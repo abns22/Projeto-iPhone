@@ -1,0 +1,116 @@
+body {
+    background-image: linear-gradient(to right, rgb(0, 0, 0) , rgb(1, 56, 19))
+}
+
+.logo {
+    display: flex;
+    justify-content: center;
+    height: 100px;
+    margin-bottom: -20px;
+    margin-top: -50px;
+}
+
+.bem-vindo {
+    display: flex;
+    border: none;
+    border-radius: 5px;
+    max-width: 150px;
+    max-height: 40px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 100px;
+    background-color: rgb(255, 255, 255);
+    justify-content: center;
+    align-items: center;
+    box-shadow: black 5px 5px 5px;
+    font-style: italic;
+}
+
+#login-bem-vindo {
+    font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif ;
+    font-size: 25px;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+    background-image: linear-gradient(to right, rgb(1, 56, 19) , rgb(2, 85, 9));
+    max-width: 300px;
+    height: 350px;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 10px;
+    box-shadow: black 5px 5px 5px;
+}
+
+input {
+    border: none;
+    border-radius: 4px;
+}
+
+.input-email {
+    max-width: 200px;
+    max-height: 100px;
+}
+
+.digite-email {
+    box-shadow: rgba(0, 0, 0, 0.473) 5px 5px 5px;
+    height: 22px;
+}
+
+.digite-senha {
+    box-shadow: rgba(0, 0, 0, 0.473) 5px 5px 5px;
+    height: 22px;
+}
+
+.input-senha {
+    max-width: 200px;
+    max-height: 100px;
+}
+
+.p-email {
+    font-size: 25px;
+    text-align: center;
+    margin-top: 25px;
+    margin-bottom: 5px;
+    border-radius: 5px;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    color: white;
+    font-style: italic;
+}
+
+.p-senha {
+    font-size: 25px;
+    text-align: center;
+    margin-top: 30px;
+    margin-bottom: 5px;
+    border-radius: 5px;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    color: white;
+    font-style: italic;
+}
+
+.botao-entrar {
+    margin-top: 35px;
+    margin-bottom: auto;
+}
+
+.entrar {
+    font-size: 25px;
+    border-radius: 3px;
+    box-shadow: rgba(0, 0, 0, 0.705) 5px 5px 5px;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    border: none;
+}
+
+.adm {
+    margin-left: auto;
+    margin-bottom: auto;
+    text-align: center;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    font-style: italic;
+    font-size: 15px;
+    color: white;
+}
