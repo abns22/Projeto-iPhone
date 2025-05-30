@@ -93,8 +93,9 @@ input {
 }
 
 .botao-entrar {
-    margin-top: 35px;
+    margin-top: 25px;
     margin-bottom: auto;
+    margin-left: 50px;
 }
 
 .entrar {
@@ -113,4 +114,9 @@ input {
     font-style: italic;
     font-size: 15px;
     color: white;
+}
+
+.msgErro {
+    color: rgb(241, 69, 69);
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
 }

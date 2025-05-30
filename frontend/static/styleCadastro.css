@@ -1,0 +1,11 @@
+body {
+    background-image: linear-gradient(to right, rgb(0, 0, 0) , rgb(1, 56, 19))
+}
+
+.logo {
+    display: flex;
+    justify-content: center;
+    height: 100px;
+    margin-bottom: -20px;
+    margin-top: -50px;
+}

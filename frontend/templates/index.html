@@ -21,6 +21,7 @@
                 <p class="p-senha">Senha</p>
                 <input class="digite-senha" type="password" name="senha" placeholder="Sua senha">
             </div>
+            <div class="msgErro">{% if erro %}<p class="erro">{{ erro }}</p>{% endif %}</div>
             <div class="botao-entrar">
                 <button class="entrar" type="submit">Entrar</button>
             </div>
