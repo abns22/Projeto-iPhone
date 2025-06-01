@@ -4,6 +4,9 @@ NOME_BANCO_DE_DADOS = 'frontend/banco.db'
 NOME_TABELA = 'usuarios'
 NOME_ANTIGO_COLUNA = 'senha'
 NOME_NOVO_COLUNA = 'senha_hash'
+COLUNA_NOME = 'nome_completo'
+COLUNA_TELEFONE = 'telefone'
+COLUNA_ADMIN = "is_admin"
 
 def renomear_coluna_no_banco():
     conexao = None
@@ -11,13 +14,13 @@ def renomear_coluna_no_banco():
         conexao = sqlite3.connect(NOME_BANCO_DE_DADOS)
         cursor = conexao.cursor()
 
-        comando_sql = f"ALTER TABLE {NOME_TABELA} RENAME COLUMN {NOME_ANTIGO_COLUNA} TO {NOME_NOVO_COLUNA}"
+        comando_sql = f"ALTER TABLE usuarios ADD COLUMN is_admin INTEGER DEFAULT 0;"
 
         print(f"Tentando executar: {comando_sql}")
         cursor.execute(comando_sql)
 
         conexao.commit()
-        print(f"Coluna '{NOME_ANTIGO_COLUNA}' renomeada para '{NOME_NOVO_COLUNA}' na tabela '{NOME_TABELA}' com sucesso!")
+        print(f"Coluna '{COLUNA_ADMIN}'adicionada com sucesso!")
 
     except sqlite3.Error as e:
         print(f"Ocorreu um erro do SQLite ao tentar renomear a coluna: {e}")
