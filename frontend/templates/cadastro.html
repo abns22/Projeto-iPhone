@@ -41,7 +41,8 @@
             <button type="submit">Cadastrar</button>
         </div>
         {% if erro %}
-        <p class="erro" style="color: red; font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;">{{ erro }}</p> {% endif %}
+        <p class="erro" style="color: rgb(250, 82, 82); font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif; font-size: 17px; font-weight: 100;">
+            {{ erro }}</p> {% endif %}
     </form>
     <br>
     <p>Ja tem um conta?&nbsp;<a href="{{ url_for ('login') }}"> Faça login aqui </a></p>
