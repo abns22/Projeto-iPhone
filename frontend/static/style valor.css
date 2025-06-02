@@ -2,11 +2,32 @@ body {
     background-image: linear-gradient(to right, rgb(0, 0, 0) , rgb(1, 56, 19))
 }
 
+.icon {
+  color: darkblue;
+  font-size: 40px;
+  background-color: none;
+  text-align: center;
+  margin-right: 10px;
+}
+
+.logout {
+  text-decoration: none;
+  color: rgb(54, 54, 255);
+  font-size: 18px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.ola {
+  color: white;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 20px;
+  margin-bottom: -10px;
+  margin-top: 5px;
+}
+
 .logo {
-    display: flex;
-    justify-content: center;
-    margin-bottom: -20px;
-    margin-top: -50px;
+  display: flex;
+  margin-top: -170px;
 }
 
 .formulario {
@@ -16,23 +37,24 @@ body {
 
 .no-canto {
     position: absolute;
-    top: 110px;
-    left: 30px;
+    top: 35px;
+    right: 30px;
     transition: all 0.5s ease;
 }
 
 .modelo-escolha {
-    height: 40px;
-    max-width: 180px;
-    font-family: Arial, Helvetica, sans-serif;
-    border-radius: 5px;
-    border: none;
-    font-size: 18px;
-    padding: 8px 12px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-align: center;
+  height: 40px;
+  max-width: 180px;
+  font-family: Arial, Helvetica, sans-serif;
+  border-radius: 5px;
+  font-size: 18px;
+  padding: 8px 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  background-color: rgb(42, 38, 252);
+  color: rgb(255, 255, 255);
 }
 
 .invisivel {
@@ -93,4 +115,13 @@ select:focus {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    background-color: rgb(42, 38, 252);
+    color: rgb(255, 255, 255);
+    transition: box-shadow 0.2s;
+}
+
+.enviar-form:active {
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+  transform: translateY(2px);
+  transition: box-shadow 0.2s, transform 0.2s;
 }

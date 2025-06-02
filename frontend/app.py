@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 import os
@@ -12,32 +12,47 @@ app.secret_key = 'sua_chave_secreta'
 @app.route('/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        usuario_form = request.form['usuario']
+        usuario_form = request.form['usuario'].strip().lower()
         senha_form = request.form['senha']
+        
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            sql_query = "SELECT id, senha_hash, nome_completo FROM usuarios WHERE usuario = ?"
+            cursor.execute(sql_query, (usuario_form,))
+            registro_usuario_db = cursor.fetchone() 
 
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        sql_query = "SELECT senha_hash FROM usuarios WHERE usuario = ?"
-        cursor.execute(sql_query, (usuario_form,))
-        registro_usuario_db = cursor.fetchone() 
+            if registro_usuario_db:
+                id_do_usuario_logado = registro_usuario_db[0]
+                hash_armazenado = registro_usuario_db[1]
+                nome_completo_do_usuario = registro_usuario_db[2]
 
-        if registro_usuario_db:
-            hash_armazenado = registro_usuario_db[0]
-            if check_password_hash(hash_armazenado, senha_form):
-                return redirect(url_for('avaliador'))
+                if check_password_hash(hash_armazenado, senha_form):
+                    session['user_id'] = id_do_usuario_logado
+                    session['username'] = usuario_form
+                    session['nome_completo'] = nome_completo_do_usuario
+                    return redirect(url_for('avaliador'))
+                else:
+                    return render_template('index.html', erro='Usuário ou senha inválidos')
             else:
+                erro = 'Usuário ou senha inválidos.'
+        except sqlite3.Error as e_db:
+            erro = "Ocorreu um erro ao processar sua solicitação."
+        finally:
+            if conn:
                 conn.close()
-                return render_template('index.html', erro='Usuário ou senha inválidos')
-        else:
-            erro = 'Usuário ou senha inválidos.'
-        conn.close()
-
         return render_template('index.html', erro=erro)
 
     return render_template('index.html')
 
 @app.route('/valor')
 def avaliador():
+    if 'user_id' not in session:
+        flash('Você precisa estar logado para acessar esta página.')
+        return redirect(url_for('login'))
+    id_do_usuario_logado = session['user_id']
+    nome_do_usuario = session.get('username', 'Usuário Desconhecido')
+    print(f"Usuário {nome_do_usuario} (ID: {id_do_usuario_logado}) acessou /valor")
     return render_template('valor.html')
 
 @app.route('/cadastro', methods=['GET', 'POST'])
@@ -90,6 +105,12 @@ def cadastro():
 
             return redirect(url_for('login'))
     return render_template('cadastro.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('user_id', None)
+    session.pop('username', None)
+    return redirect(url_for('login'))
 
 if __name__ == '__main__':
     app.run(debug=True)
