@@ -1,5 +1,8 @@
 body {
-    background-image: linear-gradient(to right, rgb(0, 0, 0) , rgb(1, 56, 19))
+    background-image: linear-gradient(rgba(0, 0, 0, 0.726), rgba(0, 0, 0, 0.726)), 
+                      url("bg11.jpg");
+    background-size: cover;
+    min-height: 100vh;
 }
 
 .flashes {
@@ -15,7 +18,7 @@ body {
     display: flex;
     justify-content: center;
     height: 100px;
-    margin-bottom: -20px;
+    margin-bottom: -50px;
     margin-top: -50px;
 }
 
@@ -28,16 +31,9 @@ body {
     margin-left: auto;
     margin-right: auto;
     margin-top: 100px;
-    background-color: rgb(255, 255, 255);
+    background-color: None;
     justify-content: center;
     align-items: center;
-    box-shadow: black 5px 5px 5px;
-    font-style: italic;
-}
-
-#login-bem-vindo {
-    font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif ;
-    font-size: 25px;
 }
 
 .container {
@@ -45,13 +41,16 @@ body {
     flex-direction: column;
     align-items: center;
     margin-top: 20px;
-    background-image: linear-gradient(to right, rgb(1, 56, 19) , rgb(2, 85, 9));
-    max-width: 300px;
-    height: 300px;
+    background-color: rgba(2, 63, 22, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    max-width: 330px;
+    height: 330px;
     margin-left: auto;
     margin-right: auto;
     border-radius: 10px;
-    box-shadow: black 5px 5px 5px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
 
 input {
@@ -66,12 +65,14 @@ input {
 
 .digite-email {
     box-shadow: rgba(0, 0, 0, 0.473) 5px 5px 5px;
-    height: 22px;
+    height: 25px;
+    width: 200px;
 }
 
 .digite-senha {
     box-shadow: rgba(0, 0, 0, 0.473) 5px 5px 5px;
-    height: 22px;
+    height: 25px;
+    width: 200px;
 }
 
 .input-senha {
@@ -87,7 +88,6 @@ input {
     border-radius: 5px;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
     color: white;
-    font-style: italic;
 }
 
 .p-senha {
@@ -98,17 +98,12 @@ input {
     border-radius: 5px;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
     color: white;
-    font-style: italic;
 }
 
 .botao-entrar {
-    margin-top: 25px;
+    margin-top: 40px;
     margin-bottom: auto;
-    margin-left: 50px;
-}
-
-button:hover {
-    font-size: 26px;
+    margin-left: 65px;
 }
 
 button:active {
@@ -116,13 +111,13 @@ button:active {
 }
 
 .entrar {
-    font-size: 25px;
+    font-size: 22px;
     border-radius: 3px;
     box-shadow: rgba(0, 0, 0, 0.705) 5px 5px 5px;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
     border: none;
     color: white;
-    background-color: rgb(42, 38, 252);
+    background-color: rgb(2, 100, 39);
 }
 
 .adm {
@@ -132,7 +127,7 @@ button:active {
     font-style: italic;
     font-size: 15px;
     color: white;
-
+    margin-top: 35px;
 }
 
 .clique-aqui {
