@@ -18,7 +18,7 @@ def login():
         try:
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
-            sql_query = "SELECT id, senha_hash, nome_completo FROM usuarios WHERE usuario = ?"
+            sql_query = "SELECT id, senha_hash, nome_completo, is_admin FROM usuarios WHERE usuario = ?"
             cursor.execute(sql_query, (usuario_form,))
             registro_usuario_db = cursor.fetchone() 
 
@@ -26,11 +26,13 @@ def login():
                 id_do_usuario_logado = registro_usuario_db[0]
                 hash_armazenado = registro_usuario_db[1]
                 nome_completo_do_usuario = registro_usuario_db[2]
+                status_admin_do_usuario = bool(registro_usuario_db[3])
 
                 if check_password_hash(hash_armazenado, senha_form):
                     session['user_id'] = id_do_usuario_logado
                     session['username'] = usuario_form
                     session['nome_completo'] = nome_completo_do_usuario
+                    session['is_admin'] = status_admin_do_usuario
                     return redirect(url_for('avaliador'))
                 else:
                     return render_template('index.html', erro='Usuário ou senha inválidos')

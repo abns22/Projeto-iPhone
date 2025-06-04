@@ -1,5 +1,5 @@
 body {
-    background-image: linear-gradient(rgba(0, 0, 0, 0.726), rgba(0, 0, 0, 0.726)), 
+    background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
                       url("bg11.jpg");
     background-size: cover;
     min-height: 100vh;
