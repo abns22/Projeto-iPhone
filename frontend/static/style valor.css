@@ -1,5 +1,5 @@
 body {
-  background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
+  background-image: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), 
                       url("b13.jpg");
   background-size: cover;
   background-repeat: no-repeat;
@@ -24,8 +24,7 @@ body, html {
   box-shadow: 2px 0 5px rgba(0,0,0,0.1); 
   background-color: rgba(2, 63, 22, 0.1);
   backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); 
+  -webkit-backdrop-filter: blur(10px); 
   color: #ecf0f1; 
   padding: 20px;
   transform: translateX(-100%);
@@ -107,7 +106,56 @@ body, html {
 }
 
 .page-content {
+  background-image: url("iPhoneBG.png");
+  background-size: 44vw;
+  background-repeat: no-repeat;
+  background-position: center center;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px); 
+  border-radius: 20px; 
+  min-height: 500px;
+  width: 40vw;
   padding: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: column;
+  justify-content: top;
+  align-items: center;
+  margin-left: auto;
+  margin-right: auto;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
+.page-content h3 {
+  color: rgb(255, 255, 255);
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+.page-content h1 {
+  color: rgb(255, 255, 255);
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+.um {
+  color: white;
+  font-family: Arial, Helvetica, sans-serif;
+  margin-bottom: -190px;
+  margin-top: 230px;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.dois {
+   color: rgb(90, 255, 101);
+  font-family: Arial, Helvetica, sans-serif;
+  margin-bottom: -190px;
+  margin-top: 230px;
+  font-size: 25px;
+  font-weight: 600;
+}
 

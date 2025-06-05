@@ -1,5 +1,5 @@
 body {
-    background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
+    background-image: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), 
                       url("bg11.jpg");
     background-size: cover;
     min-height: 100vh;
@@ -40,12 +40,14 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
+    flex-grow: 1;
+    flex-shrink: 1;
     margin-top: 20px;
     background-color: rgba(2, 63, 22, 0.1);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.18);
-    max-width: 330px;
+    max-width: 300px;
     height: 330px;
     margin-left: auto;
     margin-right: auto;
@@ -101,7 +103,7 @@ input {
 }
 
 .botao-entrar {
-    margin-top: 40px;
+    margin-top: 30px;
     margin-bottom: auto;
     margin-left: 65px;
 }
@@ -127,7 +129,7 @@ button:active {
     font-style: italic;
     font-size: 15px;
     color: white;
-    margin-top: 35px;
+    margin-top: 25px;
 }
 
 .clique-aqui {
