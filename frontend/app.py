@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 import os
@@ -113,6 +113,76 @@ def logout():
     session.pop('user_id', None)
     session.pop('username', None)
     return redirect(url_for('login'))
+
+@app.route('/calcular')
+def calcular():
+    if 'user_id' not in session:
+        flash('Você precisa estar logado para acessar esta página.', 'warning')
+        return redirect(url_for('login'))
+    
+    conn = None
+    modelos = []
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT id, nome_modelo, imagem_padrao_url FROM modelos_iphone ORDER BY id")
+        modelos = cursor.fetchall()
+
+    except sqlite3.Error as e:
+        print(f"Erro ao buscar modelos na rota /calcular: {e}")
+    finally:
+        if conn:
+            conn.close()
+    return render_template('calcular.html', modelos=modelos)
+
+@app.route('/api/modelo/<int:modelo_id>/opcoes')
+def get_opcoes_modelo(modelo_id):
+
+    if 'user_id' not in session:
+        return jsonify({"erro": "Não autorizado"}), 401
+    
+    opcoes = {
+        "cores": [],
+        "armazenamentos": []
+    }
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        # Buscar cores para o modelo_id
+        sql_cores = """
+            SELECT c.id, c.nome_cor, c.codigo_hex, mc.imagem_url 
+            FROM cores c
+            JOIN modelos_cores mc ON c.id = mc.cor_id
+            WHERE mc.modelo_id = ?
+        """
+        cursor.execute(sql_cores, (modelo_id,))
+        for row in cursor.fetchall():
+            opcoes["cores"].append(dict(row))
+
+        # Buscar armazenamentos para o modelo_id
+        sql_armazenamentos = """
+            SELECT a.id, a.capacidade_gb, ma.modificador_valor
+            FROM armazenamentos a
+            JOIN modelos_armazenamentos ma ON a.id = ma.armazenamento_id
+            WHERE ma.modelo_id = ?
+        """
+        cursor.execute(sql_armazenamentos, (modelo_id,))
+        for row in cursor.fetchall():
+            opcoes["armazenamentos"].append(dict(row))
+
+    except sqlite3.Error as e:
+        print(f"Erro ao buscar opções: {e}")
+        return jsonify({"erro": "Erro no servidor"}), 500
+    finally:
+        if conn:
+            conn.close()
+    
+    return jsonify(opcoes)
 
 if __name__ == '__main__':
     app.run(debug=True)

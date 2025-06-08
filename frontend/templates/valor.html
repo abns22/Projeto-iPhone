@@ -17,7 +17,7 @@
                 <p>Bem-vindo, {{ session.get('nome_completo', session.get('username', 'Usuário')) }}!</p>
             </div>
             <ul class="sidebar-nav">
-                <li><a href="#">Seu iPhone como parte de pagamento!</a></li>
+                <li><a href="{{ url_for('calcular') }}">Seu iPhone como parte de pagamento!</a></li>
                 <li><a href="#">Entre em contato</a></li>
                  {% if session.get('is_admin') %}
                 <li><a href="#">Ajustar valores</a></li>
