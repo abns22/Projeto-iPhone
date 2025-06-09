@@ -2,12 +2,21 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 import os
+from flask_mail import Mail, Message
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, 'banco.db')
 
 app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta'
+
+app.config['MAIL_SERVER'] = 'smtp.gmail.com' 
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'abns22.gemi@gmail.com' 
+app.config['MAIL_PASSWORD'] = 'fouz wqzk qsju zjpn'    
+
+mail = Mail(app)
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
@@ -67,7 +76,7 @@ def cadastro():
         nome_completo = request.form['nome-usuario']
 
         print(f"--- Novo Cadastro Tentativa ---")
-        print(f"Email recebido do form: '{email}'") # Veja se tem espaços ou caixa diferente
+        print(f"Email recebido do form: '{email}'") 
 
         erro = None
 
@@ -116,34 +125,46 @@ def logout():
 
 @app.route('/calcular')
 def calcular():
-    if 'user_id' not in session:
-        flash('Você precisa estar logado para acessar esta página.', 'warning')
-        return redirect(url_for('login'))
     
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
     conn = None
     modelos = []
+    dados_usuario_logado = None 
+
     try:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-
-        cursor.execute("SELECT id, nome_modelo, imagem_padrao_url FROM modelos_iphone ORDER BY id")
+        
+        
+        id_usuario = session['user_id']
+        cursor.execute("SELECT nome_completo, telefone FROM usuarios WHERE id = ?", (id_usuario,))
+        dados_usuario_logado = cursor.fetchone() 
+        
+        
+        
+        cursor.execute("SELECT * FROM modelos_iphone ORDER BY id") 
         modelos = cursor.fetchall()
-
+        
     except sqlite3.Error as e:
-        print(f"Erro ao buscar modelos na rota /calcular: {e}")
+        print(f"Erro ao buscar dados na rota /calcular: {e}")
     finally:
         if conn:
             conn.close()
-    return render_template('calcular.html', modelos=modelos)
+
+    
+    return render_template('calcular.html', modelos=modelos, usuario=dados_usuario_logado)
 
 @app.route('/api/modelo/<int:modelo_id>/opcoes')
 def get_opcoes_modelo(modelo_id):
-
     if 'user_id' not in session:
         return jsonify({"erro": "Não autorizado"}), 401
     
+   
     opcoes = {
+        "modelo_info": None, 
         "cores": [],
         "armazenamentos": []
     }
@@ -153,7 +174,14 @@ def get_opcoes_modelo(modelo_id):
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        # Buscar cores para o modelo_id
+        sql_modelo = "SELECT nome_modelo, valor_base FROM modelos_iphone WHERE id = ?"
+        cursor.execute(sql_modelo, (modelo_id,))
+        modelo_info_row = cursor.fetchone()
+        if modelo_info_row:
+            
+            opcoes['modelo_info'] = dict(modelo_info_row)
+       
+
         sql_cores = """
             SELECT c.id, c.nome_cor, c.codigo_hex, mc.imagem_url 
             FROM cores c
@@ -164,7 +192,6 @@ def get_opcoes_modelo(modelo_id):
         for row in cursor.fetchall():
             opcoes["cores"].append(dict(row))
 
-        # Buscar armazenamentos para o modelo_id
         sql_armazenamentos = """
             SELECT a.id, a.capacidade_gb, ma.modificador_valor
             FROM armazenamentos a
@@ -183,6 +210,89 @@ def get_opcoes_modelo(modelo_id):
             conn.close()
     
     return jsonify(opcoes)
+
+@app.route('/api/enviar-orcamento', methods=['POST'])
+def enviar_orcamento():
+    if 'user_id' not in session:
+        return jsonify({"erro": "Não autorizado"}), 401
+
+    dados = request.json
+    nome_usuario = session.get('nome_completo', 'Não informado')
+    email_usuario = session.get('username', 'Não informado')
+
+    try:
+        corpo_email = f"""
+        Novo Orçamento Recebido!
+        -------------------------
+        Cliente: {nome_usuario}
+        E-mail do Cliente: {email_usuario}
+
+        Detalhes do Aparelho:
+        - Modelo: {dados.get('modelo')}
+        - Detalhes: {dados.get('detalhes')}
+        - IMEI: {dados.get('imei')}
+
+        Diagnóstico:
+        """
+        for item in dados.get('resumo', []):
+            corpo_email += f"- {item['pergunta']}: {item['resposta']}\n"
+        
+        corpo_email += f"""
+        -------------------------
+        VALOR FINAL ESTIMADO: R$ {dados.get('valor')}
+        """
+
+        msg = Message(
+            subject=f"Novo Orçamento de Avaliação para {dados.get('modelo')}",
+            sender=('Nome da Sua Empresa', app.config['MAIL_USERNAME']),
+            recipients=['alfredo_gi@hotmail.com']
+        )
+        msg.body = corpo_email
+        mail.send(msg)
+        
+        return jsonify({"mensagem": "Orçamento enviado com sucesso para a nossa equipe!"})
+
+    except Exception as e:
+        print(f"Erro ao enviar e-mail: {e}")
+        return jsonify({"mensagem": "Falha ao enviar o e-mail."}), 500
+
+@app.route('/api/modelo/<int:modelo_id>/perguntas')
+def get_perguntas_modelo(modelo_id):
+
+    if 'user_id' not in session:
+        return jsonify({"erro": "Não autorizado"}), 401
+
+    perguntas_com_impacto = []
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        
+        sql = """
+            SELECT 
+                p.id as pergunta_id, 
+                p.texto_pergunta,
+                ir.resposta_que_gera_impacto,
+                ir.valor_do_impacto
+            FROM perguntas_avaliacao p
+            JOIN impacto_respostas ir ON p.id = ir.pergunta_id
+            WHERE ir.modelo_id = ?
+        """
+        cursor.execute(sql, (modelo_id,))
+        for row in cursor.fetchall():
+            perguntas_com_impacto.append(dict(row))
+
+    except sqlite3.Error as e:
+        print(f"Erro ao buscar perguntas para o modelo {modelo_id}: {e}")
+        return jsonify({"erro": "Erro no servidor"}), 500
+    finally:
+        if conn:
+            conn.close()
+
+   
+    return jsonify(perguntas_com_impacto)
 
 if __name__ == '__main__':
     app.run(debug=True)
