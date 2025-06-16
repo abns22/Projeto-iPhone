@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - Adicionar Modelo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_admin.css') }}">
+</head>
+<body>
+    <div class="admin-container">
+        <header>
+            <h1>Adicionar Novo Modelo de iPhone</h1>
+        </header>
+        <main>
+            <form method="POST">
+                <div class="form-section">
+                    <h2>Dados do Modelo</h2>
+                    <div class="form-group">
+                        <label for="nome_modelo">Nome do Modelo:</label>
+                        <input type="text" name="nome_modelo" placeholder="Ex: iPhone XR" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="valor_base">Valor Base (R$):</label>
+                        <input type="number" step="0.01" name="valor_base" placeholder="Ex: 1500.00" required>
+                    </div>
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="imagem_modelo">Imagem do Modelo:</label>
+                            <input type="file" id="imagem_modelo" name="imagem_modelo" accept="image/png, image/jpeg, image/jpg">
+                        </div>
+                    <div class="form-actions">
+                        <a href="{{ url_for('ajustar_valores_admin') }}" class="btn-cancelar">Cancelar</a>
+                        <button type="submit" class="btn-editar">Salvar Novo Modelo</button>
+                    </div>
+                    </form>
+                </div>
+            </form>
+        </main>
+    </div>
+</body>
+</html>

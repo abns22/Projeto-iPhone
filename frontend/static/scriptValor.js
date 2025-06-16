@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const secaoAvaliacao = document.getElementById('secao-avaliacao');
     const btnVoltar = document.getElementById('btn-voltar-selecao');
     const btnCalcular = document.getElementById('btn-calcular-valor');
+    
 
     if (hamburgerBtn && dashboardLayout) {
         hamburgerBtn.addEventListener('click', function() {
@@ -18,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btnVoltar.addEventListener('click', function() {
             secaoAvaliacao.style.display = 'none';
             gridModelos.style.display = 'grid';
+            resetarEstadoAvaliacao();
         });
     }
 
@@ -62,12 +64,20 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (clicado.matches('.btn-selecionar-modelo')) {
                 event.stopPropagation();
-                const corSelecionada = cardClicado.querySelector('.btn-cor.selecionado');
-                const armazenamentoSelecionado = cardClicado.querySelector('.btn-armazenamento.selecionado');
-                if (!corSelecionada || !armazenamentoSelecionado) {
-                    alert("Por favor, selecione uma cor e uma capacidade de armazenamento.");
-                    return;
+                const corSelecionadaBtn = cardClicado.querySelector('.btn-cor.selecionado');
+                const armazenamentoSelecionadoBtn = cardClicado.querySelector('.btn-armazenamento.selecionado');
+
+            
+                if (!corSelecionadaBtn || !armazenamentoSelecionadoBtn) { 
+                alert("Por favor, selecione uma cor e uma capacidade de armazenamento.");
+                return;
                 }
+
+                const secaoAvaliacao = document.getElementById('secao-avaliacao');
+                secaoAvaliacao.dataset.corSelecionada = corSelecionadaBtn.textContent;
+                secaoAvaliacao.dataset.armazenamentoSelecionado = armazenamentoSelecionadoBtn.textContent;
+
+                resetarEstadoAvaliacao();
                 transicaoParaTelaDeAvaliacao(cardClicado);
             }
         });
@@ -87,9 +97,24 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (btnCalcular) {
         btnCalcular.addEventListener('click', function() {
+            
             const valorBase = parseFloat(secaoAvaliacao.dataset.valorBase);
+            const nomeModelo = document.querySelector('#aparelho-em-destaque h2').textContent;
+            const nomeCor = secaoAvaliacao.dataset.corSelecionada;
+            const capacidadeArmazenamento = secaoAvaliacao.dataset.armazenamentoSelecionado;
+
+            const bodyElement = document.querySelector('body');
+            const nomeCliente = bodyElement.dataset.nomeUsuario || 'Não informado';
+            const telefoneCliente = bodyElement.dataset.telefoneUsuario || 'Não informado';
+
+            const imei = document.getElementById('imei-input').value;
+
             if (isNaN(valorBase)) {
-                alert("Erro: Não foi possível encontrar o valor base do aparelho.");
+                alert("Erro: Não foi possível encontrar o valor base do aparelho. Tente selecionar o modelo novamente.");
+                return;
+            }
+            if (!imei) {
+                alert("Por favor, digite o IMEI do aparelho.");
                 return;
             }
 
@@ -101,11 +126,12 @@ document.addEventListener('DOMContentLoaded', function() {
             todasAsPerguntas.forEach(itemPergunta => {
                 const respostaSelecionadaEl = itemPergunta.querySelector('.btn-resposta.selecionado');
                 if (!respostaSelecionadaEl) {
-                    todasRespondidas = false;
+                    todasRespondidas = false; 
                 } else {
                     const textoPergunta = itemPergunta.querySelector('p').textContent;
                     const resposta = respostaSelecionadaEl.dataset.resposta;
                     resumoDiagnostico.push({ pergunta: textoPergunta, resposta: resposta });
+
                     if (resposta === itemPergunta.dataset.respostaImpacto) {
                         valorFinal += parseFloat(itemPergunta.dataset.valorImpacto);
                     }
@@ -117,27 +143,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            const imei = document.getElementById('imei-input').value;
-            if (!imei) {
-                alert("Por favor, digite o IMEI do aparelho.");
-                return;
-            }
             resumoDiagnostico.push({ pergunta: "IMEI", resposta: imei });
 
-            const divResultado = document.getElementById('resultado-final');
-            divResultado.innerHTML = `
-                <h3>Valor Estimado do Aparelho:</h3>
-                <h2 class="valor-calculado">R$ ${valorFinal.toFixed(2).replace('.', ',')}</h2>
-                <button id="btn-imprimir-orcamento" class="btn-secundario">Imprimir Orçamento</button>
-            `;
-            
             const dadosDoOrcamento = {
-                modelo: document.querySelector('#aparelho-em-destaque h2').textContent,
-                detalhes: document.querySelector('#aparelho-em-destaque .info-pills').innerText.replace(/\n/g, ', '),
+                nomeCliente: nomeCliente,
+                telefoneCliente: telefoneCliente,
+                modelo: nomeModelo,
+                cor: nomeCor,
+                armazenamento: capacidadeArmazenamento,
                 imei: imei,
                 valor: valorFinal.toFixed(2),
                 resumo: resumoDiagnostico
             };
+
+            const divResultado = document.getElementById('resultado-final');
+            divResultado.innerHTML = `
+                <h3>Valor Estimado do Aparelho:</h3>
+                <h2 class="valor-calculado">R$ ${dadosDoOrcamento.valor.replace('.', ',')}</h2>
+                <button id="btn-imprimir-orcamento" class="btn-secundario">Imprimir Orçamento</button>
+            `;
 
             enviarOrcamentoPorEmail(dadosDoOrcamento);
 
@@ -275,6 +299,32 @@ function enviarOrcamentoPorEmail(dados) {
         console.error('Erro ao enviar e-mail:', error);
         alert("Ocorreu um erro ao tentar notificar nossa equipe. Por favor, guarde seu orçamento.");
     });
+}
+
+function resetarEstadoAvaliacao() {
+    console.log("Resetando estado da avaliação...");
+
+    
+    document.querySelectorAll('#lista-perguntas .btn-resposta.selecionado').forEach(btn => {
+        btn.classList.remove('selecionado');
+    });
+
+    
+    document.querySelectorAll('#lista-perguntas .item-pergunta').forEach(item => {
+        delete item.dataset.respostaSelecionada;
+    });
+
+    
+    const imeiInput = document.getElementById('imei-input');
+    if (imeiInput) {
+        imeiInput.value = '';
+    }
+
+    
+    const divResultado = document.getElementById('resultado-final');
+    if (divResultado) {
+        divResultado.innerHTML = '';
+    }
 }
 
 function gerarPaginaDeImpressao(dados) {

@@ -6,6 +6,29 @@ DB_PATH = os.path.join(BASE_DIR, 'frontend', 'banco.db')
 
 def criar_tabelas():
     
+    sql_criar_tabela_avaliacoes_concluidas = """
+
+    CREATE TABLE IF NOT EXISTS avaliacoes_concluidas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        empresa_id INTEGER NOT NULL,
+        usuario_id INTEGER, 
+        nome_cliente_final TEXT, 
+        email_cliente_final TEXT,
+        telefone_cliente_final TEXT,
+        modelo_iphone_id INTEGER NOT NULL,
+        cor_selecionada TEXT NOT NULL,
+        armazenamento_selecionado TEXT NOT NULL,
+        imei TEXT,
+        valor_base_calculado REAL NOT NULL,
+        valor_final_calculado REAL NOT NULL,
+        resumo_respostas TEXT NOT NULL,
+        data_avaliacao DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (empresa_id) REFERENCES empresas (id),
+        FOREIGN KEY (usuario_id) REFERENCES usuarios (id),
+        FOREIGN KEY (modelo_iphone_id) REFERENCES modelos_iphone (id)
+    );
+    """
+
     sql_criar_tabela_modelos = """
     CREATE TABLE IF NOT EXISTS modelos_iphone (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,6 +108,9 @@ def criar_tabelas():
         
         conexao = sqlite3.connect(DB_PATH)
         cursor = conexao.cursor()
+
+        print("Criando tabela avaliacoes_concluidas")
+        cursor.execute(sql_criar_tabela_avaliacoes_concluidas)
 
         print("Criando tabela 'modelos_iphone'...")
         cursor.execute(sql_criar_tabela_modelos)
