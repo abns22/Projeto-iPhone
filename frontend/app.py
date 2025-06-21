@@ -56,6 +56,7 @@ def get_db_connection():
 def login():
     erro = None
     if request.method == 'POST':
+        conn = None
         usuario_form = request.form['usuario'].strip().lower()
         senha_form = request.form['senha']
         
