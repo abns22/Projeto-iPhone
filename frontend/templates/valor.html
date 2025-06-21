@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avalie seu iPhone</title>
+    <link rel="stylesheet" href="../static/style valor.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" 
+    integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" 
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+    <div class="dashboard-layout">
+        <aside class="sidebar fechado" id="meuSidebar"> 
+            <div class="sidebar-header">
+                <h3>Menu</h3>
+                <p>Bem-vindo, {{ session.get('nome_completo', session.get('username', 'Usuário')) }}!</p>
+            </div>
+            <ul class="sidebar-nav">
+                <li><a href="{{ url_for('calcular') }}">Seu iPhone como parte de pagamento!</a></li>
+                <li><a href="#">Entre em contato</a></li>
+                 {% if session.get('is_admin') %}
+                <li><a href="#">Ajustar valores</a></li>
+                {% endif %}
+                <li><a href="{{ url_for('logout') }}">Sair</a></li> 
+                </ul>
+        </aside>
+        
+        <main class="main-content" id="meuConteudoPrincipal">
+            <header class="main-header">
+                <button id="hamburgerBtn" class="hamburger-button">
+                    <i class="fa-solid fa-bars"></i> </button>
+            </header>
+            <div class="page-content">
+                <h3>Procurando um iPhone novo?</h3>
+                <h1>NA OBA OBA CENTER TEM!</h1>
+                <p class="um">Seu iPhone usado tem valor aqui!</p>
+                <p class="dois">Use como parte de pagamento em um novo!</p>
+                </div>
+        </main>
+    </div>
+    <script src="{{ url_for('static', filename='scriptValor.js') }}"></script>
+</body>
+</html>

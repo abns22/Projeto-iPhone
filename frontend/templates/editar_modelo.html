@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editando: {{ modelo['nome_modelo'] }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_admin.css') }}">
+</head>
+<body>
+    <div class="admin-container">
+        <header>
+            <h1>Editando: {{ modelo['nome_modelo'] }}</h1>
+            <nav>
+                <a href="{{ url_for('ajustar_valores_admin') }}">Voltar para a Lista</a>
+            </nav>
+        </header>
+
+        <main>
+            <form method="POST">
+                <div class="admin-warning-box">
+            <div class="icon">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div class="text-content">
+                <h3>Atenção: Área de Alto Impacto</h3>
+                <p>As alterações feitas nesta seção afetam <strong>TODOS</strong> os cálculos de avaliação para sua empresa. Use com extrema cautela, pois as modificações são <strong>permanentes e não podem ser desfeitas</strong>.</p>
+            </div>
+            </div>
+                <div class="form-section">
+                    <h2>Valores Base</h2>
+                    <div class="form-group">
+                        <label for="nome_modelo">Nome do Modelo:</label>
+                        <input type="text" id="nome_modelo" name="nome_modelo" value="{{ modelo['nome_modelo'] }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="valor_base">Valor Base (R$):</label>
+                        <input type="number" step="0.01" id="valor_base" name="valor_base" value="{{ '%.2f'|format(modelo['valor_base']|float) }}" required>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2>Valores de Impacto (Descontos)</h2>
+                    <p>Ajuste os valores de desconto para cada condição. Use valores negativos (ex: -250.00).</p>
+                    
+                    <div class="impacto-grid">
+                        {% for impacto in impactos %}
+                            <div class="form-group-impacto">
+                                <label for="impacto_{{ impacto['impacto_id'] }}">{{ impacto['texto_pergunta'] }}</label>
+                                <input type="number" step="0.01" id="impacto_{{ impacto['impacto_id'] }}" name="impacto_{{ impacto['impacto_id'] }}" value="{{ '%.2f'|format(impacto['valor_do_impacto']|float) }}" required>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <a href="{{ url_for('ajustar_valores_admin') }}" class="btn-cancelar">Cancelar</a>
+                    <button type="submit" class="btn-editar">Salvar Alterações</button>
+                </div>
+            </form>
+        </main>
+    </div>
+</body>

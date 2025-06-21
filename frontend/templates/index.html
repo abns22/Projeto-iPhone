@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="../static/style.css">
+</head>
+<body>
+    <div class="logo"><a href="{{ url_for('login') }}"><img src="../static/images-removebg-preview.png" height="200px" width="200px" alt="logo-oba"></div></a>
+    <div class="bem-vindo">
+    </div>
+    <div class="container">
+        <form method="POST" action="/">
+            <div class="input-email">
+                <p class="p-email">E-mail</p>
+                <input class="digite-email" type="text" name="usuario" placeholder="Seu e-mail">
+            </div>
+            <div class="input-senha">
+                <p class="p-senha">Senha</p>
+                <input class="digite-senha" type="password" name="senha" placeholder="Sua senha">
+            </div>
+            <div class="msgErro">{% if erro %}<p class="erro">{{ erro }}</p>{% endif %}</div>
+            <div class="botao-entrar">
+                <button class="entrar" type="submit">Entrar</button>
+            </div>
+        </form>
+        <p class="adm">Para criar uma conta <a class="clique-aqui" href="{{ url_for('cadastro') }}"> clique aqui!</a></p>
+        <script src="../static/script.js"></script>
+    </div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <ul class=flashes>
+    {% for category, message in messages %}
+      <li class="{{ category }}">{{ message }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+</body>
+</html>

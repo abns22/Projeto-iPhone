@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcular Pagamento</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styleCalcular.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+    <body data-nome-usuario="{{ usuario['nome_completo'] }}" data-telefone-usuario="{{ usuario['telefone'] }}"></body>
+    <div class="dashboard-layout">
+        <aside class="sidebar" id="meuSidebar">
+            <div class="sidebar-header">
+                <h3>Menu</h3>
+                <p>Bem vindo, {{ session.get('nome_completo', session.get('username', 'Usuário')) }}!</p>
+            </div>
+            <ul class="sidebar-nav">
+                <li><a href="{{ url_for('avaliador') }}">Avaliador de iPhones</a></li>
+                <li><a href="{{ url_for('calcular') }}">Seu iPhone como parte de pagamento!</a></li>
+
+                {% if session.get('is_admin') %}
+                    <li><a href="#">Ajustar valores</a></li>
+                {% endif %}
+
+                <li><a href="{{ url_for('logout') }}">Sair</a></li> 
+            </ul>
+        </aside>
+
+        <main class="main-content" id="meuConteudoPrincipal">
+            <header class="main-header">
+                <button id="hamburgerBtn" class="hamburger-button">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </header>
+            
+            <div class="page-content">
+                <h2>Selecione o Modelo do seu iPhone</h2>
+                <p>Escolha o modelo do aparelho que você quer usar como parte do pagamento.</p>
+                
+                <div class="grid-modelos">
+                    {% for modelo in modelos %}
+                    <div class="card-modelo" data-modelo-id="{{ modelo['id'] }}">
+                        <img src="{{ url_for('static', filename=modelo['imagem_padrao_url']) }}" alt="{{ modelo['nome_modelo'] }}">
+                    <h3>{{ modelo['nome_modelo'] }}</h3>
+
+                    <div class="conteudo-expandido">
+                        <h4>Selecione a Cor:</h4>
+                    <div class="opcoes-cor" id="opcoes-cor-{{ modelo['id'] }}">
+                        <p>Carregando cores...</p>
+                </div>
+
+                    <h4>Selecione o Armazenamento:</h4>
+                <div class="opcoes-armazenamento" id="opcoes-armazenamento-{{ modelo['id'] }}">
+                    <p>Carregando armazenamentos...</p>
+                    </div>
+            
+                <button class="btn-selecionar-modelo">Avançar</button>
+                    </div>
+                </div>
+                {% else %}
+                    <p>Nenhum modelo de iPhone disponível para avaliação no momento.</p>
+                {% endfor %}
+                    </div>
+                </div>
+                <div id="secao-avaliacao" class="avaliacao-container" style="display: none;">
+                    
+    <div id="aparelho-em-destaque" class="aparelho-destaque">
+        </div>
+
+    <div id="secao-questionario" class="questionario">
+        <button id="btn-voltar-selecao" class="btn-secundario">&larr; Voltar para Modelos</button>
+        <div id="lista-perguntas">
+            </div>
+            
+        <div class="item-pergunta">
+            <p>Digite aqui o IMEI do aparelho:</p>
+            <input type="text" id="imei-input" placeholder="IMEI do aparelho">
+        </div>
+        <div class="aviso-envio-email">
+        <i class="fa-solid fa-circle-info"></i> <p><strong>Atenção:</strong> Ao clicar em "Calcular Valor Final", os detalhes da sua avaliação serão enviados para nossa equipe. Um especialista entrará em contato em breve para apresentar as melhores opções de troca para o seu novo iPhone!</p>
+        </div>
+        <button id="btn-calcular-valor" class="btn-principal">Calcular Valor Final</button>
+
+        <div id="resultado-final" style="margin-top: 20px;">
+            </div>
+        </div>
+        </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='scriptValor.js') }}"></script>
+</body>
+</html>
+</body>
+</html>

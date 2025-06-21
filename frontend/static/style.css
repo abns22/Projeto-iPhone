@@ -1,0 +1,148 @@
+body {
+    background-image: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), 
+                      url("bg11.jpg");
+    background-size: cover;
+    min-height: 100vh;
+}
+
+.flashes {
+    color: white;
+    display: flex;
+    font-family: Arial, Helvetica, sans-serif;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.logo {
+    display: flex;
+    justify-content: center;
+    height: 100px;
+    margin-bottom: -50px;
+    margin-top: -50px;
+}
+
+.bem-vindo {
+    display: flex;
+    border: none;
+    border-radius: 5px;
+    max-width: 150px;
+    max-height: 40px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 100px;
+    background-color: None;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-grow: 1;
+    flex-shrink: 1;
+    margin-top: 20px;
+    background-color: rgba(2, 63, 22, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    max-width: 300px;
+    height: 330px;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 10px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+input {
+    border: none;
+    border-radius: 4px;
+}
+
+.input-email {
+    max-width: 200px;
+    max-height: 100px;
+}
+
+.digite-email {
+    box-shadow: rgba(0, 0, 0, 0.473) 5px 5px 5px;
+    height: 25px;
+    width: 200px;
+}
+
+.digite-senha {
+    box-shadow: rgba(0, 0, 0, 0.473) 5px 5px 5px;
+    height: 25px;
+    width: 200px;
+}
+
+.input-senha {
+    max-width: 200px;
+    max-height: 100px;
+}
+
+.p-email {
+    font-size: 25px;
+    text-align: center;
+    margin-top: 25px;
+    margin-bottom: 5px;
+    border-radius: 5px;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    color: white;
+}
+
+.p-senha {
+    font-size: 25px;
+    text-align: center;
+    margin-top: 30px;
+    margin-bottom: 5px;
+    border-radius: 5px;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    color: white;
+}
+
+.botao-entrar {
+    margin-top: 30px;
+    margin-bottom: auto;
+    margin-left: 65px;
+}
+
+button:active {
+    color: green;
+}
+
+.entrar {
+    font-size: 22px;
+    border-radius: 3px;
+    box-shadow: rgba(0, 0, 0, 0.705) 5px 5px 5px;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    border: none;
+    color: white;
+    background-color: rgb(2, 100, 39);
+}
+
+.adm {
+    margin-bottom: auto;
+    text-align: center;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    font-style: italic;
+    font-size: 15px;
+    color: white;
+    margin-top: 25px;
+}
+
+.clique-aqui {
+    text-decoration: none;
+    color: white;
+}
+
+.clique-aqui:hover {
+    color: green;
+    font-size: 16px;
+}
+
+.msgErro {
+    color: rgb(241, 69, 69);
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+}
