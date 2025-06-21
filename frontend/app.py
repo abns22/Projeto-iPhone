@@ -52,50 +52,61 @@ def get_db_connection():
 
         return None
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
     erro = None
+
     if request.method == 'POST':
-        conn = None
-        usuario_form = request.form['usuario'].strip().lower()
-        senha_form = request.form['senha']
+        conn = None  
         
         try:
-            conn = get_db_connection()
+
+            conn = get_db_connection() 
+
+            if conn is None:
+
+                erro = "Erro interno no servidor. Tente novamente mais tarde."
+                flash(erro, "danger")
+
+                return render_template('login.html', erro=erro)
+
             cursor = conn.cursor(cursor_factory=RealDictCursor)
-            sql_query = "SELECT id, usuario, senha_hash, nome_completo, is_admin, empresa_id FROM usuarios WHERE usuario = %s"
-            cursor.execute(sql_query, (usuario_form,))
+            
+            usuario = request.form.get('usuario')
+            senha = request.form.get('senha')
 
-            registro_usuario_db = cursor.fetchone() 
+            if not usuario or not senha:
+                erro = "Usuário e senha são obrigatórios."
+            else:
 
-            if registro_usuario_db:
-                
-                hash_armazenado = registro_usuario_db['senha_hash']
+                cursor.execute("SELECT * FROM usuarios WHERE usuario = %s", (usuario,))
+                registro_usuario_db = cursor.fetchone()
 
-                if check_password_hash(hash_armazenado, senha_form):
+                if registro_usuario_db and check_password_hash(registro_usuario_db['senha_hash'], senha):
+ 
+                    session.clear()
                     session['user_id'] = registro_usuario_db['id']
-                    session['username'] = registro_usuario_db['usuario']
                     session['nome_completo'] = registro_usuario_db['nome_completo']
                     session['is_admin'] = registro_usuario_db['is_admin']
-                    session['empresa_id'] = registro_usuario_db['empresa_id']
-                    
-                    return redirect(url_for('calcular'))
+
+                    return redirect(url_for('pagina_principal')) 
                 else:
-                    erro = 'Usuário ou senha inválidos'
-            else:
-                erro = 'Usuário ou senha inválidos.'
+                   
+                    erro = "Usuário ou senha inválidos."
 
-        except psycopg2.Error as e_db:
-            erro = "Ocorreu um erro ao processar sua solicitação."
-            print(f"Erro de PostgreSQL no login: {e_db}")
+            if erro:
+                flash(erro, "danger")
+
+        except Exception as e:
+
+            print(f"ERRO INESPERADO NA ROTA DE LOGIN: {e}")
+            flash("Ocorreu um erro inesperado durante o login.", "danger")
         finally:
-            if conn:
-                cursor.close()
-                conn.close()
-        
-        return render_template('index.html', erro=erro) 
 
-    return render_template('index.html', erro=None)
+            if conn:
+                conn.close()
+    
+    return render_template('login.html', erro=erro)
 
 def get_info_empresa_logada():
     """Busca no banco os dados da empresa do usuário logado."""
