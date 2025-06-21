@@ -34,17 +34,23 @@ mail = Mail(app)
 
 def get_db_connection():
     """
-    Estabelece e retorna uma nova conexão com o banco de dados,
-    lendo as variáveis de ambiente toda vez.
+    Estabelece e retorna uma nova conexão com o banco de dados.
+    Esta função garante que as variáveis de ambiente sejam lidas no momento certo.
     """
-    conn = psycopg2.connect(
-        dbname=os.getenv('DB_NAME'),
-        user=os.getenv('DB_USER'),
-        password=os.getenv('DB_PASS'),
-        host=os.getenv('DB_HOST'),
-        port=os.getenv('DB_PORT')
-    )
-    return conn
+    try:
+        conn = psycopg2.connect(
+            dbname=os.getenv('DB_NAME'),
+            user=os.getenv('DB_USER'),
+            password=os.getenv('DB_PASS'),
+            host=os.getenv('DB_HOST'),
+            port=os.getenv('DB_PORT')
+        )
+        return conn
+    except psycopg2.OperationalError as e:
+
+        print(f"ERRO DE CONEXÃO COM O BANCO DE DADOS: {e}")
+
+        return None
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
@@ -54,7 +60,7 @@ def login():
         senha_form = request.form['senha']
         
         try:
-            conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
+            conn = get_db_connection()
             cursor = conn.cursor(cursor_factory=RealDictCursor)
             sql_query = "SELECT id, usuario, senha_hash, nome_completo, is_admin, empresa_id FROM usuarios WHERE usuario = %s"
             cursor.execute(sql_query, (usuario_form,))
@@ -97,7 +103,7 @@ def get_info_empresa_logada():
     
     conn = None
     try:
-        conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
+        conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         cursor.execute("SELECT nome_empresa, logo_url FROM empresas WHERE id = %s", (session['empresa_id'],))
         info_empresa = cursor.fetchone()
@@ -291,7 +297,7 @@ def enviar_orcamento():
     conn = None
     try:
 
-        conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
+        conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
 
@@ -438,7 +444,7 @@ def gerenciar_modelos_admin():
 
     try:
 
-        conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
+        conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
 
@@ -478,7 +484,7 @@ def editar_modelo_admin(modelo_id):
 
     if request.method == 'POST':
         try:
-            conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
+            conn = get_db_connection()
             cursor = conn.cursor()
           
             novo_nome = request.form['nome_modelo']
@@ -519,7 +525,7 @@ def editar_modelo_admin(modelo_id):
     modelo_para_editar = None
     impactos_do_modelo = []
     try:
-        conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
+        conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
         cursor.execute("SELECT * FROM modelos_iphone WHERE id = %s AND empresa_id = %s", (modelo_id, empresa_id_logada))
@@ -574,7 +580,7 @@ def adicionar_modelo_admin():
 
         conn = None
         try:
-            conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
+            conn = get_db_connection()
             cursor = conn.cursor()
 
             sql_insert_modelo = """
@@ -631,7 +637,7 @@ def adicionar_modelo_admin():
     cores = []
     armazenamentos = []
     try:
-        conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
+        conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
         cursor.execute("SELECT id, nome_cor FROM cores ORDER BY nome_cor")
@@ -707,7 +713,7 @@ def gerenciar_usuarios_admin():
     id_do_admin_logado = session['user_id'] 
     conn = None
     try:
-        conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
+        conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         
         cursor.execute(
@@ -746,7 +752,7 @@ def adicionar_usuario_admin():
         hash_da_senha = generate_password_hash(senha)
         conn = None
         try:
-            conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
+            conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute(
                 """INSERT INTO usuarios (usuario, senha_hash, nome_completo, telefone, is_admin, empresa_id)
@@ -782,7 +788,7 @@ def deletar_usuario_admin(usuario_id):
     empresa_id_logada = session['empresa_id']
     conn = None
     try:
-        conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         cursor.execute("DELETE FROM usuarios WHERE id = %s AND empresa_id = %s", (usuario_id, empresa_id_logada))
@@ -821,7 +827,7 @@ def super_admin_dashboard():
     empresas_clientes = []
     conn = None
     try:
-        conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
+        conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
         cursor.execute("SELECT * FROM empresas ORDER BY nome_empresa")
@@ -858,7 +864,7 @@ def adicionar_empresa_super_admin():
 
         conn = None
         try:
-            conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
+            conn = get_db_connection()
             cursor = conn.cursor(cursor_factory=RealDictCursor)
 
             sql_insert_empresa = """
