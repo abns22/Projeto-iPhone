@@ -36,6 +36,7 @@ mail = Mail(app)
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
+    erro = None
     if request.method == 'POST':
         usuario_form = request.form['usuario'].strip().lower()
         senha_form = request.form['senha']
