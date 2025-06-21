@@ -20,8 +20,6 @@ DB_HOST = os.getenv('DB_HOST')
 DB_PORT = os.getenv('DB_PORT')
 SECRET_KEY = os.getenv('SECRET_KEY')
 
-conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
-
 app.secret_key = SECRET_KEY
 
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'images')
@@ -33,6 +31,20 @@ app.config['MAIL_USERNAME'] = 'abns22.gemi@gmail.com'
 app.config['MAIL_PASSWORD'] = 'fouz wqzk qsju zjpn'
 
 mail = Mail(app)
+
+def get_db_connection():
+    """
+    Estabelece e retorna uma nova conexão com o banco de dados,
+    lendo as variáveis de ambiente toda vez.
+    """
+    conn = psycopg2.connect(
+        dbname=os.getenv('DB_NAME'),
+        user=os.getenv('DB_USER'),
+        password=os.getenv('DB_PASS'),
+        host=os.getenv('DB_HOST'),
+        port=os.getenv('DB_PORT')
+    )
+    return conn
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
