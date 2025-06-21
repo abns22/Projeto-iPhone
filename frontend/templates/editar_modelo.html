@@ -11,7 +11,7 @@
         <header>
             <h1>Editando: {{ modelo['nome_modelo'] }}</h1>
             <nav>
-                <a href="{{ url_for('ajustar_valores_admin') }}">Voltar para a Lista</a>
+                <a href="{{ url_for('gerenciar_modelos_admin') }}">Voltar para a Lista</a>
             </nav>
         </header>
 
@@ -33,8 +33,8 @@
                         <input type="text" id="nome_modelo" name="nome_modelo" value="{{ modelo['nome_modelo'] }}" required>
                     </div>
                     <div class="form-group">
-                        <label for="valor_base">Valor Base (R$):</label>
-                        <input type="number" step="0.01" id="valor_base" name="valor_base" value="{{ '%.2f'|format(modelo['valor_base']|float) }}" required>
+                        <label for="valor_base_novo">Valor Base (R$):</label>
+                        <input type="number" step="0.01" id="valor_base_novo" name="valor_base_novo" value="{{ '%.2f'|format(modelo['valor_base_novo']|float) }}" required>
                     </div>
                 </div>
 
@@ -53,7 +53,7 @@
                 </div>
                 
                 <div class="form-actions">
-                    <a href="{{ url_for('ajustar_valores_admin') }}" class="btn-cancelar">Cancelar</a>
+                    <a href="{{ url_for('gerenciar_modelos_admin') }}" class="btn-cancelar">Cancelar</a>
                     <button type="submit" class="btn-editar">Salvar Alterações</button>
                 </div>
             </form>

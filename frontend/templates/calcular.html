@@ -16,14 +16,17 @@
                 <p>Bem vindo, {{ session.get('nome_completo', session.get('username', 'Usuário')) }}!</p>
             </div>
             <ul class="sidebar-nav">
-                <li><a href="{{ url_for('avaliador') }}">Avaliador de iPhones</a></li>
-                <li><a href="{{ url_for('calcular') }}">Seu iPhone como parte de pagamento!</a></li>
-
+                <li><a href="{{ url_for('calcular') }}">Avaliador de iPhones</a></li>
+    
+                    {% if session.get('is_admin') %}
+                <li><a href="{{ url_for('admin_dashboard') }}">Painel de Administração</a></li>
+                    {% endif %}
                 {% if session.get('is_admin') %}
-                    <li><a href="#">Ajustar valores</a></li>
+                    <li><a href="{{ url_for('gerenciar_modelos_admin') }}">Gerenciar Modelos</a></li>
+                    <li><a href="{{ url_for('gerenciar_usuarios_admin') }}">Gerenciar Usuários</a></li>
                 {% endif %}
-
                 <li><a href="{{ url_for('logout') }}">Sair</a></li> 
+                </ul>
             </ul>
         </aside>
 

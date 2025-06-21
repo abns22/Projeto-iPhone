@@ -1,51 +1,52 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log("DOM carregado. Script completo iniciado.");
 
+    // --- SELEÇÃO DOS ELEMENTOS PRINCIPAIS ---
     const dashboardLayout = document.querySelector('.dashboard-layout');
     const hamburgerBtn = document.getElementById('hamburgerBtn');
     const gridModelos = document.querySelector('.grid-modelos');
     const secaoAvaliacao = document.getElementById('secao-avaliacao');
     const btnVoltar = document.getElementById('btn-voltar-selecao');
     const btnCalcular = document.getElementById('btn-calcular-valor');
-    
 
+    // --- LÓGICA DO MENU HAMBÚRGUER ---
     if (hamburgerBtn && dashboardLayout) {
-        hamburgerBtn.addEventListener('click', function() {
+        hamburgerBtn.addEventListener('click', () => {
             dashboardLayout.classList.toggle('sidebar-ativa');
         });
     }
 
+    // --- LÓGICA DO BOTÃO "VOLTAR" ---
     if (btnVoltar && gridModelos && secaoAvaliacao) {
-        btnVoltar.addEventListener('click', function() {
+        btnVoltar.addEventListener('click', () => {
             secaoAvaliacao.style.display = 'none';
             gridModelos.style.display = 'grid';
             resetarEstadoAvaliacao();
         });
     }
 
+    // --- LÓGICA DE INTERAÇÃO COM OS CARDS ---
     if (gridModelos) {
-        gridModelos.addEventListener('click', function(event) {
+        gridModelos.addEventListener('click', (event) => {
             const clicado = event.target;
             const cardClicado = clicado.closest('.card-modelo');
             if (!cardClicado) return;
 
+            // 1. EXPANDIR/RECOLHER O CARD
             if (!clicado.closest('.conteudo-expandido')) {
                 const isAlreadyActive = cardClicado.classList.contains('card-expandido');
                 document.querySelectorAll('.card-modelo').forEach(card => {
                     card.classList.remove('card-expandido');
-                    if (card.querySelector('.conteudo-expandido')) {
-                        card.querySelector('.conteudo-expandido').style.display = 'none';
-                    }
+                    card.querySelector('.conteudo-expandido').style.display = 'none';
                 });
                 if (!isAlreadyActive) {
                     cardClicado.classList.add('card-expandido');
-                    if (cardClicado.querySelector('.conteudo-expandido')) {
-                        cardClicado.querySelector('.conteudo-expandido').style.display = 'block';
-                    }
+                    cardClicado.querySelector('.conteudo-expandido').style.display = 'block';
                     fetchOpcoes(cardClicado.dataset.modeloId, cardClicado);
                 }
             }
 
+            // 2. SELECIONAR COR E MUDAR IMAGEM
             if (clicado.matches('.btn-cor')) {
                 cardClicado.querySelectorAll('.btn-cor').forEach(btn => btn.classList.remove('selecionado'));
                 clicado.classList.add('selecionado');
@@ -56,35 +57,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
+            // 3. SELECIONAR ARMAZENAMENTO
             if (clicado.matches('.btn-armazenamento')) {
                 cardClicado.querySelectorAll('.btn-armazenamento').forEach(btn => btn.classList.remove('selecionado'));
                 clicado.classList.add('selecionado');
             }
 
-            
+            // 4. LÓGICA DO BOTÃO "AVANÇAR"
             if (clicado.matches('.btn-selecionar-modelo')) {
                 event.stopPropagation();
-                const corSelecionadaBtn = cardClicado.querySelector('.btn-cor.selecionado');
-                const armazenamentoSelecionadoBtn = cardClicado.querySelector('.btn-armazenamento.selecionado');
-
-            
-                if (!corSelecionadaBtn || !armazenamentoSelecionadoBtn) { 
-                alert("Por favor, selecione uma cor e uma capacidade de armazenamento.");
-                return;
+                const corSelecionada = cardClicado.querySelector('.btn-cor.selecionado');
+                const armazenamentoSelecionado = cardClicado.querySelector('.btn-armazenamento.selecionado');
+                if (!corSelecionada || !armazenamentoSelecionado) {
+                    alert("Por favor, selecione uma cor e uma capacidade de armazenamento.");
+                    return;
                 }
-
-                const secaoAvaliacao = document.getElementById('secao-avaliacao');
-                secaoAvaliacao.dataset.corSelecionada = corSelecionadaBtn.textContent;
-                secaoAvaliacao.dataset.armazenamentoSelecionado = armazenamentoSelecionadoBtn.textContent;
-
                 resetarEstadoAvaliacao();
                 transicaoParaTelaDeAvaliacao(cardClicado);
             }
         });
     }
 
+    // --- LÓGICA DO QUESTIONÁRIO E CÁLCULO ---
     if (secaoAvaliacao) {
-        secaoAvaliacao.addEventListener('click', function(event) {
+        // Lógica para selecionar respostas Sim/Não
+        secaoAvaliacao.addEventListener('click', (event) => {
             if (event.target.matches('.btn-resposta')) {
                 const botaoClicado = event.target;
                 const divPerguntaPai = botaoClicado.closest('.item-pergunta');
@@ -93,155 +90,110 @@ document.addEventListener('DOMContentLoaded', function() {
                 divPerguntaPai.dataset.respostaSelecionada = botaoClicado.dataset.resposta;
             }
         });
-    }
-    
-    if (btnCalcular) {
-        btnCalcular.addEventListener('click', function() {
-            
-            const valorBase = parseFloat(secaoAvaliacao.dataset.valorBase);
-            const nomeModelo = document.querySelector('#aparelho-em-destaque h2').textContent;
-            const nomeCor = secaoAvaliacao.dataset.corSelecionada;
-            const capacidadeArmazenamento = secaoAvaliacao.dataset.armazenamentoSelecionado;
 
-            const bodyElement = document.querySelector('body');
-            const nomeCliente = bodyElement.dataset.nomeUsuario || 'Não informado';
-            const telefoneCliente = bodyElement.dataset.telefoneUsuario || 'Não informado';
-
-            const imei = document.getElementById('imei-input').value;
-
-            if (isNaN(valorBase)) {
-                alert("Erro: Não foi possível encontrar o valor base do aparelho. Tente selecionar o modelo novamente.");
-                return;
-            }
-            if (!imei) {
-                alert("Por favor, digite o IMEI do aparelho.");
-                return;
-            }
-
-            let valorFinal = valorBase;
-            const resumoDiagnostico = [];
-            const todasAsPerguntas = document.querySelectorAll('#lista-perguntas .item-pergunta');
-            let todasRespondidas = true;
-
-            todasAsPerguntas.forEach(itemPergunta => {
-                const respostaSelecionadaEl = itemPergunta.querySelector('.btn-resposta.selecionado');
-                if (!respostaSelecionadaEl) {
-                    todasRespondidas = false; 
-                } else {
-                    const textoPergunta = itemPergunta.querySelector('p').textContent;
-                    const resposta = respostaSelecionadaEl.dataset.resposta;
-                    resumoDiagnostico.push({ pergunta: textoPergunta, resposta: resposta });
-
-                    if (resposta === itemPergunta.dataset.respostaImpacto) {
-                        valorFinal += parseFloat(itemPergunta.dataset.valorImpacto);
-                    }
+        // Lógica para o botão de calcular
+        if (btnCalcular) {
+            btnCalcular.addEventListener('click', () => {
+                const valorBase = parseFloat(secaoAvaliacao.dataset.valorBase);
+                if (isNaN(valorBase)) {
+                    alert("Erro: Não foi possível encontrar o valor base do aparelho.");
+                    return;
                 }
+
+                let valorFinal = valorBase;
+                const resumoDiagnostico = [];
+                const todasAsPerguntas = document.querySelectorAll('#lista-perguntas .item-pergunta');
+                let todasRespondidas = true;
+
+                todasAsPerguntas.forEach(itemPergunta => {
+                    const respostaSelecionadaEl = itemPergunta.querySelector('.btn-resposta.selecionado');
+                    if (!respostaSelecionadaEl) {
+                        todasRespondidas = false;
+                    } else {
+                        const textoPergunta = itemPergunta.querySelector('p').textContent;
+                        const resposta = respostaSelecionadaEl.dataset.resposta;
+                        resumoDiagnostico.push({ pergunta: textoPergunta, resposta: resposta });
+                        if (resposta === itemPergunta.dataset.respostaImpacto) {
+                            valorFinal += parseFloat(itemPergunta.dataset.valorImpacto);
+                        }
+                    }
+                });
+
+                if (!todasRespondidas) {
+                    alert("Por favor, responda a todas as perguntas de avaliação.");
+                    return;
+                }
+
+                const imei = document.getElementById('imei-input').value;
+                if (!imei) {
+                    alert("Por favor, digite o IMEI do aparelho.");
+                    return;
+                }
+                resumoDiagnostico.push({ pergunta: "IMEI", resposta: imei });
+
+                const nomeModelo = document.querySelector('#aparelho-em-destaque h2').textContent;
+                const nomeCor = secaoAvaliacao.dataset.corSelecionada;
+                const capacidadeArmazenamento = secaoAvaliacao.dataset.armazenamentoSelecionado;
+                const bodyElement = document.querySelector('body');
+                const nomeCliente = bodyElement.dataset.nomeUsuario || 'Não informado';
+                const telefoneCliente = bodyElement.dataset.telefoneUsuario || 'Não informado';
+
+                const dadosDoOrcamento = {
+                    nomeCliente, telefoneCliente, modelo: nomeModelo, cor: nomeCor,
+                    armazenamento: capacidadeArmazenamento, imei, valor: valorFinal.toFixed(2), resumo: resumoDiagnostico
+                };
+
+                const divResultado = document.getElementById('resultado-final');
+                divResultado.innerHTML = `
+                    <h3>Valor Estimado do Aparelho:</h3>
+                    <h2 class="valor-calculado">R$ ${dadosDoOrcamento.valor.replace('.', ',')}</h2>
+                    <button id="btn-imprimir-orcamento" class="btn-secundario">Imprimir Orçamento</button>
+                `;
+                
+                enviarOrcamentoPorEmail(dadosDoOrcamento);
+
+                document.getElementById('btn-imprimir-orcamento').addEventListener('click', () => {
+                    gerarPaginaDeImpressao(dadosDoOrcamento);
+                });
             });
-
-            if (!todasRespondidas) {
-                alert("Por favor, responda a todas as perguntas de avaliação.");
-                return;
-            }
-
-            resumoDiagnostico.push({ pergunta: "IMEI", resposta: imei });
-
-            const dadosDoOrcamento = {
-                nomeCliente: nomeCliente,
-                telefoneCliente: telefoneCliente,
-                modelo: nomeModelo,
-                cor: nomeCor,
-                armazenamento: capacidadeArmazenamento,
-                imei: imei,
-                valor: valorFinal.toFixed(2),
-                resumo: resumoDiagnostico
-            };
-
-            const divResultado = document.getElementById('resultado-final');
-            divResultado.innerHTML = `
-                <h3>Valor Estimado do Aparelho:</h3>
-                <h2 class="valor-calculado">R$ ${dadosDoOrcamento.valor.replace('.', ',')}</h2>
-                <button id="btn-imprimir-orcamento" class="btn-secundario">Imprimir Orçamento</button>
-            `;
-
-            enviarOrcamentoPorEmail(dadosDoOrcamento);
-
-            document.getElementById('btn-imprimir-orcamento').addEventListener('click', function() {
-                gerarPaginaDeImpressao(dadosDoOrcamento);
-            });
-        });
+        }
     }
 });
-
-function fetchOpcoes(modeloId, cardClicado) {
-    const url = `/api/modelo/${modeloId}/opcoes`;
-    const opcoesCorDiv = cardClicado.querySelector('.opcoes-cor');
-    const opcoesArmazenamentoDiv = cardClicado.querySelector('.opcoes-armazenamento');
-
-    if (!opcoesCorDiv || !opcoesArmazenamentoDiv) {
-        console.error("Elementos para opções de cor ou armazenamento não encontrados no card.");
-        return;
-    }
-
-    opcoesCorDiv.innerHTML = '<p>Carregando...</p>';
-    opcoesArmazenamentoDiv.innerHTML = '<p>Carregando...</p>';
-    
-    fetch(url)
-        .then(response => {
-            if (!response.ok) throw new Error(`Erro na rede: ${response.statusText}`);
-            return response.json();
-        })
-        .then(data => {
-            opcoesCorDiv.innerHTML = '';
-            opcoesArmazenamentoDiv.innerHTML = '';
-
-            if (data.modelo_info) {
-                cardClicado.dataset.valorBase = data.modelo_info.valor_base;
-                cardClicado.dataset.nomeModelo = data.modelo_info.nome_modelo;
-            }
-
-            data.cores.forEach(cor => {
-                const btn = document.createElement('button');
-                btn.className = 'opcao-btn btn-cor';
-                btn.textContent = cor.nome_cor;
-                btn.dataset.corId = cor.id;
-                btn.dataset.imagemUrl = cor.imagem_url;
-                opcoesCorDiv.appendChild(btn);
-            });
-
-            data.armazenamentos.forEach(arm => {
-                const btn = document.createElement('button');
-                btn.className = 'opcao-btn btn-armazenamento';
-                btn.textContent = `${arm.capacidade_gb} GB`;
-                btn.dataset.armazenamentoId = arm.id;
-                opcoesArmazenamentoDiv.appendChild(btn);
-            });
-        })
-        .catch(error => {
-            console.error('Erro ao buscar opções:', error);
-            opcoesCorDiv.innerHTML = '<p>Erro ao carregar opções.</p>';
-            opcoesArmazenamentoDiv.innerHTML = '<p>Erro ao carregar opções.</p>';
-        });
-}
 
 function fetchEExibePerguntas(modeloId) {
     const url = `/api/modelo/${modeloId}/perguntas`;
     const listaPerguntasDiv = document.getElementById('lista-perguntas');
     
+    if (!listaPerguntasDiv) {
+        console.error("Elemento #lista-perguntas não encontrado no DOM.");
+        return;
+    }
+
     listaPerguntasDiv.innerHTML = '<p>Carregando perguntas...</p>';
 
     fetch(url)
         .then(response => {
-            if (!response.ok) throw new Error(`Erro na rede: ${response.statusText}`);
+            if (!response.ok) {
+    
+                throw new Error(`Erro na rede ao buscar perguntas: ${response.statusText}`);
+            }
             return response.json();
         })
         .then(perguntas => {
-            listaPerguntasDiv.innerHTML = '';
+            listaPerguntasDiv.innerHTML = ''; 
+            
+            if (perguntas.length === 0) {
+                listaPerguntasDiv.innerHTML = '<p>Nenhuma pergunta de avaliação encontrada para este modelo.</p>';
+                return;
+            }
+
             perguntas.forEach(pergunta => {
                 const divPergunta = document.createElement('div');
                 divPergunta.className = 'item-pergunta';
                 divPergunta.dataset.perguntaId = pergunta.pergunta_id;
                 divPergunta.dataset.respostaImpacto = pergunta.resposta_que_gera_impacto;
                 divPergunta.dataset.valorImpacto = pergunta.valor_do_impacto;
+                
                 divPergunta.innerHTML = `
                     <p>${pergunta.texto_pergunta}</p>
                     <div class="opcoes-resposta">
@@ -252,9 +204,50 @@ function fetchEExibePerguntas(modeloId) {
             });
         })
         .catch(error => {
-            console.error("Erro ao buscar perguntas:", error);
-            listaPerguntasDiv.innerHTML = '<p>Erro ao carregar as perguntas. Tente novamente.</p>';
+            console.error("Erro ao buscar ou exibir perguntas:", error);
+            listaPerguntasDiv.innerHTML = '<p>Não foi possível carregar as perguntas. Tente novamente.</p>';
         });
+}
+
+function fetchOpcoes(modeloId, cardClicado) {
+    const url = `/api/modelo/${modeloId}/opcoes`;
+    const opcoesCorDiv = cardClicado.querySelector('.opcoes-cor');
+    const opcoesArmazenamentoDiv = cardClicado.querySelector('.opcoes-armazenamento');
+    if (!opcoesCorDiv || !opcoesArmazenamentoDiv) return;
+
+    opcoesCorDiv.innerHTML = '<p>Carregando...</p>';
+    opcoesArmazenamentoDiv.innerHTML = '<p>Carregando...</p>';
+    
+    fetch(url)
+        .then(response => {
+            if (!response.ok) throw new Error(`Erro de rede: ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            opcoesCorDiv.innerHTML = '';
+            opcoesArmazenamentoDiv.innerHTML = '';
+            if (data.modelo_info) {
+                cardClicado.dataset.valorBase = data.modelo_info.valor_base_novo;
+                cardClicado.dataset.nomeModelo = data.modelo_info.nome_modelo;
+                console.log(`Dados armazenados no card ID ${modeloId}: valor_base=${cardClicado.dataset.valorBase}`);
+            }
+            data.cores.forEach(cor => {
+                const btn = document.createElement('button');
+                btn.className = 'opcao-btn btn-cor';
+                btn.textContent = cor.nome_cor;
+                btn.dataset.corId = cor.id;
+                btn.dataset.imagemUrl = cor.imagem_url;
+                opcoesCorDiv.appendChild(btn);
+            });
+            data.armazenamentos.forEach(arm => {
+                const btn = document.createElement('button');
+                btn.className = 'opcao-btn btn-armazenamento';
+                btn.textContent = `${arm.capacidade_gb} GB`;
+                btn.dataset.armazenamentoId = arm.id;
+                opcoesArmazenamentoDiv.appendChild(btn);
+            });
+        })
+        .catch(error => console.error('Erro ao buscar opções:', error));
 }
 
 function transicaoParaTelaDeAvaliacao(cardClicado) {
@@ -279,8 +272,22 @@ function transicaoParaTelaDeAvaliacao(cardClicado) {
     const secaoAvaliacao = document.getElementById('secao-avaliacao');
     secaoAvaliacao.style.display = 'flex';
     secaoAvaliacao.dataset.valorBase = valorBase;
+    secaoAvaliacao.dataset.corSelecionada = corBtn.textContent;
+    secaoAvaliacao.dataset.armazenamentoSelecionado = armBtn.textContent;
 
     fetchEExibePerguntas(cardClicado.dataset.modeloId);
+}
+
+function resetarEstadoAvaliacao() {
+    console.log("Resetando estado da avaliação...");
+    document.querySelectorAll('#lista-perguntas .item-pergunta').forEach(item => {
+        item.querySelector('.btn-resposta.selecionado')?.classList.remove('selecionado');
+        delete item.dataset.respostaSelecionada;
+    });
+    const imeiInput = document.getElementById('imei-input');
+    if (imeiInput) imeiInput.value = '';
+    const divResultado = document.getElementById('resultado-final');
+    if (divResultado) divResultado.innerHTML = '';
 }
 
 function enviarOrcamentoPorEmail(dados) {

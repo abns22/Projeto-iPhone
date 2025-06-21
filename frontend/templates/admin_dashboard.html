@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard do Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_admin.css') }}">
+</head>
+<body>
+    <div class="admin-container">
+        <header>
+            <h1>Dashboard de Administração</h1>
+            <nav>
+                <a href="{{ url_for('calcular') }}">Ir para o Avaliador</a> | <a href="{{ url_for('logout') }}">Sair</a>
+            </nav>
+        </header>
+        <main>
+            <h2>Bem-vindo, {{ session.get('nome_completo') }}!</h2>
+            <p>Selecione uma das opções abaixo para gerenciar os dados da sua empresa.</p>
+            <div class="admin-menu-grid">
+                <a href="{{ url_for('gerenciar_modelos_admin') }}" class="admin-menu-card">
+                    <h3>Gerenciar Modelos</h3>
+                    <p>Adicione, edite ou remova modelos de iPhone e seus valores.</p>
+                </a>
+                <a href="{{ url_for('gerenciar_usuarios_admin') }}" class="admin-menu-card">
+                    <h3>Gerenciar Usuários</h3>
+                    <p>Adicione ou remova usuários (funcionários) da sua equipe.</p>
+                </a>
+                <div class="admin-menu-card disabled">
+                    <h3>Relatórios</h3>
+                    <p>Visualize estatísticas de avaliações (em breve).</p>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
