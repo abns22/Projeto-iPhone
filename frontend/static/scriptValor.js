@@ -1,70 +1,182 @@
-document.addEventListener('DOMContentLoaded', function() {
-    console.log("DOM carregado. Script completo iniciado.");
+// ===================================================================
+// VERSÃO COMPLETA E CORRIGIDA - Substitua todo o seu script por este.
+// ===================================================================
 
-    // --- SELEÇÃO DOS ELEMENTOS PRINCIPAIS ---
+// O 'ouvinte' principal que garante que todo o HTML foi carregado antes de o JavaScript rodar.
+// TODO o nosso código ficará aqui dentro.
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM carregado. Iniciando script definitivo.");
+
+    // ===================================================================
+    // 1. SELEÇÃO DE TODOS OS ELEMENTOS DA PÁGINA
+    // ===================================================================
     const dashboardLayout = document.querySelector('.dashboard-layout');
     const hamburgerBtn = document.getElementById('hamburgerBtn');
     const gridModelos = document.querySelector('.grid-modelos');
     const secaoAvaliacao = document.getElementById('secao-avaliacao');
     const btnVoltar = document.getElementById('btn-voltar-selecao');
     const btnCalcular = document.getElementById('btn-calcular-valor');
+    const divResultado = document.getElementById('resultado-final');
 
-    // --- LÓGICA DO MENU HAMBÚRGUER ---
-    if (hamburgerBtn && dashboardLayout) {
+    // ===================================================================
+    // 2. DEFINIÇÃO DE TODAS AS FUNÇÕES AUXILIARES
+    // ===================================================================
+
+    function fetchOpcoes(modeloId, cardClicado) {
+        const url = `/api/modelo/${modeloId}/opcoes`;
+        const opcoesCorDiv = cardClicado.querySelector('.opcoes-cor');
+        const opcoesArmazenamentoDiv = cardClicado.querySelector('.opcoes-armazenamento');
+        if (!opcoesCorDiv || !opcoesArmazenamentoDiv) return;
+
+        opcoesCorDiv.innerHTML = '<p class="loading-text">Carregando...</p>';
+        opcoesArmazenamentoDiv.innerHTML = '<p class="loading-text">Carregando...</p>';
+        
+        fetch(url)
+            .then(response => {
+                if (!response.ok) throw new Error(`Erro de rede: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                opcoesCorDiv.innerHTML = '';
+                opcoesArmazenamentoDiv.innerHTML = '';
+                if (data.modelo_info) {
+                    cardClicado.dataset.valorBase = data.modelo_info.valor_base_novo;
+                    cardClicado.dataset.nomeModelo = data.modelo_info.nome_modelo;
+                }
+                data.cores.forEach(cor => {
+                    const btn = document.createElement('button');
+                    btn.className = 'opcao-btn btn-cor';
+                    btn.textContent = cor.nome_cor;
+                    btn.dataset.corId = cor.id;
+                    btn.dataset.imagemUrl = cor.imagem_url;
+                    opcoesCorDiv.appendChild(btn);
+                });
+                data.armazenamentos.forEach(arm => {
+                    const btn = document.createElement('button');
+                    btn.className = 'opcao-btn btn-armazenamento';
+                    btn.textContent = `${arm.capacidade_gb} GB`;
+                    btn.dataset.armazenamentoId = arm.id;
+                    opcoesArmazenamentoDiv.appendChild(btn);
+                });
+            })
+            .catch(error => console.error('Erro na função fetchOpcoes:', error));
+    }
+
+    function fetchEExibePerguntas(modeloId) {
+        const url = `/api/modelo/${modeloId}/perguntas`;
+        const listaPerguntasDiv = document.getElementById('lista-perguntas');
+        if (!listaPerguntasDiv) return;
+
+        listaPerguntasDiv.innerHTML = '<p>Carregando perguntas...</p>';
+        fetch(url)
+            .then(response => response.json())
+            .then(perguntas => {
+                listaPerguntasDiv.innerHTML = '';
+                perguntas.forEach(pergunta => {
+                    const divPergunta = document.createElement('div');
+                    divPergunta.className = 'item-pergunta';
+                    divPergunta.dataset.perguntaId = pergunta.pergunta_id;
+
+                    const textoP = document.createElement('p');
+                    textoP.textContent = pergunta.texto_pergunta;
+                    divPergunta.appendChild(textoP);
+
+                    const divOpcoes = document.createElement('div');
+                    divOpcoes.className = 'opcoes-resposta';
+                    pergunta.respostas.forEach(resposta => {
+                        const btn = document.createElement('button');
+                        btn.className = 'btn-resposta';
+                        btn.textContent = resposta.texto;
+                        btn.dataset.resposta = resposta.texto;
+                        btn.dataset.impacto = resposta.impacto;
+                        divOpcoes.appendChild(btn);
+                    });
+                    divPergunta.appendChild(divOpcoes);
+                    listaPerguntasDiv.appendChild(divPergunta);
+                });
+            })
+            .catch(error => console.error("Erro ao buscar ou exibir perguntas:", error));
+    }
+
+    function transicaoParaTelaDeAvaliacao(cardClicado) {
+        if (!gridModelos || !secaoAvaliacao) return;
+        const nomeModelo = cardClicado.dataset.nomeModelo;
+        const valorBase = cardClicado.dataset.valorBase;
+        const corBtn = cardClicado.querySelector('.btn-cor.selecionado');
+        const armBtn = cardClicado.querySelector('.btn-armazenamento.selecionado');
+        const imagemParaAtualizar = cardClicado.querySelector('img');
+        const imagemUrl = imagemParaAtualizar ? imagemParaAtualizar.src : '';
+
+        gridModelos.style.display = 'none';
+
+        const divDestaque = document.getElementById('aparelho-em-destaque');
+        if (divDestaque) {
+            divDestaque.innerHTML = `
+                <img src="${imagemUrl}" alt="${nomeModelo}">
+                <h2>${nomeModelo}</h2>
+                <div class="info-pills">
+                    <p>Cor: ${corBtn.textContent}</p>
+                    <p>Armazenamento: ${armBtn.textContent}</p>
+                </div>`;
+        }
+        
+        secaoAvaliacao.style.display = 'flex';
+        secaoAvaliacao.dataset.valorBase = valorBase;
+        secaoAvaliacao.dataset.corSelecionada = corBtn.textContent;
+        secaoAvaliacao.dataset.armazenamentoSelecionado = armBtn.textContent;
+        fetchEExibePerguntas(cardClicado.dataset.modeloId);
+    }
+
+    function resetarEstadoAvaliacao() {
+        if (secaoAvaliacao) {
+            document.querySelectorAll('#lista-perguntas .item-pergunta').forEach(item => {
+                item.querySelector('.btn-resposta.selecionado')?.classList.remove('selecionado');
+                delete item.dataset.respostaSelecionada;
+            });
+            const imeiInput = document.getElementById('imei-input');
+            if (imeiInput) imeiInput.value = '';
+            if (divResultado) divResultado.innerHTML = '';
+        }
+    }
+
+    // ===================================================================
+    // 3. CONFIGURAÇÃO DOS EVENT LISTENERS (OS "OUVINTES" DE AÇÕES)
+    // ===================================================================
+
+    if (hamburgerBtn) {
         hamburgerBtn.addEventListener('click', () => {
-            dashboardLayout.classList.toggle('sidebar-ativa');
+            dashboardLayout?.classList.toggle('sidebar-ativa');
         });
     }
 
-    // --- LÓGICA DO BOTÃO "VOLTAR" ---
-    if (btnVoltar && gridModelos && secaoAvaliacao) {
+    if (btnVoltar) {
         btnVoltar.addEventListener('click', () => {
-            secaoAvaliacao.style.display = 'none';
-            gridModelos.style.display = 'grid';
+            if (secaoAvaliacao) secaoAvaliacao.style.display = 'none';
+            if (gridModelos) gridModelos.style.display = 'grid';
             resetarEstadoAvaliacao();
         });
     }
 
-    // --- LÓGICA DE INTERAÇÃO COM OS CARDS ---
     if (gridModelos) {
-        gridModelos.addEventListener('click', (event) => {
+        gridModelos.addEventListener('click', function(event) {
             const clicado = event.target;
             const cardClicado = clicado.closest('.card-modelo');
             if (!cardClicado) return;
 
-            // 1. EXPANDIR/RECOLHER O CARD
-            if (!clicado.closest('.conteudo-expandido')) {
-                const isAlreadyActive = cardClicado.classList.contains('card-expandido');
-                document.querySelectorAll('.card-modelo').forEach(card => {
-                    card.classList.remove('card-expandido');
-                    card.querySelector('.conteudo-expandido').style.display = 'none';
-                });
-                if (!isAlreadyActive) {
-                    cardClicado.classList.add('card-expandido');
-                    cardClicado.querySelector('.conteudo-expandido').style.display = 'block';
-                    fetchOpcoes(cardClicado.dataset.modeloId, cardClicado);
-                }
-            }
-
-            // 2. SELECIONAR COR E MUDAR IMAGEM
             if (clicado.matches('.btn-cor')) {
+                event.stopPropagation();
                 cardClicado.querySelectorAll('.btn-cor').forEach(btn => btn.classList.remove('selecionado'));
                 clicado.classList.add('selecionado');
                 const novaImagemUrl = clicado.dataset.imagemUrl;
-                const imagemDoCard = cardClicado.querySelector('img');
-                if (novaImagemUrl && imagemDoCard) {
-                    imagemDoCard.src = `/static/${novaImagemUrl}`;
+                const imagemParaAtualizar = cardClicado.querySelector('img');
+                if (novaImagemUrl && imagemParaAtualizar) {
+                    imagemParaAtualizar.src = `/static/${novaImagemUrl}`;
                 }
-            }
-
-            // 3. SELECIONAR ARMAZENAMENTO
-            if (clicado.matches('.btn-armazenamento')) {
+            } else if (clicado.matches('.btn-armazenamento')) {
+                event.stopPropagation();
                 cardClicado.querySelectorAll('.btn-armazenamento').forEach(btn => btn.classList.remove('selecionado'));
                 clicado.classList.add('selecionado');
-            }
-
-            // 4. LÓGICA DO BOTÃO "AVANÇAR"
-            if (clicado.matches('.btn-selecionar-modelo')) {
+            } else if (clicado.matches('.btn-selecionar-modelo')) {
                 event.stopPropagation();
                 const corSelecionada = cardClicado.querySelector('.btn-cor.selecionado');
                 const armazenamentoSelecionado = cardClicado.querySelector('.btn-armazenamento.selecionado');
@@ -72,26 +184,39 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert("Por favor, selecione uma cor e uma capacidade de armazenamento.");
                     return;
                 }
-                resetarEstadoAvaliacao();
                 transicaoParaTelaDeAvaliacao(cardClicado);
+            } else {
+                const cardAtivoAnteriormente = document.querySelector('.card-modelo.ativo');
+                if (cardAtivoAnteriormente && cardAtivoAnteriormente !== cardClicado) {
+                    cardAtivoAnteriormente.classList.remove('ativo');
+                    cardAtivoAnteriormente.querySelector('.conteudo-expandido').style.display = 'none';
+                }
+                cardClicado.classList.toggle('ativo');
+                const conteudoExpandido = cardClicado.querySelector('.conteudo-expandido');
+                const isAtivo = cardClicado.classList.contains('ativo');
+                if (conteudoExpandido) {
+                    conteudoExpandido.style.display = isAtivo ? 'block' : 'none';
+                    const opcoesCorDiv = conteudoExpandido.querySelector('.opcoes-cor');
+                    if (isAtivo && opcoesCorDiv && opcoesCorDiv.children.length === 0) {
+                        fetchOpcoes(cardClicado.dataset.modeloId, cardClicado);
+                    }
+                }
             }
         });
     }
 
-    // --- LÓGICA DO QUESTIONÁRIO E CÁLCULO ---
     if (secaoAvaliacao) {
-        // Lógica para selecionar respostas Sim/Não
         secaoAvaliacao.addEventListener('click', (event) => {
             if (event.target.matches('.btn-resposta')) {
                 const botaoClicado = event.target;
                 const divPerguntaPai = botaoClicado.closest('.item-pergunta');
-                divPerguntaPai.querySelectorAll('.btn-resposta').forEach(btn => btn.classList.remove('selecionado'));
-                botaoClicado.classList.add('selecionado');
-                divPerguntaPai.dataset.respostaSelecionada = botaoClicado.dataset.resposta;
+                if (divPerguntaPai) {
+                    divPerguntaPai.querySelectorAll('.btn-resposta').forEach(btn => btn.classList.remove('selecionado'));
+                    botaoClicado.classList.add('selecionado');
+                }
             }
         });
 
-        // Lógica para o botão de calcular
         if (btnCalcular) {
             btnCalcular.addEventListener('click', () => {
                 const valorBase = parseFloat(secaoAvaliacao.dataset.valorBase);
@@ -99,22 +224,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert("Erro: Não foi possível encontrar o valor base do aparelho.");
                     return;
                 }
-
+                let todasRespondidas = true;
                 let valorFinal = valorBase;
                 const resumoDiagnostico = [];
-                const todasAsPerguntas = document.querySelectorAll('#lista-perguntas .item-pergunta');
-                let todasRespondidas = true;
-
-                todasAsPerguntas.forEach(itemPergunta => {
-                    const respostaSelecionadaEl = itemPergunta.querySelector('.btn-resposta.selecionado');
+                const todasAsPerguntasDivs = document.querySelectorAll('#lista-perguntas .item-pergunta');
+                todasAsPerguntasDivs.forEach(divPergunta => {
+                    const respostaSelecionadaEl = divPergunta.querySelector('.btn-resposta.selecionado');
                     if (!respostaSelecionadaEl) {
                         todasRespondidas = false;
                     } else {
-                        const textoPergunta = itemPergunta.querySelector('p').textContent;
-                        const resposta = respostaSelecionadaEl.dataset.resposta;
-                        resumoDiagnostico.push({ pergunta: textoPergunta, resposta: resposta });
-                        if (resposta === itemPergunta.dataset.respostaImpacto) {
-                            valorFinal += parseFloat(itemPergunta.dataset.valorImpacto);
+                        const textoPergunta = divPergunta.querySelector('p').textContent;
+                        const respostaTexto = respostaSelecionadaEl.dataset.resposta;
+                        resumoDiagnostico.push({ pergunta: textoPergunta, resposta: respostaTexto });
+                        const impacto = parseFloat(respostaSelecionadaEl.dataset.impacto);
+                        if (!isNaN(impacto)) {
+                            valorFinal += impacto;
                         }
                     }
                 });
@@ -143,152 +267,30 @@ document.addEventListener('DOMContentLoaded', function() {
                     armazenamento: capacidadeArmazenamento, imei, valor: valorFinal.toFixed(2), resumo: resumoDiagnostico
                 };
 
-                const divResultado = document.getElementById('resultado-final');
-                divResultado.innerHTML = `
-                    <h3>Valor Estimado do Aparelho:</h3>
-                    <h2 class="valor-calculado">R$ ${dadosDoOrcamento.valor.replace('.', ',')}</h2>
-                    <button id="btn-imprimir-orcamento" class="btn-secundario">Imprimir Orçamento</button>
-                `;
+                if(divResultado) {
+                    divResultado.innerHTML = `
+                        <h3>Valor Estimado do Aparelho:</h3>
+                        <h2 class="valor-calculado">R$ ${dadosDoOrcamento.valor.replace('.', ',')}</h2>
+                        <button id="btn-imprimir-orcamento" class="btn-secundario">Imprimir Orçamento</button>
+                    `;
+                }
                 
-                enviarOrcamentoPorEmail(dadosDoOrcamento);
+                if (typeof enviarOrcamentoPorEmail === "function") {
+                   enviarOrcamentoPorEmail(dadosDoOrcamento);
+                }
 
-                document.getElementById('btn-imprimir-orcamento').addEventListener('click', () => {
-                    gerarPaginaDeImpressao(dadosDoOrcamento);
-                });
+                const btnImprimir = document.getElementById('btn-imprimir-orcamento');
+                if (btnImprimir) {
+                    btnImprimir.addEventListener('click', () => {
+                        if (typeof gerarPaginaDeImpressao === "function") {
+                           gerarPaginaDeImpressao(dadosDoOrcamento);
+                        }
+                    });
+                }
             });
         }
     }
 });
-
-function fetchEExibePerguntas(modeloId) {
-    const url = `/api/modelo/${modeloId}/perguntas`;
-    const listaPerguntasDiv = document.getElementById('lista-perguntas');
-    
-    if (!listaPerguntasDiv) {
-        console.error("Elemento #lista-perguntas não encontrado no DOM.");
-        return;
-    }
-
-    listaPerguntasDiv.innerHTML = '<p>Carregando perguntas...</p>';
-
-    fetch(url)
-        .then(response => {
-            if (!response.ok) {
-    
-                throw new Error(`Erro na rede ao buscar perguntas: ${response.statusText}`);
-            }
-            return response.json();
-        })
-        .then(perguntas => {
-            listaPerguntasDiv.innerHTML = ''; 
-            
-            if (perguntas.length === 0) {
-                listaPerguntasDiv.innerHTML = '<p>Nenhuma pergunta de avaliação encontrada para este modelo.</p>';
-                return;
-            }
-
-            perguntas.forEach(pergunta => {
-                const divPergunta = document.createElement('div');
-                divPergunta.className = 'item-pergunta';
-                divPergunta.dataset.perguntaId = pergunta.pergunta_id;
-                divPergunta.dataset.respostaImpacto = pergunta.resposta_que_gera_impacto;
-                divPergunta.dataset.valorImpacto = pergunta.valor_do_impacto;
-                
-                divPergunta.innerHTML = `
-                    <p>${pergunta.texto_pergunta}</p>
-                    <div class="opcoes-resposta">
-                        <button class="btn-resposta" data-resposta="Sim">Sim</button>
-                        <button class="btn-resposta" data-resposta="Não">Não</button>
-                    </div>`;
-                listaPerguntasDiv.appendChild(divPergunta);
-            });
-        })
-        .catch(error => {
-            console.error("Erro ao buscar ou exibir perguntas:", error);
-            listaPerguntasDiv.innerHTML = '<p>Não foi possível carregar as perguntas. Tente novamente.</p>';
-        });
-}
-
-function fetchOpcoes(modeloId, cardClicado) {
-    const url = `/api/modelo/${modeloId}/opcoes`;
-    const opcoesCorDiv = cardClicado.querySelector('.opcoes-cor');
-    const opcoesArmazenamentoDiv = cardClicado.querySelector('.opcoes-armazenamento');
-    if (!opcoesCorDiv || !opcoesArmazenamentoDiv) return;
-
-    opcoesCorDiv.innerHTML = '<p>Carregando...</p>';
-    opcoesArmazenamentoDiv.innerHTML = '<p>Carregando...</p>';
-    
-    fetch(url)
-        .then(response => {
-            if (!response.ok) throw new Error(`Erro de rede: ${response.status}`);
-            return response.json();
-        })
-        .then(data => {
-            opcoesCorDiv.innerHTML = '';
-            opcoesArmazenamentoDiv.innerHTML = '';
-            if (data.modelo_info) {
-                cardClicado.dataset.valorBase = data.modelo_info.valor_base_novo;
-                cardClicado.dataset.nomeModelo = data.modelo_info.nome_modelo;
-                console.log(`Dados armazenados no card ID ${modeloId}: valor_base=${cardClicado.dataset.valorBase}`);
-            }
-            data.cores.forEach(cor => {
-                const btn = document.createElement('button');
-                btn.className = 'opcao-btn btn-cor';
-                btn.textContent = cor.nome_cor;
-                btn.dataset.corId = cor.id;
-                btn.dataset.imagemUrl = cor.imagem_url;
-                opcoesCorDiv.appendChild(btn);
-            });
-            data.armazenamentos.forEach(arm => {
-                const btn = document.createElement('button');
-                btn.className = 'opcao-btn btn-armazenamento';
-                btn.textContent = `${arm.capacidade_gb} GB`;
-                btn.dataset.armazenamentoId = arm.id;
-                opcoesArmazenamentoDiv.appendChild(btn);
-            });
-        })
-        .catch(error => console.error('Erro ao buscar opções:', error));
-}
-
-function transicaoParaTelaDeAvaliacao(cardClicado) {
-    const nomeModelo = cardClicado.dataset.nomeModelo;
-    const valorBase = cardClicado.dataset.valorBase;
-    const corBtn = cardClicado.querySelector('.btn-cor.selecionado');
-    const armBtn = cardClicado.querySelector('.btn-armazenamento.selecionado');
-    const imagemUrl = corBtn.dataset.imagemUrl;
-    
-    document.querySelector('.grid-modelos').style.display = 'none';
-
-    const divDestaque = document.getElementById('aparelho-em-destaque');
-    divDestaque.innerHTML = `
-        <img src="/static/${imagemUrl}" alt="${nomeModelo}">
-        <h2>${nomeModelo}</h2>
-        <div class="info-pills">
-            <p>Cor: ${corBtn.textContent}</p>
-            <p>Armazenamento: ${armBtn.textContent}</p>
-        </div>
-    `;
-
-    const secaoAvaliacao = document.getElementById('secao-avaliacao');
-    secaoAvaliacao.style.display = 'flex';
-    secaoAvaliacao.dataset.valorBase = valorBase;
-    secaoAvaliacao.dataset.corSelecionada = corBtn.textContent;
-    secaoAvaliacao.dataset.armazenamentoSelecionado = armBtn.textContent;
-
-    fetchEExibePerguntas(cardClicado.dataset.modeloId);
-}
-
-function resetarEstadoAvaliacao() {
-    console.log("Resetando estado da avaliação...");
-    document.querySelectorAll('#lista-perguntas .item-pergunta').forEach(item => {
-        item.querySelector('.btn-resposta.selecionado')?.classList.remove('selecionado');
-        delete item.dataset.respostaSelecionada;
-    });
-    const imeiInput = document.getElementById('imei-input');
-    if (imeiInput) imeiInput.value = '';
-    const divResultado = document.getElementById('resultado-final');
-    if (divResultado) divResultado.innerHTML = '';
-}
 
 function enviarOrcamentoPorEmail(dados) {
     console.log("Enviando dados para o servidor:", dados);
@@ -306,32 +308,6 @@ function enviarOrcamentoPorEmail(dados) {
         console.error('Erro ao enviar e-mail:', error);
         alert("Ocorreu um erro ao tentar notificar nossa equipe. Por favor, guarde seu orçamento.");
     });
-}
-
-function resetarEstadoAvaliacao() {
-    console.log("Resetando estado da avaliação...");
-
-    
-    document.querySelectorAll('#lista-perguntas .btn-resposta.selecionado').forEach(btn => {
-        btn.classList.remove('selecionado');
-    });
-
-    
-    document.querySelectorAll('#lista-perguntas .item-pergunta').forEach(item => {
-        delete item.dataset.respostaSelecionada;
-    });
-
-    
-    const imeiInput = document.getElementById('imei-input');
-    if (imeiInput) {
-        imeiInput.value = '';
-    }
-
-    
-    const divResultado = document.getElementById('resultado-final');
-    if (divResultado) {
-        divResultado.innerHTML = '';
-    }
 }
 
 function gerarPaginaDeImpressao(dados) {

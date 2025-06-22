@@ -5,8 +5,9 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
 from dotenv import load_dotenv
-from flask_mail import Mail
+from flask_mail import Mail, Message
 from flask import jsonify
+import json
 
 load_dotenv()
 app = Flask(__name__)
@@ -52,7 +53,14 @@ def get_db_connection():
 
         return None
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/')
+def rota_principal():
+    """
+    Esta é a página inicial. Redireciona para a página de login.
+    """
+    return redirect(url_for('login'))
+
+@app.route('/index', methods=['GET', 'POST'])
 def login():
     erro = None
 
@@ -68,7 +76,7 @@ def login():
                 erro = "Erro interno no servidor. Tente novamente mais tarde."
                 flash(erro, "danger")
 
-                return render_template('login.html', erro=erro)
+                return render_template('index.html', erro=erro)
 
             cursor = conn.cursor(cursor_factory=RealDictCursor)
             
@@ -88,8 +96,8 @@ def login():
                     session['user_id'] = registro_usuario_db['id']
                     session['nome_completo'] = registro_usuario_db['nome_completo']
                     session['is_admin'] = registro_usuario_db['is_admin']
-
-                    return redirect(url_for('pagina_principal')) 
+                    session['empresa_id'] = registro_usuario_db['empresa_id']
+                    return redirect(url_for('calcular')) 
                 else:
                    
                     erro = "Usuário ou senha inválidos."
@@ -106,7 +114,7 @@ def login():
             if conn:
                 conn.close()
     
-    return render_template('login.html', erro=erro)
+    return render_template('index.html', erro=erro)
 
 def get_info_empresa_logada():
     """Busca no banco os dados da empresa do usuário logado."""
@@ -402,43 +410,55 @@ def enviar_orcamento():
 
 @app.route('/api/modelo/<int:modelo_id>/perguntas')
 def get_perguntas_modelo(modelo_id):
-
     if 'user_id' not in session or 'empresa_id' not in session:
         return jsonify({"erro": "Não autorizado"}), 401
 
     empresa_id_logada = session['empresa_id']
-    perguntas_com_impacto = []
     conn = None
     try:
-   
-        conn = psycopg2.connect(
-            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
-        )
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({"erro": "Erro ao conectar ao banco"}), 500
+
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-        sql = """
+        cursor.execute("""
             SELECT 
-                p.id as pergunta_id, 
+                p.id AS pergunta_id,
                 p.texto_pergunta,
                 ir.resposta_que_gera_impacto,
                 ir.valor_do_impacto
             FROM perguntas_avaliacao p
             JOIN impacto_respostas ir ON p.id = ir.pergunta_id
             WHERE ir.modelo_id = %s AND ir.empresa_id = %s
-        """
-        cursor.execute(sql, (modelo_id, empresa_id_logada))
+            ORDER BY p.id
+        """, (modelo_id, empresa_id_logada))
 
-        perguntas_com_impacto = cursor.fetchall()
-            
-    except psycopg2.Error as e:
-        print(f"Erro de PostgreSQL ao buscar perguntas para o modelo {modelo_id}: {e}")
-        return jsonify({"erro": "Erro no servidor ao buscar perguntas"}), 500
+        resultados = cursor.fetchall()
+
+        perguntas = {}
+        for row in resultados:
+            pergunta_id = row['pergunta_id']
+            if pergunta_id not in perguntas:
+                perguntas[pergunta_id] = {
+                    'pergunta_id': pergunta_id,
+                    'texto_pergunta': row['texto_pergunta'],
+                    'respostas': []
+                }
+            perguntas[pergunta_id]['respostas'].append({
+                'texto': row['resposta_que_gera_impacto'],
+                'impacto': float(row['valor_do_impacto'])
+            })
+
+        return jsonify(list(perguntas.values()))
+
+    except Exception as e:
+        print(f"Erro ao buscar perguntas: {e}")
+        return jsonify({"erro": "Falha ao buscar perguntas"}), 500
     finally:
         if conn:
             cursor.close()
             conn.close()
-    
-    return jsonify(perguntas_com_impacto)
 
 @app.route('/admin/ajustes')
 def gerenciar_modelos_admin():
@@ -620,9 +640,9 @@ def adicionar_modelo_admin():
             cores_selecionadas = request.form.getlist('cores')
             for cor_id in cores_selecionadas:
                 cursor.execute(
-                    "INSERT INTO modelos_cores (modelo_id, cor_id, empresa_id, imagem_url) VALUES (%s, %s, %s, %s)",
-                    (id_novo_modelo, int(cor_id), empresa_id_logada, 'images/placeholder.png')
-                )
+                "INSERT INTO modelos_cores (modelo_id, cor_id, empresa_id, imagem_url) VALUES (%s, %s, %s, %s)",
+                (id_novo_modelo, int(cor_id), empresa_id_logada, imagem_url_para_db) 
+            )
 
             armazenamentos_selecionados = request.form.getlist('armazenamentos')
             for armazenamento_id in armazenamentos_selecionados:
@@ -668,8 +688,6 @@ def adicionar_modelo_admin():
 
     return render_template('adicionar_modelo.html', cores=cores, armazenamentos=armazenamentos)
 
-
-
 @app.route('/admin/deletar-modelo/<int:modelo_id>', methods=['POST'])
 def deletar_modelo_admin(modelo_id):
     
@@ -681,36 +699,47 @@ def deletar_modelo_admin(modelo_id):
         flash('Ação não permitida. Apenas o administrador geral pode deletar modelos.', 'danger')
         return redirect(url_for('ajustar_valores_admin'))
 
-    empresa_id_logada = session['empresa_id']
+    empresa_id_logada = session.get('empresa_id')
     conn = None
     try:
+        conn = get_db_connection()
+        if not conn:
+            flash("Erro de conexão.", "danger")
+            return redirect(url_for('gerenciar_modelos_admin'))
 
-        conn = psycopg2.connect(
-            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
-        )
-        cursor = conn.cursor()
-        
-        print(f"Deletando dependências para o modelo ID: {modelo_id} da empresa ID: {empresa_id_logada}")
-        cursor.execute("DELETE FROM impacto_respostas WHERE modelo_id = %s AND empresa_id = %s", (modelo_id, empresa_id_logada))
-        cursor.execute("DELETE FROM modelos_cores WHERE modelo_id = %s AND empresa_id = %s", (modelo_id, empresa_id_logada))
-        cursor.execute("DELETE FROM modelos_armazenamentos WHERE modelo_id = %s AND empresa_id = %s", (modelo_id, empresa_id_logada))
-        
-        print(f"Deletando o modelo principal ID: {modelo_id}")
-        cursor.execute("DELETE FROM modelos_iphone WHERE id = %s AND empresa_id = %s", (modelo_id, empresa_id_logada))
-        
-        conn.commit()
-        flash('Modelo deletado com sucesso.', 'success')
+        with conn.cursor() as cursor:
+            
+            print(f"--- INICIANDO DELETE ---")
+            print(f"Tentando deletar modelo ID: {modelo_id} para a empresa ID: {empresa_id_logada}")
+
+            cursor.execute("DELETE FROM avaliacoes_concluidas WHERE modelo_iphone_id = %s AND empresa_id = %s", (modelo_id, empresa_id_logada))
+            cursor.execute("DELETE FROM impacto_respostas WHERE modelo_id = %s AND empresa_id = %s", (modelo_id, empresa_id_logada))
+            cursor.execute("DELETE FROM modelos_cores WHERE modelo_id = %s AND empresa_id = %s", (modelo_id, empresa_id_logada))
+            cursor.execute("DELETE FROM modelos_armazenamentos WHERE modelo_id = %s AND empresa_id = %s", (modelo_id, empresa_id_logada))
+
+            cursor.execute("DELETE FROM modelos_iphone WHERE id = %s AND empresa_id = %s", (modelo_id, empresa_id_logada))
+
+            linhas_afetadas = cursor.rowcount
+            print(f"Comando DELETE no modelo principal executado. Linhas afetadas: {linhas_afetadas}")
+            print(f"--- FIM DO DELETE ---")
+
+            if linhas_afetadas == 0:
+                flash("Atenção: O modelo não foi encontrado com as permissões da sua empresa e não pôde ser deletado.", "warning")
+            else:
+                flash('Modelo e suas dependências foram deletados com sucesso!', 'success')
+
+        conn.commit() 
 
     except psycopg2.Error as e:
         if conn:
-            conn.rollback()
-        flash('Erro ao deletar o modelo.', 'danger')
+            conn.rollback() 
+        flash('Erro de banco de dados ao deletar o modelo.', 'danger')
         print(f"Erro de PostgreSQL ao deletar modelo: {e}")
+
     finally:
         if conn:
-            cursor.close()
             conn.close()
-
+            
     return redirect(url_for('gerenciar_modelos_admin'))
 
 @app.route('/admin/usuarios')

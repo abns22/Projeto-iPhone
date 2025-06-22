@@ -48,16 +48,10 @@
                     <h3>{{ modelo['nome_modelo'] }}</h3>
 
                     <div class="conteudo-expandido">
-                        <h4>Selecione a Cor:</h4>
-                    <div class="opcoes-cor" id="opcoes-cor-{{ modelo['id'] }}">
-                        <p>Carregando cores...</p>
-                </div>
-
-                    <h4>Selecione o Armazenamento:</h4>
-                <div class="opcoes-armazenamento" id="opcoes-armazenamento-{{ modelo['id'] }}">
-                    <p>Carregando armazenamentos...</p>
-                    </div>
-            
+                        <p>Selecione a cor</p>
+                        <div class="opcoes-cor" id="opcoes-cor-{{ modelo['id'] }}"></div>
+                        <p>Selecione o armazenamento</p>
+                        <div class="opcoes-armazenamento" id="opcoes-armazenamento-{{ modelo['id'] }}"></div>
                 <button class="btn-selecionar-modelo">Avançar</button>
                     </div>
                 </div>

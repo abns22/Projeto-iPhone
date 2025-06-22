@@ -446,3 +446,13 @@ body, html {
         text-align: center;
     }
 }
+
+.card-modelo.ativo {
+    
+    border: 2px solid #007bff;
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.25);
+}
+.card-modelo .conteudo-expandido {
+    display: none; 
+}
+
