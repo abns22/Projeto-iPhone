@@ -1,21 +1,54 @@
-import psycopg2
+import mysql.connector
 import os
+from dotenv import load_dotenv
 
-DB_NAME = "iphone_breakdown_db"
-DB_USER = "alfredo"
-DB_PASS = "icloudbz12031994@lF"  
-DB_HOST = "localhost"
-DB_PORT = "5432"
+# Carrega as variáveis de ambiente do seu .env local
+load_dotenv()
 
-def criar_tabelas():
+DB_NAME = os.getenv('DB_NAME')
+DB_USER = os.getenv('DB_USER')
+DB_PASS = os.getenv('DB_PASS')
+DB_HOST = os.getenv('DB_HOST')
+DB_PORT = os.getenv('DB_PORT')
+
+def get_db_connection():
     """
-    Cria toda a estrutura de tabelas no banco de dados PostgreSQL.
-    A sintaxe está adaptada com SERIAL, VARCHAR, NUMERIC, e restrições de integridade.
+    Conecta ao banco de dados MySQL usando as variáveis carregadas.
+    Adicionado tratamento para caso a porta (DB_PORT) não seja definida.
     """
+    try:
+        # CORREÇÃO: Verifica se a variável DB_PORT foi carregada do .env.
+        # Se ela for None (vazia), o comando int(None) causa o TypeError.
+        # Portanto, usamos a porta padrão do MySQL (3306) como fallback.
+        port_para_conectar = int(DB_PORT) if DB_PORT else 3306
+
+        # Verifica se as variáveis essenciais foram carregadas
+        if not all([DB_NAME, DB_USER, DB_HOST]):
+            print("ERRO DE CONFIGURAÇÃO: Uma ou mais variáveis (DB_NAME, DB_USER, DB_HOST) não estão definidas no arquivo .env.")
+            return None
+
+        conn = mysql.connector.connect(
+            database=DB_NAME,
+            user=DB_USER,
+            password=DB_PASS,
+            host=DB_HOST,
+            port=port_para_conectar # Usa a variável que garantimos ser um inteiro
+        )
+        return conn
+    except mysql.connector.Error as e:
+        print(f"ERRO DE CONEXÃO COM O MYSQL: {e}")
+        return None
+    except (ValueError, TypeError) as e:
+        # Captura outros erros, como um valor não numérico para a porta
+        print(f"ERRO DE CONFIGURAÇÃO no arquivo .env: {e}")
+        return None
+    
+def criar_tabelas(cursor):
+    
     comandos_sql_criar = [
         """
-        CREATE TABLE IF NOT EXISTS empresas (
-            id SERIAL PRIMARY KEY,
+            CREATE TABLE IF NOT EXISTS empresas (
+            id INT PRIMARY KEY AUTO_INCREMENT,
             nome_empresa VARCHAR(255) NOT NULL UNIQUE,
             logo_url VARCHAR(255),
             email_contato_principal VARCHAR(255),
@@ -23,137 +56,130 @@ def criar_tabelas():
             permite_ajuste_valores BOOLEAN DEFAULT FALSE,
             envia_email_orcamento BOOLEAN DEFAULT TRUE,
             permite_link_convidado BOOLEAN DEFAULT FALSE
-        );
-        """,
+            );
+        """
         """
         CREATE TABLE IF NOT EXISTS usuarios (
-            id SERIAL PRIMARY KEY,
+            id INT PRIMARY KEY AUTO_INCREMENT,
             usuario VARCHAR(255) NOT NULL,
             senha_hash VARCHAR(255) NOT NULL,
             nome_completo VARCHAR(255),
             telefone VARCHAR(20),
             is_admin BOOLEAN DEFAULT FALSE,
-            empresa_id INTEGER NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+            empresa_id INT NOT NULL,
+            FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE,
             UNIQUE(usuario, empresa_id)
         );
-        """,
+        """
         """
         CREATE TABLE IF NOT EXISTS modelos_iphone (
-            id SERIAL PRIMARY KEY,
+            id INT PRIMARY KEY AUTO_INCREMENT,
             nome_modelo VARCHAR(100) NOT NULL,
-            valor_base_novo NUMERIC(10, 2) NOT NULL,
+            valor_base_novo DECIMAL(10, 2) NOT NULL,
             imagem_padrao_url VARCHAR(255),
-            empresa_id INTEGER NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+            empresa_id INT NOT NULL,
+            FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE,
             UNIQUE(id, empresa_id)
         );
-        """,
+        """
         """
         CREATE TABLE IF NOT EXISTS cores (
-            id SERIAL PRIMARY KEY,
+            id INT PRIMARY KEY AUTO_INCREMENT,
             nome_cor VARCHAR(50) NOT NULL UNIQUE,
             codigo_hex VARCHAR(7)
         );
-        """,
         """
+        """        
         CREATE TABLE IF NOT EXISTS armazenamentos (
-            id SERIAL PRIMARY KEY,
-            capacidade_gb INTEGER NOT NULL UNIQUE
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            capacidade_gb INT NOT NULL UNIQUE
         );
-        """,
         """
+        """        
         CREATE TABLE IF NOT EXISTS componentes (
-            id SERIAL PRIMARY KEY,
+            id INT PRIMARY KEY AUTO_INCREMENT,
             nome_componente VARCHAR(255) NOT NULL UNIQUE
         );
-        """,
+        """
         """
         CREATE TABLE IF NOT EXISTS perguntas_avaliacao (
-            id SERIAL PRIMARY KEY,
-            texto_pergunta TEXT NOT NULL UNIQUE,
-            componente_id INTEGER REFERENCES componentes(id) ON DELETE SET NULL
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            texto_pergunta TEXT NOT NULL,
+            componente_id INT,
+            UNIQUE KEY (texto_pergunta(255)),
+            FOREIGN KEY (componente_id) REFERENCES componentes(id) ON DELETE SET NULL
         );
-        """,
+        """
         """
         CREATE TABLE IF NOT EXISTS modelos_cores (
-            id SERIAL PRIMARY KEY,
-            modelo_id INTEGER NOT NULL,
-            cor_id INTEGER NOT NULL,
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            modelo_id INT NOT NULL,
+            cor_id INT NOT NULL,
             imagem_url VARCHAR(255) NOT NULL,
-            empresa_id INTEGER NOT NULL,
+            empresa_id INT NOT NULL,
             FOREIGN KEY (modelo_id, empresa_id) REFERENCES modelos_iphone(id, empresa_id) ON DELETE CASCADE,
             FOREIGN KEY (cor_id) REFERENCES cores(id) ON DELETE CASCADE,
             UNIQUE(modelo_id, cor_id, empresa_id)
         );
-        """,
+        """
         """
         CREATE TABLE IF NOT EXISTS modelos_armazenamentos (
-            id SERIAL PRIMARY KEY,
-            modelo_id INTEGER NOT NULL,
-            armazenamento_id INTEGER NOT NULL,
-            modificador_valor NUMERIC(10, 2) DEFAULT 0,
-            empresa_id INTEGER NOT NULL,
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            modelo_id INT NOT NULL,
+            armazenamento_id INT NOT NULL,
+            modificador_valor DECIMAL(10, 2) DEFAULT 0,
+            empresa_id INT NOT NULL,
             FOREIGN KEY (modelo_id, empresa_id) REFERENCES modelos_iphone(id, empresa_id) ON DELETE CASCADE,
             FOREIGN KEY (armazenamento_id) REFERENCES armazenamentos(id) ON DELETE CASCADE,
             UNIQUE(modelo_id, armazenamento_id, empresa_id)
         );
-        """,
+        """
         """
         CREATE TABLE IF NOT EXISTS impacto_respostas (
-            id SERIAL PRIMARY KEY,
-            modelo_id INTEGER NOT NULL,
-            pergunta_id INTEGER NOT NULL,
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            modelo_id INT NOT NULL,
+            pergunta_id INT NOT NULL,
             resposta_que_gera_impacto VARCHAR(50) NOT NULL,
-            valor_do_impacto NUMERIC(10, 2) NOT NULL,
-            empresa_id INTEGER NOT NULL,
+            valor_do_impacto DECIMAL(10, 2) NOT NULL,
+            empresa_id INT NOT NULL,
             FOREIGN KEY (modelo_id, empresa_id) REFERENCES modelos_iphone(id, empresa_id) ON DELETE CASCADE,
             FOREIGN KEY (pergunta_id) REFERENCES perguntas_avaliacao(id) ON DELETE CASCADE,
             UNIQUE(modelo_id, pergunta_id, resposta_que_gera_impacto, empresa_id)
         );
-        """,
+        """
         """
         CREATE TABLE IF NOT EXISTS avaliacoes_concluidas (
-            id SERIAL PRIMARY KEY,
-            empresa_id INTEGER NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
-            usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            empresa_id INT NOT NULL,
+            usuario_id INT,
             nome_cliente_final VARCHAR(255),
             email_cliente_final VARCHAR(255),
             telefone_cliente_final VARCHAR(255),
-            modelo_iphone_id INTEGER NOT NULL,
+            modelo_iphone_id INT NOT NULL,
             cor_selecionada VARCHAR(100) NOT NULL,
             armazenamento_selecionado VARCHAR(100) NOT NULL,
             imei VARCHAR(50),
-            valor_base_calculado NUMERIC(10, 2) NOT NULL,
-            valor_final_calculado NUMERIC(10, 2) NOT NULL,
+            valor_base_calculado DECIMAL(10, 2) NOT NULL,
+            valor_final_calculado DECIMAL(10, 2) NOT NULL,
             resumo_respostas TEXT NOT NULL,
-            data_avaliacao TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+            data_avaliacao DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE,
+            FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL,
             FOREIGN KEY (modelo_iphone_id, empresa_id) REFERENCES modelos_iphone(id, empresa_id)
         );
         """
     ]
     
-    conexao = None
-    try:
-        conexao = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
-        cursor = conexao.cursor()
-        print("Conectado ao PostgreSQL. Criando todas as tabelas...")
-
-        for comando in comandos_sql_criar:
+    print("Verificando/Criando tabelas no MySQL...")
+    for comando in comandos_sql_criar:
+        try:
             cursor.execute(comando)
-
-        conexao.commit()
-        print("Tabelas criadas com sucesso no PostgreSQL.")
-        
-    except psycopg2.Error as e:
-        print(f"Ocorreu um erro com o PostgreSQL ao criar tabelas: {e}")
-        if conexao: conexao.rollback()
-    finally:
-        if conexao:
-            cursor.close()
-            conexao.close()
-            print("Conexão de criação de tabelas fechada.")
+        except mysql.connector.Error as err:
+            print(f"AVISO ao criar tabela: {err}")
+    print("Estrutura de tabelas verificada.")
 
 
-def popular_tabelas():
+def popular_tabelas(cursor):
     """
     Popula todas as tabelas com dados iniciais para a empresa padrão (ID 1).
     ON CONFLICT DO NOTHING impede a inserção de duplicatas.
@@ -702,44 +728,46 @@ def popular_tabelas():
         (24, PERGUNTA_CARREGAMENTO_RUIM, 'Não', -100.00, empresa_id_padrao), 
         (24, PERGUNTA_PECA_DESCONHECIDA, 'Sim', -400.00, empresa_id_padrao)
     ]
-    conexao = None
+    print("\nPopulando tabelas base com INSERT IGNORE...")
+    
     try:
-        conexao = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
-        cursor = conexao.cursor()
-        print("\nPopulando tabelas no PostgreSQL...")
+        cursor.executemany("INSERT IGNORE INTO empresas (id, nome_empresa, logo_url, email_contato_principal, plano_ativo, permite_ajuste_valores, envia_email_orcamento, permite_link_convidado) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", empresas_para_inserir)
+        cursor.executemany("INSERT IGNORE INTO cores (id, nome_cor, codigo_hex) VALUES (%s, %s, %s)", cores_para_inserir)
+        cursor.executemany("INSERT IGNORE INTO armazenamentos (id, capacidade_gb) VALUES (%s, %s)", armazenamentos_para_inserir)
+        cursor.executemany("INSERT IGNORE INTO componentes (id, nome_componente) VALUES (%s, %s)", componentes_para_inserir)
+        cursor.executemany("INSERT IGNORE INTO perguntas_avaliacao (id, texto_pergunta, componente_id) VALUES (%s, %s, %s)", perguntas_para_inserir)
+        cursor.executemany("INSERT IGNORE INTO modelos_iphone (id, nome_modelo, valor_base_novo, imagem_padrao_url, empresa_id) VALUES (%s, %s, %s, %s, %s)", modelos_para_inserir)
+        cursor.executemany("INSERT IGNORE INTO modelos_cores (modelo_id, cor_id, imagem_url, empresa_id) VALUES (%s, %s, %s, %s) ", modelos_cores_para_inserir)
+        cursor.executemany("INSERT IGNORE INTO modelos_armazenamentos (modelo_id, armazenamento_id, modificador_valor, empresa_id) VALUES (%s, %s, %s, %s) ", modelos_armazenamentos_para_inserir)
+        cursor.executemany("INSERT IGNORE INTO impacto_respostas (modelo_id, pergunta_id, resposta_que_gera_impacto, valor_do_impacto, empresa_id) VALUES (%s, %s, %s, %s, %s)", impactos_para_inserir)
 
-        cursor.executemany("INSERT INTO empresas (id, nome_empresa, logo_url, email_contato_principal, plano_ativo, permite_ajuste_valores, envia_email_orcamento, permite_link_convidado) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (id) DO NOTHING", empresas_para_inserir)
-        cursor.executemany("INSERT INTO cores (id, nome_cor, codigo_hex) VALUES (%s, %s, %s) ON CONFLICT (id) DO NOTHING", cores_para_inserir)
-        cursor.executemany("INSERT INTO armazenamentos (id, capacidade_gb) VALUES (%s, %s) ON CONFLICT (id) DO NOTHING", armazenamentos_para_inserir)
-        cursor.executemany("INSERT INTO componentes (id, nome_componente) VALUES (%s, %s) ON CONFLICT (id) DO NOTHING", componentes_para_inserir)
-        cursor.executemany("INSERT INTO perguntas_avaliacao (id, texto_pergunta, componente_id) VALUES (%s, %s, %s) ON CONFLICT (id) DO NOTHING", perguntas_para_inserir)
-        
-        cursor.executemany("INSERT INTO modelos_iphone (id, nome_modelo, valor_base_novo, imagem_padrao_url, empresa_id) VALUES (%s, %s, %s, %s, %s) ON CONFLICT (id) DO NOTHING", modelos_para_inserir)
-        
-        cursor.executemany("INSERT INTO modelos_cores (modelo_id, cor_id, imagem_url, empresa_id) VALUES (%s, %s, %s, %s) ON CONFLICT (modelo_id, cor_id, empresa_id) DO NOTHING", modelos_cores_para_inserir)
-        cursor.executemany("INSERT INTO modelos_armazenamentos (modelo_id, armazenamento_id, modificador_valor, empresa_id) VALUES (%s, %s, %s, %s) ON CONFLICT (modelo_id, armazenamento_id, empresa_id) DO NOTHING", modelos_armazenamentos_para_inserir)
-        cursor.executemany("INSERT INTO impacto_respostas (modelo_id, pergunta_id, resposta_que_gera_impacto, valor_do_impacto, empresa_id) VALUES (%s, %s, %s, %s, %s) ON CONFLICT (modelo_id, pergunta_id, resposta_que_gera_impacto, empresa_id) DO NOTHING", impactos_para_inserir)
-
-        conexao.commit()
+        print(f"{cursor.rowcount} registros de empresa inseridos ou ignorados.")
+            # Adicione prints para as outras tabelas se desejar
         print("\nTabelas populadas com os dados fornecidos.")
+                
+    except mysql.connector.Error as err:
+        print(f"Erro durante a execução de executemany: {err}")
 
-    except psycopg2.Error as e:
-        print(f"Ocorreu um erro ao popular as tabelas no PostgreSQL: {e}")
-        if conexao: conexao.rollback()
-    finally:
-        if conexao:
-            cursor.close()
-            conexao.close()
-            print("Conexão de população de tabelas fechada.")
-
-
-# --- Bloco de Execução Principal ---
+        # --- Bloco de Execução Principal ---
 if __name__ == '__main__':
-    # 1. Cria a estrutura de tabelas no PostgreSQL
-    criar_tabelas()
-    
-    # 2. Popula as tabelas com dados iniciais
-    popular_tabelas()
-    
-    print("\nScript de setup para PostgreSQL concluído!")
-    
+    print("Iniciando script de setup para o banco de dados MySQL...")
+    conexao = get_db_connection()
+            
+    if conexao:
+        try:
+            with conexao.cursor() as cursor:
+                # criar_tabelas(cursor)  # Descomente se precisar recriar a estrutura
+                popular_tabelas(cursor)
+                        
+            conexao.commit()
+            print("\nScript de setup concluído com sucesso!")
+
+        except mysql.connector.Error as e:
+            print(f"Ocorreu um erro GERAL com o MySQL: {e}")
+            print("Desfazendo todas as alterações (rollback)...")
+            conexao.rollback()
+        finally:
+            print("Fechando conexão com o MySQL.")
+            conexao.close()
+    else:
+        print("A execução foi abortada porque não foi possível conectar ao banco de dados.")

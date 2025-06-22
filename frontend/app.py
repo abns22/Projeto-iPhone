@@ -1,8 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.utils import secure_filename
-from werkzeug.security import check_password_hash
-import psycopg2
-from psycopg2.extras import RealDictCursor
+from werkzeug.security import generate_password_hash, check_password_hash
+import mysql.connector
 import os
 from dotenv import load_dotenv
 from flask_mail import Mail, Message
@@ -35,22 +34,29 @@ mail = Mail(app)
 
 def get_db_connection():
     """
-    Estabelece e retorna uma nova conexão com o banco de dados.
-    Esta função garante que as variáveis de ambiente sejam lidas no momento certo.
+    Estabelece e retorna uma nova conexão com o banco de dados MySQL,
+    exigindo uma conexão segura SSL para o PythonAnywhere.
     """
     try:
-        conn = psycopg2.connect(
-            dbname=os.getenv('DB_NAME'),
-            user=os.getenv('DB_USER'),
-            password=os.getenv('DB_PASS'),
-            host=os.getenv('DB_HOST'),
-            port=os.getenv('DB_PORT')
-        )
+
+        db_host = os.getenv('DB_HOST')
+
+        conn_args = {
+            'database': os.getenv('DB_NAME'),
+            'user': os.getenv('DB_USER'),
+            'password': os.getenv('DB_PASS'),
+            'host': db_host,
+            'port': os.getenv('DB_PORT')
+        }
+        if db_host and 'pythonanywhere' in db_host:
+            conn_args['ssl_ca'] = "/etc/ssl/certs/ca-certificates.crt"
+            conn_args['ssl_verify_cert'] = True
+
+        conn = mysql.connector.connect(**conn_args)
         return conn
-    except psycopg2.OperationalError as e:
 
-        print(f"ERRO DE CONEXÃO COM O BANCO DE DADOS: {e}")
-
+    except mysql.connector.Error as e:
+        print(f"ERRO DE CONEXÃO COM O MYSQL: {e}")
         return None
 
 @app.route('/')
@@ -78,7 +84,7 @@ def login():
 
                 return render_template('index.html', erro=erro)
 
-            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            cursor = conn.cursor(dictionary=True)
             
             usuario = request.form.get('usuario')
             senha = request.form.get('senha')
@@ -124,11 +130,11 @@ def get_info_empresa_logada():
     conn = None
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor(dictionary=True)
         cursor.execute("SELECT nome_empresa, logo_url FROM empresas WHERE id = %s", (session['empresa_id'],))
         info_empresa = cursor.fetchone()
         return info_empresa
-    except psycopg2.Error as e:
+    except mysql.connector.Error as e:
         print(f"Erro ao buscar info da empresa: {e}")
         return None
     finally:
@@ -212,11 +218,9 @@ def calcular():
 
     try:
         
-        conn = psycopg2.connect(
-            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
-        )
+        conn = get_db_connection() 
         
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor(dictionary=True)
         
         id_usuario = session['user_id']
         
@@ -229,7 +233,7 @@ def calcular():
         )
         modelos = cursor.fetchall()
         
-    except psycopg2.Error as e:
+    except mysql.connector.Error as e:
         flash('Não foi possível carregar os dados da página. Tente novamente mais tarde.', 'danger')
         print(f"Erro de PostgreSQL na rota /calcular: {e}")
     finally:
@@ -258,11 +262,9 @@ def get_opcoes_modelo(modelo_id):
     conn = None
     try:
         
-        conn = psycopg2.connect(
-            dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT
-        )
+        conn = get_db_connection() 
 
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor(dictionary=True)
 
         sql_modelo = "SELECT nome_modelo, valor_base_novo FROM modelos_iphone WHERE id = %s AND empresa_id = %s"
         cursor.execute(sql_modelo, (modelo_id, empresa_id_logada))
@@ -291,7 +293,7 @@ def get_opcoes_modelo(modelo_id):
         cursor.execute(sql_armazenamentos, (modelo_id, empresa_id_logada))
         opcoes["armazenamentos"] = cursor.fetchall()
 
-    except psycopg2.Error as e:
+    except mysql.connector.Error as e:
         print(f"Erro de PostgreSQL ao buscar opções: {e}")
         return jsonify({"erro": "Erro no servidor ao buscar opções"}), 500
     finally:
@@ -318,7 +320,7 @@ def enviar_orcamento():
     try:
 
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor(dictionary=True)
 
 
         modelo_nome = dados.get('modelo')
@@ -359,7 +361,7 @@ def enviar_orcamento():
         conn.commit()
         print("Avaliação salva com sucesso no banco de dados PostgreSQL.")
 
-    except psycopg2.Error as e:
+    except mysql.connector.Error as e:
         if conn: conn.rollback()
         print(f"Erro de PostgreSQL ao salvar avaliação: {e}")
     finally:
@@ -420,7 +422,7 @@ def get_perguntas_modelo(modelo_id):
         if not conn:
             return jsonify({"erro": "Erro ao conectar ao banco"}), 500
 
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor(dictionary=True)
 
         cursor.execute("""
             SELECT 
@@ -477,7 +479,7 @@ def gerenciar_modelos_admin():
     try:
 
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor(dictionary=True)
 
 
         cursor.execute("SELECT nome_empresa, logo_url FROM empresas WHERE id = %s", (empresa_id_logada,))
@@ -490,7 +492,7 @@ def gerenciar_modelos_admin():
         )
         modelos_da_empresa = cursor.fetchall()
         
-    except psycopg2.Error as e:
+    except mysql.connector.Error as e:
         flash('Ocorreu um erro ao buscar os dados para administração.', 'danger')
         print(f"Erro de PostgreSQL ao buscar para admin: {e}")
     finally:
@@ -542,7 +544,7 @@ def editar_modelo_admin(modelo_id):
             conn.commit()
             flash('Modelo e valores atualizados com sucesso!', 'success')
 
-        except psycopg2.Error as e:
+        except mysql.connector.Error as e:
             if conn:
                 conn.rollback()
             flash('Ocorreu um erro ao salvar as alterações.', 'danger')
@@ -558,7 +560,7 @@ def editar_modelo_admin(modelo_id):
     impactos_do_modelo = []
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor(dictionary=True)
 
         cursor.execute("SELECT * FROM modelos_iphone WHERE id = %s AND empresa_id = %s", (modelo_id, empresa_id_logada))
         modelo_para_editar = cursor.fetchone()
@@ -574,7 +576,7 @@ def editar_modelo_admin(modelo_id):
             cursor.execute(sql_impactos, (modelo_id, empresa_id_logada))
             impactos_do_modelo = cursor.fetchall()
         
-    except psycopg2.Error as e:
+    except mysql.connector.Error as e:
         flash('Erro ao buscar dados para edição.', 'danger')
         print(f"Erro de PostgreSQL ao buscar para edição: {e}")
     finally:
@@ -617,10 +619,10 @@ def adicionar_modelo_admin():
 
             sql_insert_modelo = """
                 INSERT INTO modelos_iphone (nome_modelo, valor_base_novo, empresa_id, imagem_padrao_url)
-                VALUES (%s, %s, %s, %s) RETURNING id;
+                VALUES (%s, %s, %s, %s);
             """
             cursor.execute(sql_insert_modelo, (nome_modelo, valor_base, empresa_id_logada, imagem_url_para_db))
-            id_novo_modelo = cursor.fetchone()[0]
+            id_novo_modelo = cursor.lastrowid 
 
             cursor.execute("SELECT id FROM perguntas_avaliacao")
             todas_perguntas = cursor.fetchall()
@@ -654,7 +656,7 @@ def adicionar_modelo_admin():
             conn.commit()
             flash(f'Modelo "{nome_modelo}" adicionado com sucesso!', 'success')
 
-        except psycopg2.Error as e:
+        except mysql.connector.Error as e:
             if conn:
                 conn.rollback()
             flash('Erro ao adicionar o modelo.', 'danger')
@@ -670,7 +672,7 @@ def adicionar_modelo_admin():
     armazenamentos = []
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor(dictionary=True)
 
         cursor.execute("SELECT id, nome_cor FROM cores ORDER BY nome_cor")
         cores = cursor.fetchall()
@@ -678,7 +680,7 @@ def adicionar_modelo_admin():
         cursor.execute("SELECT id, capacidade_gb FROM armazenamentos ORDER BY capacidade_gb")
         armazenamentos = cursor.fetchall()
 
-    except psycopg2.Error as e:
+    except mysql.connector.Error as e:
         flash('Erro ao carregar cores e armazenamentos.', 'danger')
         print(f"Erro: {e}")
     finally:
@@ -730,7 +732,7 @@ def deletar_modelo_admin(modelo_id):
 
         conn.commit() 
 
-    except psycopg2.Error as e:
+    except mysql.connector.Error as e:
         if conn:
             conn.rollback() 
         flash('Erro de banco de dados ao deletar o modelo.', 'danger')
@@ -755,7 +757,7 @@ def gerenciar_usuarios_admin():
     conn = None
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor(dictionary=True)
         
         cursor.execute(
             "SELECT id, nome_completo, usuario as email, is_admin FROM usuarios WHERE empresa_id = %s AND id != %s ORDER BY nome_completo",
@@ -763,7 +765,7 @@ def gerenciar_usuarios_admin():
         )
         usuarios_da_empresa = cursor.fetchall()
         
-    except psycopg2.Error as e:
+    except mysql.connector.Error as e:
         flash('Ocorreu um erro ao buscar os usuários.', 'danger')
         print(f"Erro ao buscar usuários para admin: {e}")
     finally:
@@ -802,7 +804,7 @@ def adicionar_usuario_admin():
             )
             conn.commit()
             flash(f'Usuário "{nome}" criado com sucesso!', 'success')
-        except psycopg2.Error as e:
+        except mysql.connector.Error as e:
             if conn: conn.rollback()
             flash('Erro ao criar o usuário. O e-mail já pode estar em uso.', 'danger')
             print(f"Erro ao criar usuário: {e}")
@@ -836,7 +838,7 @@ def deletar_usuario_admin(usuario_id):
         
         conn.commit()
         flash('Usuário deletado com sucesso.', 'success')
-    except psycopg2.Error as e:
+    except mysql.connector.Error as e:
         if conn: conn.rollback()
         flash('Erro ao deletar o usuário.', 'danger')
         print(f"Erro ao deletar usuário: {e}")
@@ -869,12 +871,12 @@ def super_admin_dashboard():
     conn = None
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor(dictionary=True)
 
         cursor.execute("SELECT * FROM empresas ORDER BY nome_empresa")
         empresas_clientes = cursor.fetchall()
         
-    except psycopg2.Error as e:
+    except mysql.connector.Error as e:
         flash('Ocorreu um erro ao buscar os dados do Super Admin.', 'danger')
         print(f"Erro ao buscar empresas para super admin: {e}")
     finally:
@@ -906,7 +908,7 @@ def adicionar_empresa_super_admin():
         conn = None
         try:
             conn = get_db_connection()
-            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            cursor = conn.cursor(dictionary=True)
 
             sql_insert_empresa = """
                 INSERT INTO empresas (nome_empresa, cnpj, nome_responsavel, email_contato_principal, max_usuarios, permite_ajuste_valores, permite_link_convidado)
@@ -933,7 +935,7 @@ def adicionar_empresa_super_admin():
             conn.commit()
             flash(f'Empresa "{nome_empresa}" e seu usuário administrador foram criados com sucesso!', 'success')
 
-        except psycopg2.Error as e:
+        except mysql.connector.Error as e:
             if conn: conn.rollback() 
             flash(f'Erro ao criar empresa: {e}', 'danger')
             print(f"Erro ao criar empresa: {e}")
