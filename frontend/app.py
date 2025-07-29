@@ -143,13 +143,20 @@ def login():
                 registro_usuario_db = cursor.fetchone()
 
                 if registro_usuario_db and check_password_hash(registro_usuario_db['senha_hash'], senha):
-                    cursor.execute("SELECT permite_ajuste_valores, permite_link_convidado, envia_email_orcamento, envia_email_orcamento_link, plano_ativo FROM empresas WHERE id = %s", (registro_usuario_db['empresa_id'],))
+                    # Verificar se empresa_id não é None
+                    empresa_id = registro_usuario_db.get('empresa_id')
+                    if empresa_id is None:
+                        erro = "Usuário não está associado a uma empresa válida."
+                        flash(erro, "danger")
+                        return render_template('index.html', erro=erro)
+                    
+                    cursor.execute("SELECT permite_ajuste_valores, permite_link_convidado, envia_email_orcamento, envia_email_orcamento_link, plano_ativo FROM empresas WHERE id = %s", (empresa_id,))
                     info_empresa = cursor.fetchone()
                     session.clear()
                     session['user_id'] = registro_usuario_db['id']
                     session['nome_completo'] = registro_usuario_db['nome_completo']
                     session['is_admin'] = registro_usuario_db['is_admin']
-                    session['empresa_id'] = registro_usuario_db['empresa_id']
+                    session['empresa_id'] = empresa_id
                     if info_empresa:
                         session['empresa_pode_gerir'] = info_empresa['permite_ajuste_valores']
                         session['permite_link_convidado'] = info_empresa['permite_link_convidado']
@@ -183,7 +190,7 @@ def login():
     return render_template('index.html', erro=erro)
 
 def get_info_empresa_logada():
-    if 'empresa_id' not in session:
+    if 'empresa_id' not in session or session['empresa_id'] is None:
         return None
     conn = None
     try:
@@ -404,7 +411,9 @@ def get_opcoes_modelo(modelo_id):
     resp = require_login()
     if resp: return resp
    
-    empresa_id_logada = session['empresa_id']
+    empresa_id_logada = session.get('empresa_id')
+    if not empresa_id_logada:
+        return jsonify({"erro": "Usuário não está associado a uma empresa válida"}), 400
 
     opcoes = {
         "modelo_info": None,
@@ -465,8 +474,13 @@ def enviar_orcamento():
 
     dados = request.json
 
-    empresa_id_logada = session['empresa_id']
-    usuario_id_logado = session['user_id']
+    empresa_id_logada = session.get('empresa_id')
+    if not empresa_id_logada:
+        return jsonify({"mensagem": "Usuário não está associado a uma empresa válida"}), 400
+    
+    usuario_id_logado = session.get('user_id')
+    if not usuario_id_logado:
+        return jsonify({"mensagem": "Usuário não autenticado"}), 400
     email_usuario_logado = session.get('username')
 
     conn = None
@@ -573,7 +587,9 @@ def get_perguntas_modelo(modelo_id):
     resp = require_login()
     if resp: return resp
 
-    empresa_id_logada = session['empresa_id']
+    empresa_id_logada = session.get('empresa_id')
+    if not empresa_id_logada:
+        return jsonify({"erro": "Usuário não está associado a uma empresa válida"}), 400
     conn = None
     try:
         conn = get_db_connection()
@@ -651,7 +667,11 @@ def gerenciar_modelos_admin():
     resp = require_login() or require_admin() or require_empresa_permissao()
     if resp: return resp
 
-    empresa_id_logada = session['empresa_id']
+    empresa_id_logada = session.get('empresa_id')
+    if not empresa_id_logada:
+        flash("Usuário não está associado a uma empresa válida", "danger")
+        return redirect(url_for('login'))
+    
     is_super_admin = (empresa_id_logada == 1) 
 
     conn = None
@@ -785,7 +805,10 @@ def adicionar_modelo_admin():
     resp = require_login() or require_admin() or require_empresa_permissao()
     if resp: return resp
 
-    empresa_id_logada = session['empresa_id']
+    empresa_id_logada = session.get('empresa_id')
+    if not empresa_id_logada:
+        flash("Usuário não está associado a uma empresa válida", "danger")
+        return redirect(url_for('login'))
 
     if request.method == 'POST':
         nome_modelo = request.form['nome_modelo']
@@ -934,9 +957,16 @@ def gerenciar_usuarios_admin():
     if resp: return resp
 
     info_empresa = get_info_empresa_logada()
-    empresa_id_logada = session['empresa_id']
+    empresa_id_logada = session.get('empresa_id')
+    if not empresa_id_logada:
+        flash("Usuário não está associado a uma empresa válida", "danger")
+        return redirect(url_for('login'))
+    
     usuarios_da_empresa = []
-    id_do_admin_logado = session['user_id'] 
+    id_do_admin_logado = session.get('user_id')
+    if not id_do_admin_logado:
+        flash("Usuário não autenticado", "danger")
+        return redirect(url_for('login')) 
     conn = None
     try:
         conn = get_db_connection()
@@ -975,7 +1005,11 @@ def adicionar_usuario_admin():
     info_empresa = get_info_empresa_logada()
     
     if request.method == 'POST':
-        empresa_id_logada = session['empresa_id']
+        empresa_id_logada = session.get('empresa_id')
+        if not empresa_id_logada:
+            flash("Usuário não está associado a uma empresa válida", "danger")
+            return redirect(url_for('login'))
+        
         email = request.form['email'].strip().lower()
         nome = request.form['nome_completo']
         telefone = request.form['telefone']
@@ -1017,7 +1051,11 @@ def deletar_usuario_admin(usuario_id):
         flash('Você não pode deletar sua própria conta.', 'danger')
         return redirect(url_for('gerenciar_usuarios_admin'))
 
-    empresa_id_logada = session['empresa_id']
+    empresa_id_logada = session.get('empresa_id')
+    if not empresa_id_logada:
+        flash("Usuário não está associado a uma empresa válida", "danger")
+        return redirect(url_for('gerenciar_usuarios_admin'))
+    
     conn = None
     try:
         conn = get_db_connection()
