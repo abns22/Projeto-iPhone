@@ -17,12 +17,13 @@ app = Flask(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-DB_NAME = os.getenv('DB_NAME')
-DB_USER = os.getenv('DB_USER')
-DB_PASS = os.getenv('DB_PASS')
-DB_HOST = os.getenv('DB_HOST')
-DB_PORT = os.getenv('DB_PORT')
-SECRET_KEY = os.getenv('SECRET_KEY')
+# Configurações do banco de dados com valores padrão para PythonAnywhere
+DB_NAME = os.getenv('DB_NAME', 'abns22$iphone_breakdown_db')
+DB_USER = os.getenv('DB_USER', 'abns22')
+DB_PASS = os.getenv('DB_PASS', 'sua_senha_aqui')
+DB_HOST = os.getenv('DB_HOST', 'abns22.mysql.pythonanywhere-services.com')
+DB_PORT = os.getenv('DB_PORT', '3306')
+SECRET_KEY = os.getenv('SECRET_KEY', 'sua_chave_secreta_muito_segura_aqui_12345')
 
 app.secret_key = SECRET_KEY
 
@@ -42,17 +43,16 @@ def get_db_connection():
     exigindo uma conexão segura SSL para o PythonAnywhere.
     """
     try:
-
-        db_host = os.getenv('DB_HOST')
-
         conn_args = {
-            'database': os.getenv('DB_NAME'),
-            'user': os.getenv('DB_USER'),
-            'password': os.getenv('DB_PASS'),
-            'host': db_host,
-            'port': os.getenv('DB_PORT')
+            'database': DB_NAME,
+            'user': DB_USER,
+            'password': DB_PASS,
+            'host': DB_HOST,
+            'port': int(DB_PORT) if DB_PORT else 3306
         }
-        if db_host and 'pythonanywhere' in db_host:
+        
+        # Configurações SSL para PythonAnywhere
+        if 'pythonanywhere' in DB_HOST:
             conn_args['ssl_ca'] = "/etc/ssl/certs/ca-certificates.crt"
             conn_args['ssl_verify_cert'] = True
 
