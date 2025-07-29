@@ -70,6 +70,29 @@ body, html {
   background-color: #0080ff;
 }
 
+.sidebar-nav a.menu-card-bloqueado,
+.sidebar-nav a.menu-card-bloqueado:hover {
+    background: rgba(120,120,120,0.18) !important;
+    color: #888 !important;
+    cursor: not-allowed !important;
+    position: relative;
+    pointer-events: none;
+}
+.sidebar-nav a.menu-card-bloqueado .lock-icon {
+    display: block;
+    font-size: 2em;
+    color: #888;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    pointer-events: none;
+}
+.sidebar-nav a .lock-icon {
+    display: none;
+}
+
 .main-content {
   min-height: 100vh; 
   margin-left: 0; 
@@ -454,5 +477,23 @@ body, html {
 }
 .card-modelo .conteudo-expandido {
     display: none; 
+}
+
+.menu-botao-azul {
+    color: #fff !important;
+    background: rgba(0,123,255,0.8) !important;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin: 6px 0;
+    display: block;
+    text-align: center;
+    font-weight: bold;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: background 0.2s, color 0.2s;
+}
+.menu-botao-azul:hover {
+    background: #0080ff !important;
+    color: #fff !important;
 }
 

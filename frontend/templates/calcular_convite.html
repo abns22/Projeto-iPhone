@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcular Orçamento - Link de Convite</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styleCalcular.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+    <div class="dashboard-layout">
+        <div style="width:100%; display:flex; align-items:center; gap:12px; justify-content:center; margin-top:32px; margin-bottom:24px;">
+            {% if link.logo_url %}
+                <img src="{{ url_for('static', filename=link.logo_url) }}" alt="Logo" style="height:38px; width:38px; object-fit:contain; border-radius:8px; background:#fff; box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+            {% endif %}
+            <span style="color:#007bff; font-size:1.3rem; font-weight:bold;">{{ link.nome_empresa }}</span>
+        </div>
+        <header>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+        </header>
+        <main class="main-content" id="meuConteudoPrincipal">
+            <div class="page-content">
+                <h2>Selecione o Modelo do seu iPhone</h2>
+                <p>Escolha o modelo do aparelho que você quer avaliar.</p>
+                <div class="grid-modelos">
+                    {% for modelo in modelos %}
+                    <div class="card-modelo" data-modelo-id="{{ modelo['id'] }}">
+                        <img src="{{ url_for('static', filename=modelo['imagem_padrao_url']) }}" alt="{{ modelo['nome_modelo'] }}">
+                        <h3>{{ modelo['nome_modelo'] }}</h3>
+                        <div class="conteudo-expandido">
+                            <p>Selecione a cor</p>
+                            <div class="opcoes-cor" id="opcoes-cor-{{ modelo['id'] }}"></div>
+                            <p>Selecione o armazenamento</p>
+                            <div class="opcoes-armazenamento" id="opcoes-armazenamento-{{ modelo['id'] }}"></div>
+                            <button class="btn-selecionar-modelo">Avançar</button>
+                        </div>
+                    </div>
+                    {% else %}
+                        <p>Nenhum modelo de iPhone disponível para avaliação no momento.</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div id="secao-avaliacao" class="avaliacao-container" style="display: none;">
+                <div id="aparelho-em-destaque" class="aparelho-destaque"></div>
+                <div id="secao-questionario" class="questionario">
+                    <button id="btn-voltar-selecao" class="btn-secundario">&larr; Voltar para Modelos</button>
+                    <div id="lista-perguntas"></div>
+                    <div class="item-pergunta">
+                        <p>Digite aqui o IMEI do aparelho:</p>
+                        <input type="text" id="imei-input" placeholder="IMEI do aparelho">
+                    </div>
+                    <div class="aviso-envio-email">
+                        <i class="fa-solid fa-circle-info"></i> <p><strong>Atenção:</strong> Ao clicar em "Calcular Valor Final", os detalhes da sua avaliação serão enviados para a empresa. Você receberá um link do WhatsApp para contato direto!</p>
+                    </div>
+                    <button id="btn-calcular-valor" class="btn-principal">Calcular Valor Final</button>
+                    <div id="resultado-final" style="margin-top: 20px;"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script>
+        // Variáveis globais para uso do JS de cálculo
+        window.CONVITE_TOKEN = "{{ token }}";
+        window.IS_CONVITE = true;
+    </script>
+    <script src="{{ url_for('static', filename='scriptValor.js') }}"></script>
+</body>
+</html> 

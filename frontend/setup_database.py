@@ -57,7 +57,7 @@ def criar_tabelas(cursor):
             envia_email_orcamento BOOLEAN DEFAULT TRUE,
             permite_link_convidado BOOLEAN DEFAULT FALSE
             );
-        """
+        """,
         """
         CREATE TABLE IF NOT EXISTS usuarios (
             id INT PRIMARY KEY AUTO_INCREMENT,
@@ -70,7 +70,7 @@ def criar_tabelas(cursor):
             FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE,
             UNIQUE(usuario, empresa_id)
         );
-        """
+        """,
         """
         CREATE TABLE IF NOT EXISTS modelos_iphone (
             id INT PRIMARY KEY AUTO_INCREMENT,
@@ -81,26 +81,26 @@ def criar_tabelas(cursor):
             FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE,
             UNIQUE(id, empresa_id)
         );
-        """
+        """,
         """
         CREATE TABLE IF NOT EXISTS cores (
             id INT PRIMARY KEY AUTO_INCREMENT,
             nome_cor VARCHAR(50) NOT NULL UNIQUE,
             codigo_hex VARCHAR(7)
         );
-        """
+        """,
         """        
         CREATE TABLE IF NOT EXISTS armazenamentos (
             id INT PRIMARY KEY AUTO_INCREMENT,
             capacidade_gb INT NOT NULL UNIQUE
         );
-        """
+        """,
         """        
         CREATE TABLE IF NOT EXISTS componentes (
             id INT PRIMARY KEY AUTO_INCREMENT,
             nome_componente VARCHAR(255) NOT NULL UNIQUE
         );
-        """
+        """,
         """
         CREATE TABLE IF NOT EXISTS perguntas_avaliacao (
             id INT PRIMARY KEY AUTO_INCREMENT,
@@ -109,7 +109,7 @@ def criar_tabelas(cursor):
             UNIQUE KEY (texto_pergunta(255)),
             FOREIGN KEY (componente_id) REFERENCES componentes(id) ON DELETE SET NULL
         );
-        """
+        """,
         """
         CREATE TABLE IF NOT EXISTS modelos_cores (
             id INT PRIMARY KEY AUTO_INCREMENT,
@@ -121,7 +121,7 @@ def criar_tabelas(cursor):
             FOREIGN KEY (cor_id) REFERENCES cores(id) ON DELETE CASCADE,
             UNIQUE(modelo_id, cor_id, empresa_id)
         );
-        """
+        """,
         """
         CREATE TABLE IF NOT EXISTS modelos_armazenamentos (
             id INT PRIMARY KEY AUTO_INCREMENT,
@@ -133,7 +133,7 @@ def criar_tabelas(cursor):
             FOREIGN KEY (armazenamento_id) REFERENCES armazenamentos(id) ON DELETE CASCADE,
             UNIQUE(modelo_id, armazenamento_id, empresa_id)
         );
-        """
+        """,
         """
         CREATE TABLE IF NOT EXISTS impacto_respostas (
             id INT PRIMARY KEY AUTO_INCREMENT,
@@ -146,7 +146,7 @@ def criar_tabelas(cursor):
             FOREIGN KEY (pergunta_id) REFERENCES perguntas_avaliacao(id) ON DELETE CASCADE,
             UNIQUE(modelo_id, pergunta_id, resposta_que_gera_impacto, empresa_id)
         );
-        """
+        """,
         """
         CREATE TABLE IF NOT EXISTS avaliacoes_concluidas (
             id INT PRIMARY KEY AUTO_INCREMENT,
@@ -168,12 +168,32 @@ def criar_tabelas(cursor):
             FOREIGN KEY (modelo_iphone_id, empresa_id) REFERENCES modelos_iphone(id, empresa_id)
         );
         """
+        """
+        CREATE TABLE IF NOT EXISTS links_convidados (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            empresa_id INT NOT NULL,
+            usuario_id INT NOT NULL,
+            token_unico VARCHAR(255) NOT NULL UNIQUE,
+            nome_cliente VARCHAR(255),
+            email_cliente VARCHAR(255),
+            telefone_cliente VARCHAR(255),
+            data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
+            data_expiracao DATETIME NOT NULL,
+            usado BOOLEAN DEFAULT FALSE,
+            data_uso DATETIME,
+            FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE,
+            FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+        );
+        """,
     ]
     
     print("Verificando/Criando tabelas no MySQL...")
     for comando in comandos_sql_criar:
         try:
             cursor.execute(comando)
+            # Consome todos os resultados pendentes, se houver
+            while cursor.nextset():
+                pass
         except mysql.connector.Error as err:
             print(f"AVISO ao criar tabela: {err}")
     print("Estrutura de tabelas verificada.")
@@ -756,9 +776,8 @@ if __name__ == '__main__':
     if conexao:
         try:
             with conexao.cursor() as cursor:
-                # criar_tabelas(cursor)  # Descomente se precisar recriar a estrutura
+                criar_tabelas(cursor)
                 popular_tabelas(cursor)
-                        
             conexao.commit()
             print("\nScript de setup concluído com sucesso!")
 

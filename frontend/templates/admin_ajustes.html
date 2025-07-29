@@ -13,12 +13,26 @@
             <h1>Painel de Administração</h1>
             <nav>
                 <a href="{{ url_for('calcular') }}">Ir para o Avaliador</a>
-                <span>|</span> 
-                <a href="{{ url_for('gerenciar_usuarios_admin') }}">Gerenciar Usuários</a>
+                <span>|</span>
+                <a href="{{ url_for('gerenciar_usuarios_admin') }}"
+                   class="{% if not (is_admin|int and empresa_pode_gerir|int) %}menu-card-bloqueado{% endif %}"
+                   {% if not (is_admin|int and empresa_pode_gerir|int) %} tabindex="-1" onclick="return false;" {% endif %}>
+                    <span class="lock-icon" {% if is_admin|int and empresa_pode_gerir|int %}style="display:none"{% endif %}>🔒</span>
+                    Gerenciar Usuários
+                </a>
                 <span>|</span>
                 <a href="{{ url_for('logout') }}">Sair</a>
             </nav>
         </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
 
         <main>
             <div class="admin-warning-box">
@@ -39,14 +53,6 @@
                     <i class="fa-solid fa-plus"></i> Adicionar Novo Modelo
                 </a>
             </div>
-
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
 
             <div class="admin-table-wrapper">
                 <table class="admin-table">

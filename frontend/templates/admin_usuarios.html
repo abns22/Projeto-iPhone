@@ -13,12 +13,26 @@
             <h1>Painel de Administração</h1>
             <nav>
                 <a href="{{ url_for('calcular') }}">Ir para o Avaliador</a>
-                <span>|</span> 
-                <a href="{{ url_for('gerenciar_modelos_admin') }}">Gerenciar Modelos</a>
+                <span>|</span>
+                <a href="{{ url_for('gerenciar_modelos_admin') }}"
+                   class="{% if not (is_admin|int and empresa_pode_gerir|int) %}menu-card-bloqueado{% endif %}"
+                   {% if not (is_admin|int and empresa_pode_gerir|int) %} tabindex="-1" onclick="return false;" {% endif %}>
+                    <span class="lock-icon" {% if is_admin|int and empresa_pode_gerir|int %}style="display:none"{% endif %}>🔒</span>
+                    Gerenciar Modelos
+                </a>
                 <span>|</span>
                 <a href="{{ url_for('logout') }}">Sair</a>
             </nav>
         </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
 
         <main>
             <h2>Gerenciar Usuários</h2>
@@ -27,14 +41,6 @@
             <a href="{{ url_for('adicionar_usuario_admin') }}" class="btn btn-adicionar">
                 <i class="fas fa-plus"></i> Adicionar Novo Usuário
             </a>
-
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
 
             <div class="admin-table-wrapper">
                 <table class="admin-table">

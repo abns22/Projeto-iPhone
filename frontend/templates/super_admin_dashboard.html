@@ -15,6 +15,15 @@
                 <a href="{{ url_for('logout') }}">Sair</a>
             </nav>
         </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
         <main>
             <h2>Gerenciamento de Empresas Clientes</h2>
             <p>Use esta área para adicionar e gerenciar as empresas que utilizam o seu sistema.</p>
@@ -42,7 +51,7 @@
                             <td>{{ empresa.email_contato_principal }}</td>
                             <td>{{ 'Sim' if empresa.plano_ativo else 'Não' }}</td>
                             <td class="actions-cell">
-                                <a href="#" class="btn-editar">Editar Plano/Permissões</a>
+                                <a href="{{ url_for('editar_empresa_admin', empresa_id=empresa.id) }}">Editar</a>
                             </td>
                         </tr>
                         {% else %}

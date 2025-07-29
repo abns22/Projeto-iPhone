@@ -7,6 +7,10 @@ from dotenv import load_dotenv
 from flask_mail import Mail, Message
 from flask import jsonify
 import json
+import secrets
+import datetime
+from PIL import Image
+from io import BytesIO
 
 load_dotenv()
 app = Flask(__name__)
@@ -59,12 +63,54 @@ def get_db_connection():
         print(f"ERRO DE CONEXÃO COM O MYSQL: {e}")
         return None
 
+def require_login():
+    if 'user_id' not in session:
+        flash('Faça login para acessar.', 'warning')
+        return redirect(url_for('login'))
+    return None
+
+def require_admin():
+    if not session.get('is_admin'):
+        flash('Acesso restrito a administradores.', 'danger')
+        return redirect(url_for('login'))
+    return None
+
+def require_super_admin():
+    if not session.get('is_admin') or session.get('empresa_id') != 1:
+        flash('Acesso restrito ao Super Admin.', 'danger')
+        return redirect(url_for('login'))
+    return None
+
+def require_empresa_permissao():
+    # Verifica se o usuário é admin E se a empresa tem permissão para gerenciar
+    # Apenas usuários admin de empresas com permissão podem acessar
+    if not session.get('is_admin'):
+        flash('Acesso restrito a administradores.', 'danger')
+        return redirect(url_for('login'))
+    
+    # Atualiza as permissões da empresa na sessão
+    get_info_empresa_logada()
+    
+    if not session.get('empresa_pode_gerir'):
+        flash('Sua empresa não tem permissão para acessar esta funcionalidade.', 'warning')
+        return redirect(url_for('calcular'))
+    
+    return None
+
 @app.route('/')
 def rota_principal():
     """
     Esta é a página inicial. Redireciona para a página de login.
     """
     return redirect(url_for('login'))
+
+@app.route('/corrigir-respostas')
+def corrigir_respostas():
+    """
+    Rota para corrigir as respostas das perguntas.
+    """
+    garantir_respostas_completas()
+    return "Respostas corrigidas com sucesso!"
 
 @app.route('/index', methods=['GET', 'POST'])
 def login():
@@ -97,12 +143,26 @@ def login():
                 registro_usuario_db = cursor.fetchone()
 
                 if registro_usuario_db and check_password_hash(registro_usuario_db['senha_hash'], senha):
- 
+                    cursor.execute("SELECT permite_ajuste_valores, permite_link_convidado, envia_email_orcamento, envia_email_orcamento_link, plano_ativo FROM empresas WHERE id = %s", (registro_usuario_db['empresa_id'],))
+                    info_empresa = cursor.fetchone()
                     session.clear()
                     session['user_id'] = registro_usuario_db['id']
                     session['nome_completo'] = registro_usuario_db['nome_completo']
                     session['is_admin'] = registro_usuario_db['is_admin']
                     session['empresa_id'] = registro_usuario_db['empresa_id']
+                    if info_empresa:
+                        session['empresa_pode_gerir'] = info_empresa['permite_ajuste_valores']
+                        session['permite_link_convidado'] = info_empresa['permite_link_convidado']
+                        session['envia_email_orcamento'] = info_empresa['envia_email_orcamento']
+                        session['envia_email_orcamento_link'] = info_empresa['envia_email_orcamento_link']
+                        session['plano_ativo'] = info_empresa['plano_ativo']
+                    else:
+                        session['empresa_pode_gerir'] = False
+                        session['permite_link_convidado'] = False
+                        session['envia_email_orcamento'] = False
+                        session['envia_email_orcamento_link'] = False
+                        session['plano_ativo'] = False
+                    print('DEBUG LOGIN SESSION:', dict(session))
                     return redirect(url_for('calcular')) 
                 else:
                    
@@ -123,16 +183,23 @@ def login():
     return render_template('index.html', erro=erro)
 
 def get_info_empresa_logada():
-    """Busca no banco os dados da empresa do usuário logado."""
     if 'empresa_id' not in session:
         return None
-    
     conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT nome_empresa, logo_url FROM empresas WHERE id = %s", (session['empresa_id'],))
+        cursor.execute("SELECT nome_empresa, logo_url, permite_ajuste_valores, permite_link_convidado, envia_email_orcamento, envia_email_orcamento_link, plano_ativo FROM empresas WHERE id = %s", (session['empresa_id'],))
         info_empresa = cursor.fetchone()
+        
+        # Atualiza as permissões na sessão se necessário
+        if info_empresa:
+            session['empresa_pode_gerir'] = info_empresa['permite_ajuste_valores']
+            session['permite_link_convidado'] = info_empresa['permite_link_convidado']
+            session['envia_email_orcamento'] = info_empresa['envia_email_orcamento']
+            session['envia_email_orcamento_link'] = info_empresa['envia_email_orcamento_link']
+            session['plano_ativo'] = info_empresa['plano_ativo']
+        
         return info_empresa
     except mysql.connector.Error as e:
         print(f"Erro ao buscar info da empresa: {e}")
@@ -141,6 +208,89 @@ def get_info_empresa_logada():
         if conn:
             cursor.close()
             conn.close()
+
+def garantir_respostas_completas():
+    """
+    Garante que todas as perguntas tenham as duas respostas (Sim e Não) 
+    para todos os modelos de todas as empresas.
+    """
+    print("Iniciando verificação e correção de respostas...")
+    conn = get_db_connection()
+    if not conn:
+        print("Não foi possível conectar ao banco de dados. Abortando.")
+        return
+
+    try:
+        with conn.cursor(dictionary=True) as cursor:
+            
+            # Busca todas as perguntas de avaliação
+            cursor.execute("SELECT id FROM perguntas_avaliacao")
+            todas_perguntas = cursor.fetchall()
+            if not todas_perguntas:
+                print("Nenhuma pergunta de avaliação encontrada.")
+                return
+
+            print(f"Encontradas {len(todas_perguntas)} perguntas de avaliação.")
+            
+            # Busca todos os modelos de todas as empresas
+            cursor.execute("SELECT id, empresa_id FROM modelos_iphone")
+            todos_modelos = cursor.fetchall()
+            if not todos_modelos:
+                print("Nenhum modelo encontrado.")
+                return
+
+            print(f"Encontrados {len(todos_modelos)} modelos.")
+            
+            # Itera sobre cada modelo
+            for modelo in todos_modelos:
+                modelo_id = modelo['id']
+                empresa_id = modelo['empresa_id']
+                
+                print(f"\n--- Verificando Modelo ID: {modelo_id} (Empresa ID: {empresa_id}) ---")
+                
+                # Itera sobre cada pergunta para o modelo atual
+                for pergunta in todas_perguntas:
+                    pergunta_id = pergunta['id']
+                    
+                    # Verifica as respostas existentes para esta combinação
+                    cursor.execute(
+                        "SELECT resposta_que_gera_impacto FROM impacto_respostas WHERE modelo_id = %s AND pergunta_id = %s AND empresa_id = %s",
+                        (modelo_id, pergunta_id, empresa_id)
+                    )
+                    respostas_existentes = {row['resposta_que_gera_impacto'] for row in cursor.fetchall()}
+                    
+                    # Se já existem as duas respostas ("Sim" e "Não"), está tudo certo
+                    if len(respostas_existentes) >= 2:
+                        continue
+                    
+                    # Se não existe a resposta "Sim", cria ela com impacto 0
+                    if "Sim" not in respostas_existentes:
+                        print(f"  -> Adicionando resposta 'Sim' (impacto 0) para pergunta ID {pergunta_id}")
+                        cursor.execute(
+                            "INSERT INTO impacto_respostas (modelo_id, pergunta_id, resposta_que_gera_impacto, valor_do_impacto, empresa_id) VALUES (%s, %s, 'Sim', 0.00, %s)",
+                            (modelo_id, pergunta_id, empresa_id)
+                        )
+
+                    # Se não existe a resposta "Não", cria ela com impacto 0
+                    if "Não" not in respostas_existentes:
+                        print(f"  -> Adicionando resposta 'Não' (impacto 0) para pergunta ID {pergunta_id}")
+                        cursor.execute(
+                            "INSERT INTO impacto_respostas (modelo_id, pergunta_id, resposta_que_gera_impacto, valor_do_impacto, empresa_id) VALUES (%s, %s, 'Não', 0.00, %s)",
+                            (modelo_id, pergunta_id, empresa_id)
+                        )
+
+            # Salva todas as alterações feitas no banco de dados
+            conn.commit()
+            print("\nVerificação e correção de respostas concluída com sucesso!")
+
+    except mysql.connector.Error as e:
+        print(f"Ocorreu um erro com o MySQL durante a correção: {e}")
+        print("Desfazendo alterações (rollback)...")
+        conn.rollback()
+    finally:
+        if conn and conn.is_connected():
+            conn.close()
+            print("Conexão com o MySQL fechada.")
 
 @app.route('/cadastro', methods=['GET', 'POST'])
 def cadastro():
@@ -207,6 +357,10 @@ def calcular():
         flash('Por favor, faça login para acessar o avaliador.', 'warning')
         return redirect(url_for('login'))
     info_empresa = get_info_empresa_logada()
+    if info_empresa:
+        session['permite_ajuste_valores'] = info_empresa.get('permite_ajuste_valores', 0)
+        session['permite_link_convidado'] = info_empresa.get('permite_link_convidado', 0)
+    print('DEBUG SESSION IN CALCULAR:', dict(session))
     empresa_id_logada = session.get('empresa_id')
     if not empresa_id_logada:
         flash("Ocorreu um erro com a identificação da sua empresa. Por favor, faça login novamente.", "danger")
@@ -242,15 +396,14 @@ def calcular():
             cursor.close()
             conn.close()
 
-    return render_template('calcular.html', modelos=modelos, usuario=dados_usuario_logado, info_empresa=info_empresa)
+    return render_template('calcular.html', modelos=modelos, usuario=dados_usuario_logado, info_empresa=info_empresa, is_admin=session.get('is_admin'), empresa_pode_gerir=session.get('empresa_pode_gerir'), permite_link_convidado=session.get('permite_link_convidado'), permite_ajuste_valores=session.get('permite_ajuste_valores'))
 
 
 @app.route('/api/modelo/<int:modelo_id>/opcoes')
 def get_opcoes_modelo(modelo_id):
+    resp = require_login()
+    if resp: return resp
    
-    if 'user_id' not in session or 'empresa_id' not in session:
-        return jsonify({"erro": "Não autorizado"}), 401
-    
     empresa_id_logada = session['empresa_id']
 
     opcoes = {
@@ -304,11 +457,11 @@ def get_opcoes_modelo(modelo_id):
     
     return jsonify(opcoes)
 
+# --- ENVIAR ORÇAMENTO PADRÃO ---
 @app.route('/api/enviar-orcamento', methods=['POST'])
 def enviar_orcamento():
-
-    if 'user_id' not in session:
-        return jsonify({"erro": "Não autorizado"}), 401
+    resp = require_login()
+    if resp: return resp
 
     dados = request.json
 
@@ -395,10 +548,15 @@ def enviar_orcamento():
         VALOR FINAL ESTIMADO: R$ {dados.get('valor')}
         """
 
+        # Buscar email de contato da empresa
+        cursor.execute("SELECT email_contato_principal FROM empresas WHERE id = %s", (empresa_id_logada,))
+        empresa = cursor.fetchone()
+        email_destino = empresa['email_contato_principal'] if empresa else None
+
         msg = Message(
             subject=f"Novo Orçamento de Avaliação para {dados.get('modelo')}",
             sender=('Sua Calculadora de iPhones', app.config['MAIL_USERNAME']),
-            recipients=['alfredo_gi@hotmail.com'] 
+            recipients=[email_destino] if email_destino else ['alfredo_gi@hotmail.com'] 
         )
         msg.body = corpo_email
         mail.send(msg)
@@ -412,8 +570,8 @@ def enviar_orcamento():
 
 @app.route('/api/modelo/<int:modelo_id>/perguntas')
 def get_perguntas_modelo(modelo_id):
-    if 'user_id' not in session or 'empresa_id' not in session:
-        return jsonify({"erro": "Não autorizado"}), 401
+    resp = require_login()
+    if resp: return resp
 
     empresa_id_logada = session['empresa_id']
     conn = None
@@ -424,35 +582,59 @@ def get_perguntas_modelo(modelo_id):
 
         cursor = conn.cursor(dictionary=True)
 
+        # Busca todas as perguntas de avaliação
         cursor.execute("""
             SELECT 
                 p.id AS pergunta_id,
-                p.texto_pergunta,
-                ir.resposta_que_gera_impacto,
-                ir.valor_do_impacto
+                p.texto_pergunta
             FROM perguntas_avaliacao p
-            JOIN impacto_respostas ir ON p.id = ir.pergunta_id
-            WHERE ir.modelo_id = %s AND ir.empresa_id = %s
             ORDER BY p.id
-        """, (modelo_id, empresa_id_logada))
+        """)
+        
+        todas_perguntas = cursor.fetchall()
+        perguntas = []
 
-        resultados = cursor.fetchall()
-
-        perguntas = {}
-        for row in resultados:
-            pergunta_id = row['pergunta_id']
-            if pergunta_id not in perguntas:
-                perguntas[pergunta_id] = {
-                    'pergunta_id': pergunta_id,
-                    'texto_pergunta': row['texto_pergunta'],
-                    'respostas': []
-                }
-            perguntas[pergunta_id]['respostas'].append({
-                'texto': row['resposta_que_gera_impacto'],
-                'impacto': float(row['valor_do_impacto'])
+        for pergunta in todas_perguntas:
+            pergunta_id = pergunta['pergunta_id']
+            
+            # Busca as respostas existentes para esta pergunta e modelo
+            cursor.execute("""
+                SELECT 
+                    ir.resposta_que_gera_impacto,
+                    ir.valor_do_impacto
+                FROM impacto_respostas ir
+                WHERE ir.pergunta_id = %s AND ir.modelo_id = %s AND ir.empresa_id = %s
+            """, (pergunta_id, modelo_id, empresa_id_logada))
+            
+            respostas_existentes = cursor.fetchall()
+            
+            # Cria um dicionário para facilitar a busca
+            respostas_dict = {r['resposta_que_gera_impacto']: r['valor_do_impacto'] for r in respostas_existentes}
+            
+            # Garante que sempre tenha as duas opções
+            respostas = []
+            
+            # Adiciona resposta "Sim"
+            impacto_sim = respostas_dict.get('Sim', 0.0)
+            respostas.append({
+                'texto': 'Sim',
+                'impacto': float(impacto_sim)
+            })
+            
+            # Adiciona resposta "Não"
+            impacto_nao = respostas_dict.get('Não', 0.0)
+            respostas.append({
+                'texto': 'Não',
+                'impacto': float(impacto_nao)
+            })
+            
+            perguntas.append({
+                'pergunta_id': pergunta_id,
+                'texto_pergunta': pergunta['texto_pergunta'],
+                'respostas': respostas
             })
 
-        return jsonify(list(perguntas.values()))
+        return jsonify(perguntas)
 
     except Exception as e:
         print(f"Erro ao buscar perguntas: {e}")
@@ -462,12 +644,12 @@ def get_perguntas_modelo(modelo_id):
             cursor.close()
             conn.close()
 
+# Exemplo para as principais rotas sensíveis:
+
 @app.route('/admin/ajustes')
 def gerenciar_modelos_admin():
-
-    if 'user_id' not in session or not session.get('is_admin'):
-        flash('Acesso negado. Esta página é apenas para administradores.', 'danger')
-        return redirect(url_for('login'))
+    resp = require_login() or require_admin() or require_empresa_permissao()
+    if resp: return resp
 
     empresa_id_logada = session['empresa_id']
     is_super_admin = (empresa_id_logada == 1) 
@@ -499,102 +681,109 @@ def gerenciar_modelos_admin():
         if conn:
             cursor.close()
             conn.close()
-    return render_template('admin_ajustes.html', 
-                           modelos=modelos_da_empresa, 
-                           is_super_admin=is_super_admin, 
-                           info_empresa=info_empresa)
+    return render_template(
+        'admin_ajustes.html',
+        modelos=modelos_da_empresa,
+        is_super_admin=is_super_admin,
+        info_empresa=info_empresa,
+        is_admin=session.get('is_admin'),
+        empresa_pode_gerir=session.get('empresa_pode_gerir'),
+        permite_link_convidado=session.get('permite_link_convidado'),
+        permite_ajuste_valores=session.get('permite_ajuste_valores')
+    )
 
 @app.route('/admin/editar-modelo/<int:modelo_id>', methods=['GET', 'POST'])
 def editar_modelo_admin(modelo_id):
-   
-    if 'user_id' not in session or not session.get('is_admin'):
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('login'))
+    resp = require_login() or require_admin() or require_empresa_permissao()
+    if resp: return resp
 
-    info_empresa = get_info_empresa_logada()
-    
-    empresa_id_logada = session['empresa_id']
+    empresa_id_logada = session.get('empresa_id')
     conn = None
 
-    if request.method == 'POST':
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-          
-            novo_nome = request.form['nome_modelo']
-            novo_valor_base = request.form['valor_base_novo']
-            
-            cursor.execute(
-                """UPDATE modelos_iphone SET nome_modelo = %s, valor_base_novo = %s
-                   WHERE id = %s AND empresa_id = %s""",
-                (novo_nome, novo_valor_base, modelo_id, empresa_id_logada)
-            )
-           
-            for key, value in request.form.items():
-                if key.startswith('impacto_'):
-                    impacto_id = int(key.split('_')[1])
-                    novo_valor_impacto = value
-                    
-                    cursor.execute(
-                        """UPDATE impacto_respostas SET valor_do_impacto = %s
-                           WHERE id = %s AND empresa_id = %s""",
-                        (novo_valor_impacto, impacto_id, empresa_id_logada)
-                    )
-
-            conn.commit()
-            flash('Modelo e valores atualizados com sucesso!', 'success')
-
-        except mysql.connector.Error as e:
-            if conn:
-                conn.rollback()
-            flash('Ocorreu um erro ao salvar as alterações.', 'danger')
-            print(f"Erro de PostgreSQL ao atualizar: {e}")
-        finally:
-            if conn:
-                cursor.close()
-                conn.close()
-        
-        return redirect(url_for('ajustar_valores_admin'))
-
-    modelo_para_editar = None
-    impactos_do_modelo = []
     try:
         conn = get_db_connection()
+        if not conn:
+            flash("Erro de conexão com o banco de dados.", "danger")
+            return redirect(url_for('gerenciar_modelos_admin'))
+        
         cursor = conn.cursor(dictionary=True)
 
-        cursor.execute("SELECT * FROM modelos_iphone WHERE id = %s AND empresa_id = %s", (modelo_id, empresa_id_logada))
-        modelo_para_editar = cursor.fetchone()
+        # --- LÓGICA PARA SALVAR OS DADOS (MÉTODO POST) ---
+        if request.method == 'POST':
+            # 1. Atualiza os dados principais do modelo
+            novo_nome = request.form.get('nome_modelo')
+            novo_valor_base = request.form.get('valor_base_novo')
+            cursor.execute(
+                "UPDATE modelos_iphone SET nome_modelo = %s, valor_base_novo = %s WHERE id = %s AND empresa_id = %s",
+                (novo_nome, novo_valor_base, modelo_id, empresa_id_logada)
+            )
 
-        if modelo_para_editar:
-            sql_impactos = """
-                SELECT p.texto_pergunta, ir.id as impacto_id, ir.valor_do_impacto
-                FROM impacto_respostas ir
-                JOIN perguntas_avaliacao p ON ir.pergunta_id = p.id
-                WHERE ir.modelo_id = %s AND ir.empresa_id = %s
-                ORDER BY p.id
-            """
-            cursor.execute(sql_impactos, (modelo_id, empresa_id_logada))
-            impactos_do_modelo = cursor.fetchall()
+            # 2. Itera sobre os dados do formulário para encontrar e salvar os valores de impacto
+            for key, value in request.form.items():
+                resposta_texto = None
+                if key.startswith('impacto_sim_'):
+                    pergunta_id = key.replace('impacto_sim_', '')
+                    resposta_texto = 'Sim'
+                elif key.startswith('impacto_nao_'):
+                    pergunta_id = key.replace('impacto_nao_', '')
+                    resposta_texto = 'Não'
+                else:
+                    continue
+                
+                novo_valor_impacto = float(value) if value else 0.0
+
+                cursor.execute(
+                    "UPDATE impacto_respostas SET valor_do_impacto = %s WHERE modelo_id = %s AND pergunta_id = %s AND resposta_que_gera_impacto = %s AND empresa_id = %s",
+                    (novo_valor_impacto, modelo_id, pergunta_id, resposta_texto, empresa_id_logada)
+                )
+
+            conn.commit()
+            flash('Modelo atualizado com sucesso!', 'success')
+            return redirect(url_for('gerenciar_modelos_admin'))
+
+        # --- LÓGICA PARA CARREGAR OS DADOS (MÉTODO GET) ---
         
+        # 1. Busca os dados do modelo APENAS UMA VEZ
+        cursor.execute("SELECT * FROM modelos_iphone WHERE id = %s AND empresa_id = %s", (modelo_id, empresa_id_logada))
+        modelo = cursor.fetchone()
+        if not modelo:
+            flash("Modelo não encontrado.", "danger")
+            return redirect(url_for('gerenciar_modelos_admin'))
+
+        # 2. CONSULTA SQL INTELIGENTE QUE RESOLVE A DUPLICAÇÃO
+        sql_perguntas = """
+            SELECT
+                p.id, p.texto_pergunta,
+                MAX(CASE WHEN ir.resposta_que_gera_impacto = 'Sim' THEN ir.valor_do_impacto END) AS impacto_sim,
+                MAX(CASE WHEN ir.resposta_que_gera_impacto = 'Não' THEN ir.valor_do_impacto END) AS impacto_nao
+            FROM perguntas_avaliacao p
+            LEFT JOIN impacto_respostas ir ON p.id = ir.pergunta_id AND ir.modelo_id = %s AND ir.empresa_id = %s
+            GROUP BY p.id, p.texto_pergunta
+            ORDER BY p.id;
+        """
+        cursor.execute(sql_perguntas, (modelo_id, empresa_id_logada))
+        perguntas_com_impactos = cursor.fetchall()
+
+        return render_template(
+            'editar_modelo.html', 
+            modelo=modelo,                  # Passa o objeto do modelo
+            perguntas=perguntas_com_impactos  # Passa a lista de perguntas únicas
+        )
+
     except mysql.connector.Error as e:
-        flash('Erro ao buscar dados para edição.', 'danger')
-        print(f"Erro de PostgreSQL ao buscar para edição: {e}")
+        if conn: conn.rollback()
+        print(f"ERRO DE MYSQL NA ROTA DE EDIÇÃO: {e}")
+        flash("Ocorreu um erro de banco de dados.", "danger")
+        return redirect(url_for('gerenciar_modelos_admin'))
     finally:
-        if conn:
-            cursor.close()
+        if conn and conn.is_connected():
             conn.close()
-    
-    if modelo_para_editar:
-        return render_template('editar_modelo.html', modelo=modelo_para_editar, impactos=impactos_do_modelo, info_empresa=info_empresa)
-    else:
-        flash('Modelo não encontrado ou não pertence à sua empresa.', 'warning')
-        return redirect(url_for('ajustar_valores_admin'))
+
 
 @app.route('/admin/adicionar-modelo', methods=['GET', 'POST'])
 def adicionar_modelo_admin():
-    if 'user_id' not in session or not session.get('is_admin'):
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('login'))
+    resp = require_login() or require_admin() or require_empresa_permissao()
+    if resp: return resp
 
     empresa_id_logada = session['empresa_id']
 
@@ -692,14 +881,9 @@ def adicionar_modelo_admin():
 
 @app.route('/admin/deletar-modelo/<int:modelo_id>', methods=['POST'])
 def deletar_modelo_admin(modelo_id):
+    resp = require_login() or require_admin() or require_empresa_permissao()
+    if resp: return resp
     
-    if 'user_id' not in session or not session.get('is_admin'):
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('login'))
-    
-    if session.get('empresa_id') != 1:
-        flash('Ação não permitida. Apenas o administrador geral pode deletar modelos.', 'danger')
-        return redirect(url_for('ajustar_valores_admin'))
 
     empresa_id_logada = session.get('empresa_id')
     conn = None
@@ -746,9 +930,8 @@ def deletar_modelo_admin(modelo_id):
 
 @app.route('/admin/usuarios')
 def gerenciar_usuarios_admin():
-    if 'user_id' not in session or not session.get('is_admin'):
-        flash('Acesso negado. Esta página é apenas para administradores.', 'danger')
-        return redirect(url_for('login'))
+    resp = require_login() or require_admin() or require_empresa_permissao()
+    if resp: return resp
 
     info_empresa = get_info_empresa_logada()
     empresa_id_logada = session['empresa_id']
@@ -773,14 +956,21 @@ def gerenciar_usuarios_admin():
             cursor.close()
             conn.close()
 
-    return render_template('admin_usuarios.html', usuarios=usuarios_da_empresa, info_empresa=info_empresa)
+    return render_template(
+        'admin_usuarios.html',
+        usuarios=usuarios_da_empresa,
+        info_empresa=info_empresa,
+        is_admin=session.get('is_admin'),
+        empresa_pode_gerir=session.get('empresa_pode_gerir'),
+        permite_link_convidado=session.get('permite_link_convidado'),
+        permite_ajuste_valores=session.get('permite_ajuste_valores')
+    )
 
 
 @app.route('/admin/adicionar-usuario', methods=['GET', 'POST'])
 def adicionar_usuario_admin():
-    if 'user_id' not in session or not session.get('is_admin'):
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('login'))
+    resp = require_login() or require_admin() or require_empresa_permissao()
+    if resp: return resp
 
     info_empresa = get_info_empresa_logada()
     
@@ -820,9 +1010,8 @@ def adicionar_usuario_admin():
 
 @app.route('/admin/deletar-usuario/<int:usuario_id>', methods=['POST'])
 def deletar_usuario_admin(usuario_id):
-    if 'user_id' not in session or not session.get('is_admin'):
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('login'))
+    resp = require_login() or require_admin() or require_empresa_permissao()
+    if resp: return resp
 
     if usuario_id == session['user_id']:
         flash('Você não pode deletar sua própria conta.', 'danger')
@@ -851,20 +1040,23 @@ def deletar_usuario_admin(usuario_id):
 
 @app.route('/admin')
 def admin_dashboard():
-    if 'user_id' not in session or not session.get('is_admin'):
-        flash('Acesso negado.', 'danger')
-        return redirect(url_for('login'))
+    print('DEBUG SESSION:', dict(session))
+    resp = require_login() or require_admin() or require_empresa_permissao()
+    if resp: return resp
 
     info_empresa = get_info_empresa_logada()
-
-    return render_template('admin_dashboard.html', info_empresa=info_empresa)
+    return render_template(
+        'admin_dashboard.html',
+        info_empresa=info_empresa,
+        is_admin=session.get('is_admin'),
+        empresa_pode_gerir=session.get('empresa_pode_gerir')
+    )
 
 @app.route('/super-admin')
 def super_admin_dashboard():
-
-    if 'user_id' not in session or not session.get('is_admin') or session.get('empresa_id') != 1:
-        flash('Acesso restrito ao Super Administrador.', 'danger')
-        return redirect(url_for('login'))
+    print("Rota /super-admin foi chamada")
+    resp = require_login() or require_super_admin()
+    if resp: return resp
 
     info_empresa = get_info_empresa_logada() 
     empresas_clientes = []
@@ -888,22 +1080,50 @@ def super_admin_dashboard():
 
 @app.route('/super-admin/adicionar-empresa', methods=['GET', 'POST'])
 def adicionar_empresa_super_admin():
-
-    if 'user_id' not in session or not session.get('is_admin') or session.get('empresa_id') != 1:
-        flash('Acesso restrito ao Super Administrador.', 'danger')
-        return redirect(url_for('login'))
+    resp = require_login() or require_super_admin()
+    if resp: return resp
 
     if request.method == 'POST':
 
         nome_empresa = request.form['nome_empresa']
         cnpj = request.form.get('cnpj') 
+        email_contato_principal = request.form.get('email_contato_principal')
         nome_responsavel = request.form['nome_responsavel']
         email_admin = request.form['email_admin'].strip().lower()
         senha_admin = request.form['senha_admin']
         limite_usuarios = request.form['max_usuarios']
 
+        plano_ativo = 'plano_ativo' in request.form
         permite_ajustes = 'permite_ajuste_valores' in request.form
         permite_link = 'permite_link_convidado' in request.form
+        envia_email = 'envia_email_orcamento' in request.form
+        envia_email_link = 'envia_email_orcamento_link' in request.form
+
+        logo_url = None
+        if 'logo_empresa' in request.files:
+            file = request.files['logo_empresa']
+            if file and file.filename:
+                filename = secure_filename(file.filename)
+                extensao = filename.rsplit('.', 1)[-1].lower()
+                tipos_permitidos = {'png', 'jpg', 'jpeg'}
+                tamanho_max = 2 * 1024 * 1024  # 2MB
+                if extensao not in tipos_permitidos:
+                    flash('Apenas arquivos PNG, JPG ou JPEG são permitidos.', 'danger')
+                    return redirect(request.url)
+                file_bytes = file.read()
+                file.seek(0)
+                try:
+                    img = Image.open(BytesIO(file_bytes))
+                    tipo_real = img.format.lower()  # 'jpeg', 'png', etc.
+                except Exception:
+                    tipo_real = None
+                if tipo_real not in tipos_permitidos:
+                    flash('O arquivo enviado não é uma imagem válida.', 'danger')
+                    return redirect(request.url)
+                logos_dir = os.path.join(app.static_folder, 'images', 'logos')
+                os.makedirs(logos_dir, exist_ok=True)
+                file.save(os.path.join(logos_dir, filename))
+                logo_url = f'images/logos/{filename}'
 
         conn = None
         try:
@@ -911,13 +1131,13 @@ def adicionar_empresa_super_admin():
             cursor = conn.cursor(dictionary=True)
 
             sql_insert_empresa = """
-                INSERT INTO empresas (nome_empresa, cnpj, nome_responsavel, email_contato_principal, max_usuarios, permite_ajuste_valores, permite_link_convidado)
-                VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id;
+                INSERT INTO empresas (nome_empresa, cnpj, nome_responsavel, email_contato_principal, max_usuarios, permite_ajuste_valores, permite_link_convidado, envia_email_orcamento, envia_email_orcamento_link, plano_ativo, logo_url)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
             """
             cursor.execute(sql_insert_empresa, (
-                nome_empresa, cnpj, nome_responsavel, email_admin, limite_usuarios, permite_ajustes, permite_link
+                nome_empresa, cnpj, nome_responsavel, email_contato_principal, limite_usuarios, permite_ajustes, permite_link, envia_email, envia_email_link, plano_ativo, logo_url
             ))
-            nova_empresa_id = cursor.fetchone()['id']
+            nova_empresa_id = cursor.lastrowid
             print(f"Empresa '{nome_empresa}' criada com ID: {nova_empresa_id}")
             hash_senha_admin = generate_password_hash(senha_admin)
 
@@ -1006,7 +1226,451 @@ def copiar_dados_mestre_para_empresa(cursor, nova_empresa_id):
 
             cursor.execute(sql_insert, valores_para_inserir)
 
+@app.route('/super-admin/editar-empresa/<int:empresa_id>', methods=['GET', 'POST'])
+def editar_empresa_admin(empresa_id):
+    # Verificação de segurança para garantir que apenas o Super Admin (empresa ID 1) aceda
+    resp = require_login() or require_super_admin()
+    if resp: return resp
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        if request.method == 'POST':
+            # Pega todos os dados do formulário
+            nome_empresa = request.form.get('nome_empresa')
+            cnpj = request.form.get('cnpj')
+            email_contato = request.form.get('email_contato_principal')
+            max_usuarios = request.form.get('max_usuarios', 1, type=int)
+
+            permite_ajustes = int('permite_ajuste_valores' in request.form)
+            permite_link = int('permite_link_convidado' in request.form)
+            envia_email = 'envia_email_orcamento' in request.form
+            envia_email_link = 'envia_email_orcamento_link' in request.form
+            plano_ativo = 'plano_ativo' in request.form
+            
+            # Processa alteração de senha se fornecida
+            nova_senha = request.form.get('nova_senha_admin')
+            confirmar_senha = request.form.get('confirmar_senha_admin')
+            
+            if nova_senha:
+                if nova_senha != confirmar_senha:
+                    flash('As senhas não coincidem!', 'danger')
+                    return redirect(url_for('editar_empresa_admin', empresa_id=empresa_id))
+                
+                if len(nova_senha) < 6:
+                    flash('A senha deve ter pelo menos 6 caracteres!', 'danger')
+                    return redirect(url_for('editar_empresa_admin', empresa_id=empresa_id))
+                
+                # Busca o administrador da empresa
+                cursor.execute("SELECT id FROM usuarios WHERE empresa_id = %s AND is_admin = 1 LIMIT 1", (empresa_id,))
+                admin = cursor.fetchone()
+                
+                if admin:
+                    hash_nova_senha = generate_password_hash(nova_senha)
+                    cursor.execute("UPDATE usuarios SET senha_hash = %s WHERE id = %s", (hash_nova_senha, admin['id']))
+                    flash('Senha do administrador alterada com sucesso!', 'success')
+                else:
+                    flash('Administrador da empresa não encontrado!', 'warning')
+            
+            # Executa o comando UPDATE completo
+            sql_update = """
+                UPDATE empresas SET 
+                    nome_empresa = %s, cnpj = %s, email_contato_principal = %s,
+                    max_usuarios = %s, permite_ajuste_valores = %s, permite_link_convidado = %s,
+                    envia_email_orcamento = %s, envia_email_orcamento_link = %s, plano_ativo = %s
+                WHERE id = %s
+            """
+            cursor.execute(sql_update, (
+                nome_empresa, cnpj, email_contato, max_usuarios, permite_ajustes, 
+                permite_link, envia_email, envia_email_link, plano_ativo, empresa_id
+            ))
+            
+            conn.commit()
+            flash('Empresa atualizada com sucesso!', 'success')
+            if session.get('empresa_id') == empresa_id:
+                session['permite_ajuste_valores'] = int(permite_ajustes)
+                session['permite_link_convidado'] = int(permite_link)
+                print('DEBUG SESSION UPDATE:', dict(session))
+            return redirect(url_for('super_admin_dashboard'))
+
+        # Lógica GET: Busca os dados atuais da empresa para preencher o formulário
+        cursor.execute("SELECT * FROM empresas WHERE id = %s", (empresa_id,))
+        empresa = cursor.fetchone()
+
+        if not empresa:
+            flash('Empresa não encontrada.', 'warning')
+            return redirect(url_for('super_admin_dashboard'))
+
+        return render_template('editar_empresa.html', empresa=empresa)
+
+    except mysql.connector.Error as e:
+        if conn: conn.rollback()
+        flash('Ocorreu um erro ao interagir com o banco de dados.', 'danger')
+    finally:
+        if conn and conn.is_connected():
+            conn.close()
+            
+    return redirect(url_for('super_admin_dashboard'))
+
+# ===== SISTEMA DE LINKS DE CONVITE =====
+
+@app.route('/admin/gerar-link-convite', methods=['GET', 'POST'])
+def gerar_link_convite():
+    """Gera um link de convite único para a empresa logada."""
+    resp = require_login() or require_admin() or require_empresa_permissao()
+    if resp: return resp
+    
+    empresa_id = session['empresa_id']
+    usuario_id = session['user_id']
+    
+    # Verifica se a empresa permite links de convite
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        cursor.execute("SELECT permite_link_convidado FROM empresas WHERE id = %s", (empresa_id,))
+        empresa = cursor.fetchone()
+        
+        if not empresa or not empresa['permite_link_convidado']:
+            flash('Sua empresa não tem permissão para gerar links de convite.', 'danger')
+            return redirect(url_for('admin_dashboard'))
+        
+        if request.method == 'POST':
+            # Gera token único
+            token = secrets.token_urlsafe(32)
+            
+            # Define expiração (30 minutos)
+            data_expiracao = datetime.datetime.now() + datetime.timedelta(minutes=30)
+            
+            # Insere no banco
+            sql_insert = """
+                INSERT INTO links_convidados 
+                (empresa_id, usuario_id, token_unico, data_expiracao) 
+                VALUES (%s, %s, %s, %s)
+            """
+            cursor.execute(sql_insert, (empresa_id, usuario_id, token, data_expiracao))
+            conn.commit()
+            
+            # Gera o link completo
+            link_completo = request.host_url.rstrip('/') + url_for('usar_link_convite', token=token)
+            
+            flash('Link de convite gerado com sucesso! Válido por 30 minutos.', 'success')
+            return redirect(url_for('link_convite_gerado', token=token))
+        
+        return render_template('gerar_link_convite.html')
+        
+    except mysql.connector.Error as e:
+        flash(f'Erro ao gerar link: {e}', 'danger')
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+    
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/link-convite-gerado/<token>')
+def link_convite_gerado(token):
+    resp = require_login() or require_admin() or require_empresa_permissao()
+    if resp: return resp
+    return render_template('link_convite_gerado.html', link=request.host_url.rstrip('/') + url_for('usar_link_convite', token=token), token=token)
+
+@app.route('/convite/<token>', methods=['GET', 'POST'])
+def usar_link_convite(token):
+    """Página para o convidado usar o link e fazer o orçamento."""
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Busca o link no banco
+        cursor.execute("""
+            SELECT lc.*, e.nome_empresa, e.email_contato_principal 
+            FROM links_convidados lc 
+            JOIN empresas e ON lc.empresa_id = e.id 
+            WHERE lc.token_unico = %s
+        """, (token,))
+        link = cursor.fetchone()
+        
+        if not link:
+            flash('Link de convite inválido ou expirado.', 'danger')
+            return redirect(url_for('login'))
+        
+        # Verifica se já foi usado
+        if link['usado']:
+            flash('Este link já foi utilizado.', 'warning')
+            return redirect(url_for('login'))
+        
+        # Verifica se expirou
+        if datetime.datetime.now() > link['data_expiracao']:
+            flash('Este link expirou.', 'warning')
+            return redirect(url_for('login'))
+        
+        if request.method == 'POST':
+            # Salva dados do cliente
+            nome_cliente = request.form.get('nome_cliente')
+            email_cliente = request.form.get('email_cliente')
+            telefone_cliente = request.form.get('telefone_cliente')
+            
+            # Atualiza o link com os dados do cliente
+            cursor.execute("""
+                UPDATE links_convidados 
+                SET nome_cliente = %s, email_cliente = %s, telefone_cliente = %s
+                WHERE token_unico = %s
+            """, (nome_cliente, email_cliente, telefone_cliente, token))
+            conn.commit()
+            
+            # Redireciona para a página de cálculo
+            return redirect(url_for('calcular_convite', token=token))
+        
+        # Busca informações da empresa
+        cursor.execute("SELECT nome_empresa, logo_url FROM empresas WHERE id = %s", (link['empresa_id'],))
+        empresa = cursor.fetchone()
+        
+        return render_template('formulario_convite.html', token=token, empresa=empresa)
+        
+    except mysql.connector.Error as e:
+        flash(f'Erro ao acessar link: {e}', 'danger')
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+    
+    return redirect(url_for('login'))
+
+@app.route('/convite/<token>/calcular', methods=['GET', 'POST'])
+def calcular_convite(token):
+    """Página de cálculo para convidados."""
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Busca o link e verifica se é válido
+        cursor.execute("""
+            SELECT lc.*, e.nome_empresa, e.email_contato_principal 
+            FROM links_convidados lc 
+            JOIN empresas e ON lc.empresa_id = e.id 
+            WHERE lc.token_unico = %s
+        """, (token,))
+        link = cursor.fetchone()
+        
+        if not link or link['usado'] or datetime.datetime.now() > link['data_expiracao']:
+            flash('Link inválido, usado ou expirado.', 'danger')
+            return redirect(url_for('login'))
+        
+        # Busca modelos da empresa
+        cursor.execute("""
+            SELECT id, nome_modelo, imagem_padrao_url 
+            FROM modelos_iphone 
+            WHERE empresa_id = %s 
+            ORDER BY id
+        """, (link['empresa_id'],))
+        modelos = cursor.fetchall()
+        
+        return render_template('calcular_convite.html', token=token, modelos=modelos, link=link)
+        
+    except mysql.connector.Error as e:
+        flash(f'Erro ao carregar dados: {e}', 'danger')
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+    
+    return redirect(url_for('login'))
+
+@app.route('/convite/<token>/api/modelo/<int:modelo_id>/opcoes')
+def get_opcoes_modelo_convite(token, modelo_id):
+    """API para buscar opções do modelo (versão para convidados)."""
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Verifica se o link é válido
+        cursor.execute("SELECT empresa_id FROM links_convidados WHERE token_unico = %s AND usado = FALSE", (token,))
+        link = cursor.fetchone()
+        
+        if not link:
+            return jsonify({"erro": "Link inválido"}), 401
+        
+        empresa_id = link['empresa_id']
+        
+        opcoes = {
+            "modelo_info": None,
+            "cores": [],
+            "armazenamentos": []
+        }
+        
+        # Busca informações do modelo
+        sql_modelo = "SELECT nome_modelo, valor_base_novo FROM modelos_iphone WHERE id = %s AND empresa_id = %s"
+        cursor.execute(sql_modelo, (modelo_id, empresa_id))
+        modelo_info_row = cursor.fetchone()
+        
+        if not modelo_info_row:
+            return jsonify({"erro": "Modelo não encontrado"}), 404
+        
+        opcoes['modelo_info'] = modelo_info_row
+        
+        # Busca cores
+        sql_cores = """
+            SELECT c.id, c.nome_cor, c.codigo_hex, mc.imagem_url 
+            FROM cores c
+            JOIN modelos_cores mc ON c.id = mc.cor_id
+            WHERE mc.modelo_id = %s AND mc.empresa_id = %s
+        """
+        cursor.execute(sql_cores, (modelo_id, empresa_id))
+        opcoes["cores"] = cursor.fetchall()
+        
+        # Busca armazenamentos
+        sql_armazenamentos = """
+            SELECT a.id, a.capacidade_gb, ma.modificador_valor
+            FROM armazenamentos a
+            JOIN modelos_armazenamentos ma ON a.id = ma.armazenamento_id
+            WHERE ma.modelo_id = %s AND ma.empresa_id = %s
+        """
+        cursor.execute(sql_armazenamentos, (modelo_id, empresa_id))
+        opcoes["armazenamentos"] = cursor.fetchall()
+        
+        return jsonify(opcoes)
+        
+    except mysql.connector.Error as e:
+        return jsonify({"erro": "Erro no servidor"}), 500
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+
+# --- ENVIAR ORÇAMENTO VIA LINK ---
+@app.route('/convite/<token>/api/enviar-orcamento', methods=['POST'])
+def enviar_orcamento_convite(token):
+    """Envia orçamento do convidado."""
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Verifica link
+        cursor.execute("""
+            SELECT lc.*, e.nome_empresa, e.email_contato_principal 
+            FROM links_convidados lc 
+            JOIN empresas e ON lc.empresa_id = e.id 
+            WHERE lc.token_unico = %s AND lc.usado = FALSE
+        """, (token,))
+        link = cursor.fetchone()
+        
+        if not link or datetime.datetime.now() > link['data_expiracao']:
+            return jsonify({"erro": "Link inválido ou expirado"}), 401
+        
+        dados = request.json
+        empresa_id = link['empresa_id']
+        
+        # Busca modelo
+        modelo_nome = dados.get('modelo')
+        cursor.execute("""
+            SELECT id, valor_base_novo FROM modelos_iphone 
+            WHERE nome_modelo = %s AND empresa_id = %s
+        """, (modelo_nome, empresa_id))
+        modelo_row = cursor.fetchone()
+        
+        if not modelo_row:
+            return jsonify({"erro": "Modelo não encontrado"}), 404
+        
+        modelo_id = modelo_row['id']
+        valor_base_db = modelo_row['valor_base_novo']
+        
+        # Dados do orçamento
+        nome_cliente = link['nome_cliente']
+        email_cliente = link['email_cliente']
+        telefone_cliente = link['telefone_cliente']
+        cor_selecionada = dados.get('cor', 'N/A')
+        armazenamento_selecionado = dados.get('armazenamento', 'N/A')
+        imei = dados.get('imei', 'N/A')
+        valor_final_calculado = float(dados.get('valor', 0.0))
+        resumo_json = json.dumps(dados.get('resumo', []))
+        
+        # Salva avaliação
+        sql_insert = """
+            INSERT INTO avaliacoes_concluidas (
+                empresa_id, nome_cliente_final, email_cliente_final, telefone_cliente_final,
+                modelo_iphone_id, cor_selecionada, armazenamento_selecionado, imei, 
+                valor_base_calculado, valor_final_calculado, resumo_respostas
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        cursor.execute(sql_insert, (
+            empresa_id, nome_cliente, email_cliente, telefone_cliente,
+            modelo_id, cor_selecionada, armazenamento_selecionado, imei,
+            valor_base_db, valor_final_calculado, resumo_json
+        ))
+        
+        # Marca link como usado
+        cursor.execute("""
+            UPDATE links_convidados 
+            SET usado = TRUE, data_uso = NOW() 
+            WHERE token_unico = %s
+        """, (token,))
+        
+        conn.commit()
+        
+        # Envia email para a empresa
+        email_destino = link['email_contato_principal']
+        if link.get('envia_email_orcamento_link', True):
+            corpo_email = f"""
+            Novo Orçamento via Link de Convite!
+            ------------------------------------
+            Cliente: {nome_cliente}
+            E-mail: {email_cliente}
+            Telefone: {telefone_cliente}
+            
+            Detalhes do Aparelho:
+            - Modelo: {dados.get('modelo')}
+            - Cor: {cor_selecionada}
+            - Armazenamento: {armazenamento_selecionado}
+            - IMEI: {imei}
+            
+            Diagnóstico:
+            """
+            for item in dados.get('resumo', []):
+                if 'pergunta' in item and 'resposta' in item:
+                    corpo_email += f"- {item['pergunta']}: {item['resposta']}\n"
+            
+            corpo_email += f"""
+            ------------------------------------
+            VALOR FINAL ESTIMADO: R$ {dados.get('valor')}
+            """
+            
+            msg = Message(
+                subject=f"Novo Orçamento via Convite - {dados.get('modelo')}",
+                sender=('Sistema de Convites', app.config['MAIL_USERNAME']),
+                recipients=[email_destino]
+            )
+            msg.body = corpo_email
+            mail.send(msg)
+        
+        # Gera link do WhatsApp
+        telefone_empresa = link.get('telefone_cliente', '')  # Você pode adicionar telefone da empresa na tabela
+        mensagem_whatsapp = f"Olá! Gostaria de mais informações sobre o orçamento do {dados.get('modelo')} que acabei de fazer. Valor: R$ {dados.get('valor')}"
+        link_whatsapp = f"https://wa.me/55{telefone_empresa.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')}?text={mensagem_whatsapp}"
+        
+        return jsonify({
+            "mensagem": "Orçamento enviado com sucesso!",
+            "link_whatsapp": link_whatsapp
+        })
+        
+    except mysql.connector.Error as e:
+        if conn: conn.rollback()
+        return jsonify({"erro": f"Erro ao salvar: {e}"}), 500
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+
 if __name__ == '__main__':
+    print("Iniciando correção automática das respostas...")
+    garantir_respostas_completas()
+    print("Correção concluída. Iniciando servidor...")
     app.run(debug=True)
 
 
