@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Ajustar Valores</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_admin.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+    <div class="admin-container">
+        <header>
+            <h1>Painel de Administração</h1>
+            <nav>
+                <a href="{{ url_for('calcular') }}">Ir para o Avaliador</a>
+                <span>|</span>
+                <a href="{{ url_for('gerenciar_usuarios_admin') }}"
+                   class="{% if not (is_admin|int and empresa_pode_gerir|int) %}menu-card-bloqueado{% endif %}"
+                   {% if not (is_admin|int and empresa_pode_gerir|int) %} tabindex="-1" onclick="return false;" {% endif %}>
+                    <span class="lock-icon" {% if is_admin|int and empresa_pode_gerir|int %}style="display:none"{% endif %}>🔒</span>
+                    Gerenciar Usuários
+                </a>
+                <span>|</span>
+                <a href="{{ url_for('logout') }}">Sair</a>
+            </nav>
+        </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <main>
+            <div class="admin-warning-box">
+                <div class="icon">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div class="text-content">
+                    <h3>Atenção: Área de Alto Impacto</h3>
+                    <p>As alterações feitas nesta seção afetam <strong>TODOS</strong> os cálculos de avaliação para sua empresa. Use com extrema cautela, pois as modificações são <strong>permanentes e não podem ser desfeitas</strong>.</p>
+                </div>
+            </div>
+
+            <h2>Gerenciar Modelos de iPhone</h2>
+            <p>Abaixo estão os modelos cadastrados para sua empresa. Clique em "Editar" para alterar os valores ou em "Adicionar" para criar um novo modelo.</p>
+            
+            <div class="actions-header">
+                <a href="{{ url_for('adicionar_modelo_admin') }}" class="btn-adicionar">
+                    <i class="fa-solid fa-plus"></i> Adicionar Novo Modelo
+                </a>
+            </div>
+
+            <div class="admin-table-wrapper">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nome do Modelo</th>
+                            <th>Valor Base (R$)</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for modelo in modelos %}
+                        <tr>
+                            <td>{{ modelo.id }}</td>
+                            <td>{{ modelo.nome_modelo }}</td>
+                            <td>{{ "%.2f"|format(modelo.valor_base_novo|float) }}</td>
+                            <td class="actions-cell">
+                                <a href="{{ url_for('editar_modelo_admin', modelo_id=modelo.id) }}" class="btn-editar">
+                                    <i class="fa-solid fa-pen-to-square"></i> Editar
+                                </a>
+                                {% if is_super_admin %}
+                                    <form method="POST" action="{{ url_for('deletar_modelo_admin', modelo_id=modelo.id) }}" style="display: inline;" onsubmit="return confirm('ATENÇÃO, SUPER ADMIN: Você tem certeza que quer deletar este modelo e todos os seus dados associados permanentemente?');">
+                                        <button type="submit" class="btn-deletar">
+                                            <i class="fa-solid fa-trash-can"></i> Deletar
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4">Nenhum modelo cadastrado para esta empresa.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

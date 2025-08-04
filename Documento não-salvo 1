@@ -1,0 +1,206 @@
+Certo, vamos lá! Primeiramente minha pasta esta assim!
+Projeto iPhone
+    |
+    |
+    frontend
+        |
+        |
+        static
+            |
+            |
+            (imagens de fundo)
+            (logos das empresas)
+            script.js 
+            scriptValor.js
+            style_admin.css
+            style.css
+            styleCadastro.css
+            styleCalcular.css
+        |
+        |
+        templates
+            |
+            |
+            adicionar_modelo.html (tela que admin da empresa tem acesso para adicionar modelos)
+            admin_adicionar_usuario.html (tela que admin da empresa tem acesso para adicionar usuarios da empresa)
+            admin_ajustes.html  (tela que admin da empresa tem acesso para escolher o modelo e ajustar)
+            admin_dashboard.html (tela inicial do admin)
+            admin_usuarios.html (tela que mostra os usuarios ao admin da empresa)
+            calcular.html (tela que lista os modelos de iphones para calculo)
+            editar_modelo.html (tela que pede as informações que quer mudar para o admin da empresa)
+            index.html (login) 
+            super_admin_adicionar_empresa.html (tela super admin (eu) para adicionar novas empresas)
+            super_admin_dashboard.html (tela inicial super admin)
+            (proxima funcao seria os relatorios e estatisticas)
+        |
+        |
+        app.py (codigo geral do backend)
+    |
+    |
+    Projeto-iPhone (ambiente virtual, tive problemas ao criar e tive que utilizar esse nome)
+    Aqui tem alguns arquivos de python (scripts) para modificar/alterar/incluir/ajustar banco de dados, mas quase nao utilizo eles.
+
+
+
+A função de adicionar empresa esta funcionando, porem ainda preciso arrumar a função editar modelo que esta dando um erro no codigo do app.py, criar a funcao do botao Editar Plano/Permissões que fica ao lado de cada empresa no painel super admin, inclusive preciso poder deletar alguma empresa também, além disso ja vou deixar aqui as proximas funções que preciso adicionar também! Preciso que exista um botao para adicionar a logo da empresa na hora de criar a mesma, uma forma de fazer o upload da imagem da logo e ainda preciso que essa logo aparece nas paginas no menu hamburguer que foi feito, tambem preciso que apareça no e-mail e no orçamento! 
+
+Agora vou explicar um pouco do projeto, primeiramente a empresa entra em contato comigo, compra um pacote de uso, digamos que ela escolher ter o pacote completo, então ela tera acesso a: Cacluladora de modelos, com todas as perguntas sobre e o calculo final de quanto aquele modelo iria valer. Ele tabém teria acesso a um botão de link temporario, o que esse link faz? Ele gera um link com um token para que ele envie para o cliente, o cliente mesmo iria fazer o calculo e ao finalizar, o sistema iria enviar automaticamente um e-mail ao e-mail cadastrado da empresa contendo todas as informações desse calculo, alem do nome, telefone e email desse cliente. Esses dados do cliente seriam preenchidos antes de responder as perguntas, isso seria apenas para aquela sessão, não sendo salvas em banco de dados. Além disso, a empresa também teria acesso ao menu de ajustar os modelos, podendo adicionar/remover e alterar valores, alem da foto padrão do modelo, e também acesso aos relatorios e estatisticas sobre os calculos feitos, e-mails enviados, links gerados, etc... Algo bem completo. 
+
+Então basicamente eu tenho um plano de negocios onde existiriam dois planos (esse plano de negocio ainda pode ser discutido, não tenho certeza), o plano basico onde teria a calculadora de iphone, o orçamento e link temporario, e entao o plano profissional, onde teria tudo do plano anterior e mais o painel de admin, onde ele pode adicionar usuarios, remover usuarios, adicionar e remover modelos, ajustar valores dos modelos e ter acesso a relatorios e estatisticas. 
+
+Então eu tenho um painel super admin onde posso adicionar/remover empresas e controlar o que cada uma pode ou não fazer, nesse caso eu preciso ter opções para essas funções sendo elas: link temporaririo, orçamento, email, ajustar modelos, adicionar usuarios (com limite dito por mim na hora), e ter acesso aos relatorios e estatisticas. 
+
+No momento eu estou com o erro 
+
+
+    File "/home/alfredo/Área de trabalho/Projeto iPhone/frontend/app.py", line 528, in editar_modelo_admin
+
+    return render_template('editar_modelo.html', modelo=modelo_para_editar, impactos=impactos_do_modelo, info_empresa=info_empresa)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "/home/alfredo/Área de trabalho/Projeto iPhone/Projeto-iPhone/lib/python3.12/site-packages/flask/templating.py", line 150, in render_template
+
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "/home/alfredo/Área de trabalho/Projeto iPhone/Projeto-iPhone/lib/python3.12/site-packages/flask/templating.py", line 131, in _render
+
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "/home/alfredo/Área de trabalho/Projeto iPhone/Projeto-iPhone/lib/python3.12/site-packages/jinja2/environment.py", line 1295, in render
+
+    self.environment.handle_exception()
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "/home/alfredo/Área de trabalho/Projeto iPhone/Projeto-iPhone/lib/python3.12/site-packages/jinja2/environment.py", line 942, in handle_exception
+
+    raise rewrite_traceback_stack(source=source)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "/home/alfredo/Área de trabalho/Projeto iPhone/frontend/templates/editar_modelo.html", line 14, in top-level template code
+
+    <a href="{{ url_for('editar_modelo_admin') }}">Voltar para a Lista</a>
+
+    File "/home/alfredo/Área de trabalho/Projeto iPhone/Projeto-iPhone/lib/python3.12/site-packages/flask/app.py", line 1121, in url_for
+
+    return self.handle_url_build_error(error, endpoint, values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    File "/home/alfredo/Área de trabalho/Projeto iPhone/Projeto-iPhone/lib/python3.12/site-packages/flask/app.py", line 1110, in url_for
+
+    rv = url_adapter.build(  # type: ignore[union-attr]
+         
+
+    File "/home/alfredo/Área de trabalho/Projeto iPhone/Projeto-iPhone/lib/python3.12/site-packages/werkzeug/routing/map.py", line 924, in build
+
+    raise BuildError(endpoint, values, method, self)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'editar_modelo_admin'. Did you forget to specify values ['modelo_id']?
+
+e preciso corrigir. 
+
+No momento, o que está funcional é: o calculo dos iphones, o envio de e-mail, o orçamento impresso, o ajuste de modelos quando o usuario é admin (que no caso tem esse erro acima), o ajuste de usuarios quando o usuario é admin, o painel super admin para adicionar empresa (ainda falta poder editar/remover) mas ao adicionar a empresa ja tenho a opção de criar a empresa como admin ou não (que no caso teria acesso aos ajustes de modelos e adicionar usuarios), porem ainda não consigo editar as empresas pois o bota esta sem função. 
+
+Então o que falta fazer é adicionar a logo às empresas, criar o link temporario, adicionar logo nos orçamentos e email, adicionar as opções de habilitado/desabilitado para empresas no painel super admin (ao criar uma nova empresa) e adicionar a função de editar/deletar empresa no painel super admin. No momento estou utilizando banco de dados postgre.
+
+
+Preciso que tudo seja feito com calma, de forma simples e direta ao ponto para criar essas funções e deixar o sistema redondo, dessa vez com codigos prontos e ajustados para meu projeto. 
+
+Trecho do codigo do erro acima: 
+
+@app.route('/admin/editar-modelo/<int:modelo_id>', methods=['GET', 'POST'])
+def editar_modelo_admin(modelo_id):
+   
+    if 'user_id' not in session or not session.get('is_admin'):
+        flash('Acesso negado.', 'danger')
+        return redirect(url_for('login'))
+
+    info_empresa = get_info_empresa_logada()
+    
+    empresa_id_logada = session['empresa_id']
+    conn = None
+
+    if request.method == 'POST':
+        try:
+            conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
+            cursor = conn.cursor()
+          
+            novo_nome = request.form['nome_modelo']
+            novo_valor_base = request.form['valor_base_novo']
+            
+            cursor.execute(
+                """UPDATE modelos_iphone SET nome_modelo = %s, valor_base_novo = %s
+                   WHERE id = %s AND empresa_id = %s""",
+                (novo_nome, novo_valor_base, modelo_id, empresa_id_logada)
+            )
+           
+            for key, value in request.form.items():
+                if key.startswith('impacto_'):
+                    impacto_id = int(key.split('_')[1])
+                    novo_valor_impacto = value
+                    
+                    cursor.execute(
+                        """UPDATE impacto_respostas SET valor_do_impacto = %s
+                           WHERE id = %s AND empresa_id = %s""",
+                        (novo_valor_impacto, impacto_id, empresa_id_logada)
+                    )
+
+            conn.commit()
+            flash('Modelo e valores atualizados com sucesso!', 'success')
+
+        except psycopg2.Error as e:
+            if conn:
+                conn.rollback()
+            flash('Ocorreu um erro ao salvar as alterações.', 'danger')
+            print(f"Erro de PostgreSQL ao atualizar: {e}")
+        finally:
+            if conn:
+                cursor.close()
+                conn.close()
+        
+        return redirect(url_for('ajustar_valores_admin'))
+
+    modelo_para_editar = None
+    impactos_do_modelo = []
+    try:
+        conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST, port=DB_PORT)
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+        cursor.execute("SELECT * FROM modelos_iphone WHERE id = %s AND empresa_id = %s", (modelo_id, empresa_id_logada))
+        modelo_para_editar = cursor.fetchone()
+
+        if modelo_para_editar:
+            sql_impactos = """
+                SELECT p.texto_pergunta, ir.id as impacto_id, ir.valor_do_impacto
+                FROM impacto_respostas ir
+                JOIN perguntas_avaliacao p ON ir.pergunta_id = p.id
+                WHERE ir.modelo_id = %s AND ir.empresa_id = %s
+                ORDER BY p.id
+            """
+            cursor.execute(sql_impactos, (modelo_id, empresa_id_logada))
+            impactos_do_modelo = cursor.fetchall()
+        
+    except psycopg2.Error as e:
+        flash('Erro ao buscar dados para edição.', 'danger')
+        print(f"Erro de PostgreSQL ao buscar para edição: {e}")
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+    
+    if modelo_para_editar:
+        return render_template('editar_modelo.html', modelo=modelo_para_editar, impactos=impactos_do_modelo, info_empresa=info_empresa)
+    else:
+        flash('Modelo não encontrado ou não pertence à sua empresa.', 'warning')
+        return redirect(url_for('ajustar_valores_admin'))
+
+
+
+
+
+
+
+
+

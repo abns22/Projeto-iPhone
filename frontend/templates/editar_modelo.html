@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editando: {{ modelo['nome_modelo'] }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_admin.css') }}">
+</head>
+<body>
+    <div class="admin-container">
+        <header>
+            <h1>Editando: {{ modelo['nome_modelo'] }}</h1>
+            <nav>
+                <a href="{{ url_for('gerenciar_modelos_admin') }}">Voltar para a Lista</a>
+            </nav>
+        </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <main>
+            <form method="POST">
+                <div class="admin-warning-box">
+            <div class="icon">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div class="text-content">
+                <h3>Atenção: Área de Alto Impacto</h3>
+                <p>As alterações feitas nesta seção afetam <strong>TODOS</strong> os cálculos de avaliação para sua empresa. Use com extrema cautela, pois as modificações são <strong>permanentes e não podem ser desfeitas</strong>. 
+                Tenha certeza de alterar apenas os campos com <strong>VALORES NEGATIVOS</strong>.</p>
+            </div>
+            </div>
+                <main>
+    <form method="POST" action="{{ url_for('editar_modelo_admin', modelo_id=modelo.id) }}">
+        
+        <div class="form-section">
+            <h2>Valores Base</h2>
+            <div class="form-group">
+                <label for="nome_modelo">Nome do Modelo:</label>
+                <input type="text" id="nome_modelo" name="nome_modelo" value="{{ modelo.nome_modelo }}" required>
+            </div>
+            <div class="form-group">
+                <label for="valor_base_novo">Valor Base (R$):</label>
+                <input type="number" step="0.01" id="valor_base_novo" name="valor_base_novo" value="{{ '%.2f'|format(modelo.valor_base_novo|float) }}" required>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h2>Valores de Impacto (Descontos)</h2>
+            <p>Ajuste os valores de desconto para cada condição. Use valores negativos (ex: -250.00).</p>
+            
+            <div class="impacto-grid">
+                {% for pergunta in perguntas %}
+                    <div class="form-group-impacto">
+                        <p class="pergunta-texto">{{ pergunta.texto_pergunta }}</p>
+                        
+                        <div class="impacto-input-group">
+                            <label for="impacto_sim_{{ pergunta.id }}">Impacto "Sim":</label>
+                            <input type="number" step="0.01" 
+                                   name="impacto_sim_{{ pergunta.id }}" 
+                                   value="{{ '%.2f'|format(pergunta.impacto_sim|float) if pergunta.impacto_sim is not none else '0.00' }}">
+                        </div>
+
+                        <div class="impacto-input-group">
+                             <label for="impacto_nao_{{ pergunta.id }}">Impacto "Não":</label>
+                             <input type="number" step="0.01" 
+                                    name="impacto_nao_{{ pergunta.id }}"
+                                    value="{{ '%.2f'|format(pergunta.impacto_nao|float) if pergunta.impacto_nao is not none else '0.00' }}">
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <a href="{{ url_for('gerenciar_modelos_admin') }}" class="btn-cancelar">Cancelar</a>
+            <button type="submit" class="btn-editar">Salvar Alterações</button>
+        </div>
+    </form>
+</main>
+
+    </div>
+</body>

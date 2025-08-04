@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adicionar Novo Usuário</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_admin.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+    <div class="admin-container">
+        <header>
+            <h1>Adicionar Novo Usuário</h1>
+            <nav>
+                <a href="{{ url_for('gerenciar_usuarios_admin') }}">Voltar para a Lista</a>
+            </nav>
+        </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <main>
+            <div class="admin-warning-box">
+                <div class="icon">
+                    <i class="fa-solid fa-user-plus"></i> </div>
+                <div class="text-content">
+                    <h3>Atenção ao Criar Usuários</h3>
+                    <p>Você está prestes a criar um novo usuário para sua empresa. Verifique se o e-mail está correto e defina uma senha forte. Lembre-se que conceder permissões de <strong>Administrador</strong> dará a este usuário acesso para gerenciar modelos e valores.</p>
+                </div>
+            </div>
+
+            <form method="POST" class="form-section">
+                <h2>Dados do Novo Usuário</h2>
+                <div class="form-group">
+                    <label for="nome_completo">Nome Completo</label>
+                    <input type="text" id="nome_completo" name="nome_completo" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">E-mail (será usado para login)</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="telefone">Telefone</label>
+                    <input type="tel" id="telefone" name="telefone">
+                </div>
+                <div class="form-group">
+                    <label for="senha">Senha Temporária</label>
+                    <input type="password" id="senha" name="senha" required>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="is_admin" value="true">
+                        Tornar este usuário um Administrador da Empresa?
+                    </label>
+                    <p style="font-size: 0.8em; color: #666;">(Administradores podem gerenciar modelos, valores e outros usuários).</p>
+                </div>
+                <div class="form-actions">
+    <a href="{{ url_for('gerenciar_usuarios_admin') }}" class="btn-cancelar">Cancelar</a>
+    <button type="submit" class="btn-adicionar">Salvar Usuário</button>
+</div>
+            </form>
+        </main>
+    </div>
+</body>
+</html>

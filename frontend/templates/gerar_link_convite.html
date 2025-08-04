@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerar Link de Convite</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_admin.css') }}">
+    <style>
+        .form-section {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+            padding: 32px 24px;
+            max-width: 500px;
+            margin: 40px auto;
+        }
+        .form-section h2 {
+            color: #1a1a1a;
+            margin-bottom: 18px;
+            font-size: 2rem;
+        }
+        .form-section p {
+            color: #555;
+            margin-bottom: 18px;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 12px 28px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        .info-box {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 18px 16px;
+            margin-top: 28px;
+            color: #333;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            font-size: 1.1rem;
+            color: #007bff;
+        }
+        .info-box ul {
+            margin: 0;
+            padding-left: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <header>
+            <h1 style="color:#007bff;">Gerar Link de Convite</h1>
+            <nav>
+                <a href="{{ url_for('admin_dashboard') }}" class="btn-primary" style="background:#6c757d;">Voltar para o Dashboard</a>
+            </nav>
+        </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <main>
+            <div class="form-section">
+                <h2>Gerar Novo Link de Convite</h2>
+                <p>Este link será válido por <strong>30 minutos</strong> e pode ser usado apenas uma vez.</p>
+                
+                <form method="POST" class="admin-form">
+                    <div class="form-group" style="text-align:center;">
+                        <button type="submit" class="btn-primary">Gerar Link de Convite</button>
+                    </div>
+                </form>
+                
+                <div class="info-box">
+                    <h3>Como funciona:</h3>
+                    <ul>
+                        <li>O link será único e seguro</li>
+                        <li>Válido por 30 minutos</li>
+                        <li>Pode ser usado apenas uma vez</li>
+                        <li>O convidado preencherá seus dados</li>
+                        <li>Fará o orçamento do iPhone</li>
+                        <li>Você receberá o orçamento por email</li>
+                        <li>O convidado receberá link do WhatsApp</li>
+                    </ul>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html> 

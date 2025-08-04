@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard do Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_admin.css') }}">
+</head>
+<body>
+    <div class="admin-container">
+        <header style="display:flex; align-items:center; gap:12px;">
+            {% set info_empresa = info_empresa or session.get('info_empresa') %}
+            {% if info_empresa and info_empresa.logo_url %}
+                <img src="{{ url_for('static', filename=info_empresa.logo_url) }}" alt="Logo" style="height:64px; width:64px; object-fit:contain; border-radius:8px; background:#fff; box-shadow:0 1px 6px rgba(0,0,0,0.07);">
+            {% endif %}
+            <div>
+                <h1 style="margin:0; font-size:1.5rem; color:#007bff;">
+                    {{ info_empresa.nome_empresa if info_empresa else 'Dashboard de Administração' }}
+                    {% if info_empresa and (info_empresa.permite_ajuste_valores or info_empresa.permite_link_convidado or info_empresa.envia_email_orcamento or info_empresa.envia_email_orcamento_link) and info_empresa.plano_ativo %}
+                        <span style="font-size:0.9em; color:#e67e22; font-weight:700; margin-left:10px;">ADMIN</span>
+                    {% endif %}
+                </h1>
+                <nav>
+                    <a href="{{ url_for('calcular') }}" style="margin-right:18px; color:#007bff; font-weight:500; text-decoration:underline;">&larr; Voltar para Avaliador</a>
+                    <a href="{{ url_for('logout') }}">Sair</a>
+                </nav>
+            </div>
+        </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        <main>
+            <h2>Bem-vindo, {{ session.get('nome_completo') }}!</h2>
+            <p>Selecione uma das opções abaixo para gerenciar os dados da sua empresa.</p>
+            <div class="admin-menu-grid">
+                <a href="{{ url_for('gerenciar_modelos_admin') }}"
+                   class="admin-menu-card{% if not (is_admin|int and empresa_pode_gerir|int) %} menu-card-bloqueado{% endif %}"
+                   {% if not (is_admin|int and empresa_pode_gerir|int) %} tabindex="-1" onclick="return false;" {% endif %}>
+                    <span class="lock-icon" {% if is_admin|int and empresa_pode_gerir|int %}style="display:none"{% endif %}>🔒</span>
+                    <h3>Gerenciar Modelos</h3>
+                    <p>Adicione, edite ou remova modelos de iPhone e seus valores.</p>
+                </a>
+                <a href="{{ url_for('gerenciar_usuarios_admin') }}"
+                   class="admin-menu-card{% if not (is_admin|int and empresa_pode_gerir|int) %} menu-card-bloqueado{% endif %}"
+                   {% if not (is_admin|int and empresa_pode_gerir|int) %} tabindex="-1" onclick="return false;" {% endif %}>
+                    <span class="lock-icon" {% if is_admin|int and empresa_pode_gerir|int %}style="display:none"{% endif %}>🔒</span>
+                    <h3>Gerenciar Usuários</h3>
+                    <p>Adicione ou remova usuários (funcionários) da sua equipe.</p>
+                </a>
+                <a href="{{ url_for('gerar_link_convite') }}"
+                   class="admin-menu-card{% if not (is_admin|int and empresa_pode_gerir|int) %} menu-card-bloqueado{% endif %}"
+                   {% if not (is_admin|int and empresa_pode_gerir|int) %} tabindex="-1" onclick="return false;" {% endif %}>
+                    <span class="lock-icon" {% if is_admin|int and empresa_pode_gerir|int %}style="display:none"{% endif %}>🔒</span>
+                    <h3>Gerar Link de Convite</h3>
+                    <p>Crie links únicos para clientes fazerem orçamentos sem login.</p>
+                </a>
+                <div class="admin-menu-card disabled">
+                    <h3>Relatórios</h3>
+                    <p>Visualize estatísticas de avaliações (em breve).</p>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

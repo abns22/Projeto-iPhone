@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Breakdown</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+    <div class="login-page-container">
+        <div class="login-card">
+            
+            <div class="logo-container">
+                <a href="{{ url_for('login') }}">
+                    <img src="{{ url_for('static', filename='images-removebg-preview.png') }}" alt="Logo da Empresa">
+                </a>
+            </div>
+
+            <h2>Bem-vindo de Volta!</h2>
+            <p class="subtitle">Faça login para avaliar seu aparelho.</p>
+
+            {% if erro %}
+                <div class="alert alert-danger">{{ erro }}</div>
+            {% endif %}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form class="login-form" method="POST" action="{{ url_for('login') }}">
+                <div class="input-group">
+                    <i class="fa-solid fa-envelope"></i>
+                    <input type="text" name="usuario" placeholder="Seu e-mail" required>
+                </div>
+                <div class="input-group">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" name="senha" placeholder="Sua senha" required>
+                </div>
+                <button type="submit" class="btn-login">Entrar</button>
+            </form>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

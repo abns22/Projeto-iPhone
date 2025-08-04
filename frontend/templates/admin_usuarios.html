@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Usuários</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_admin.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+    <div class="admin-container">
+        <header>
+            <h1>Painel de Administração</h1>
+            <nav>
+                <a href="{{ url_for('calcular') }}">Ir para o Avaliador</a>
+                <span>|</span>
+                <a href="{{ url_for('gerenciar_modelos_admin') }}"
+                   class="{% if not (is_admin|int and empresa_pode_gerir|int) %}menu-card-bloqueado{% endif %}"
+                   {% if not (is_admin|int and empresa_pode_gerir|int) %} tabindex="-1" onclick="return false;" {% endif %}>
+                    <span class="lock-icon" {% if is_admin|int and empresa_pode_gerir|int %}style="display:none"{% endif %}>🔒</span>
+                    Gerenciar Modelos
+                </a>
+                <span>|</span>
+                <a href="{{ url_for('logout') }}">Sair</a>
+            </nav>
+        </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <main>
+            <h2>Gerenciar Usuários</h2>
+            <p>Adicione ou remova os usuários (funcionários) que podem acessar o sistema da sua empresa.</p>
+            
+            <a href="{{ url_for('adicionar_usuario_admin') }}" class="btn btn-adicionar">
+                <i class="fas fa-plus"></i> Adicionar Novo Usuário
+            </a>
+
+            <div class="admin-table-wrapper">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Nome Completo</th>
+                            <th>E-mail (Login)</th>
+                            <th>É Admin?</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for usuario in usuarios %}
+                        <tr>
+                            <td>{{ usuario.nome_completo }}</td>
+                            <td>{{ usuario.email }}</td>
+                            <td>{{ 'Sim' if usuario.is_admin else 'Não' }}</td>
+                            <td class="actions-cell">
+                                <form method="POST" action="{{ url_for('deletar_usuario_admin', usuario_id=usuario.id) }}" onsubmit="return confirm('Tem certeza que quer deletar o usuário {{ usuario.nome_completo }}?');">
+                                    <button type="submit" class="btn btn-deletar">
+                                        <i class="fas fa-trash-can"></i> Deletar
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4">Nenhum usuário cadastrado para esta empresa.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

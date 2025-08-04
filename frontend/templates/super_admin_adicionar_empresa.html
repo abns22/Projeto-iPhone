@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin - Adicionar Empresa</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_admin.css') }}">
+</head>
+<body>
+    <div class="admin-container">
+        <header>
+            <h1>Adicionar Nova Empresa Cliente</h1>
+            <nav>
+                <a href="{{ url_for('super_admin_dashboard') }}">Voltar para o Dashboard</a>
+            </nav>
+        </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <main>
+            <form method="POST" enctype="multipart/form-data" class="form-section">
+                <div class="form-section">
+                    <h2>Dados da Nova Empresa</h2>
+                    <div class="form-group">
+                        <label for="nome_empresa">Nome da Empresa</label>
+                        <input type="text" id="nome_empresa" name="nome_empresa" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cnpj">CNPJ (opcional)</label>
+                        <input type="text" id="cnpj" name="cnpj">
+                    </div>
+                    <div class="form-group">
+                        <label for="email_contato_principal">E-mail de Contato <span style="color:#e67e22; font-size:0.95em;">(será utilizado para envio dos orçamentos)</span></label>
+                        <input type="email" id="email_contato_principal" name="email_contato_principal">
+                        <small style="color:#888;">Este e-mail será utilizado para receber os orçamentos enviados pelo sistema, tanto pelo orçamento padrão quanto pelo link de convidado.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="logo_empresa">Logo da Empresa (opcional)</label>
+                        <input type="file" id="logo_empresa" name="logo_empresa" accept="image/*">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2>Dados do Usuário Administrador (Dono da Conta)</h2>
+                    <div class="form-group">
+                        <label for="nome_responsavel">Nome do Responsável</label>
+                        <input type="text" id="nome_responsavel" name="nome_responsavel" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email_admin">E-mail do Admin (será o login)</label>
+                        <input type="email" id="email_admin" name="email_admin" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="senha_admin">Senha Inicial para o Admin</label>
+                        <input type="password" id="senha_admin" name="senha_admin" required>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h2>Plano e Permissões</h2>
+                    <div class="form-group">
+                        <label for="max_usuarios">Limite de Usuários</label>
+                        <input type="number" id="max_usuarios" name="max_usuarios" value="3" min="1" required>
+                    </div>
+                    
+                    <div class="form-group-checkbox">
+                        <input type="checkbox" id="plano_ativo" name="plano_ativo" value="true" checked>
+                        <label for="plano_ativo">Plano Ativo</label>
+                    </div>
+                    
+                    <div class="form-group-checkbox">
+                        <input type="checkbox" id="permite_ajuste_valores" name="permite_ajuste_valores" value="true">
+                        <label for="permite_ajuste_valores">Pode ajustar valores de avaliação?</label>
+                    </div>
+                    
+                    <div class="form-group-checkbox">
+                        <input type="checkbox" id="permite_link_convidado" name="permite_link_convidado" value="true">
+                        <label for="permite_link_convidado">Pode gerar links para clientes?</label>
+                    </div>
+                    
+                    <div class="form-group-checkbox">
+                        <input type="checkbox" id="envia_email_orcamento" name="envia_email_orcamento" value="true" checked>
+                        <label for="envia_email_orcamento">Receber e-mail ao finalizar orçamento na loja</label>
+                    </div>
+                    <div class="form-group-checkbox">
+                        <input type="checkbox" id="envia_email_orcamento_link" name="envia_email_orcamento_link" value="true" checked>
+                        <label for="envia_email_orcamento_link">Receber e-mail ao finalizar orçamento via link de convidado</label>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <a href="{{ url_for('super_admin_dashboard') }}" class="btn-cancelar">Cancelar</a>
+                    <button type="submit" class="btn-adicionar">Salvar e Criar Empresa</button>
+                </div>
+            </form>
+        </main>
+    </div>
+</body>
+</html>

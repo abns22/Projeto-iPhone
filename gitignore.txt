@@ -1,0 +1,90 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+bin/
+include/
+lib64/
+pyvenv.cfg
+
+# Flask
+instance/
+.webassets-cache
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Backup files
+*.bak
+*.backup
+
+# Token files
+token
+token2
+
+# Document files
+*.docx
+*.doc
+"Documento não-salvo 1"
+"Sem título 1.docx"
+
+# Images that might be temporary
+static/images/logos/

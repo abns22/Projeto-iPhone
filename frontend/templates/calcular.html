@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calcular Pagamento</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styleCalcular.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+    <body data-nome-usuario="{{ usuario['nome_completo'] }}" data-telefone-usuario="{{ usuario['telefone'] }}"></body>
+    <div class="dashboard-layout">
+        <aside class="sidebar" id="meuSidebar">
+            <div class="sidebar-header" style="display:flex; flex-direction:column; align-items:center; gap:10px; padding:22px 0 12px 0;">
+                {% set info_empresa = info_empresa or session.get('info_empresa') %}
+                {% if info_empresa and info_empresa.logo_url %}
+                    <img src="{{ url_for('static', filename=info_empresa.logo_url) }}" alt="Logo" style="height:72px; width:72px; object-fit:contain; border-radius:16px; background:#fff; box-shadow:0 1px 8px rgba(0,0,0,0.10); margin-bottom:10px;">
+                {% endif %}
+                <span style="font-size:1.15rem; color:#007bff; font-weight:700; margin-bottom:2px; line-height:1.2; text-align:center;">{{ info_empresa.nome_empresa if info_empresa else 'Menu' }}</span>
+                {% if session.get('is_admin') %}
+                <span style="color:#444; font-size:1.08rem; margin-top:4px; text-align:center; letter-spacing:3px; font-weight:700; font-family:'Segoe UI', 'Montserrat', 'Arial', sans-serif; text-transform:uppercase;">ADMIN</span>
+                {% endif %}
+            </div>
+            <ul class="sidebar-nav">
+                {% if session.get('empresa_id') == 1 %}
+                <li><a href="{{ url_for('calcular') }}" class="menu-botao-azul"><i class="fa-solid fa-mobile-screen-button"></i> Avaliador de iPhones</a></li>
+                {% set is_super_admin = True %}
+                <li><a href="{{ url_for('admin_dashboard') }}"
+                       class=""
+                       >
+                    <span class="lock-icon" style="display:none">🔒</span>
+                    <i class="fa-solid fa-gauge"></i> Painel de Administração
+                </a></li>
+                <li><a href="{{ url_for('gerar_link_convite') }}"
+                       class=""
+                       >
+                    <span class="lock-icon" style="display:none">🔒</span>
+                    <i class="fa-solid fa-link"></i> Gerar Link de Convite
+                </a></li>
+                <li><a href="{{ url_for('gerenciar_modelos_admin') }}"
+                       class=""
+                       >
+                    <span class="lock-icon" style="display:none">🔒</span>
+                    <i class="fa-solid fa-cubes"></i> Gerenciar Modelos
+                </a></li>
+                <li><a href="{{ url_for('gerenciar_usuarios_admin') }}"
+                       class=""
+                       >
+                    <span class="lock-icon" style="display:none">🔒</span>
+                    <i class="fa-solid fa-users"></i> Gerenciar Usuários
+                </a></li>
+                <li><a href="{{ url_for('logout') }}" style="color:#fff; background:rgba(220,53,69,0.8); border-radius:6px; padding:8px 12px; margin:6px 0; display:block; text-align:center; font-weight:bold; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);"><i class="fa-solid fa-right-from-bracket"></i> Sair</a></li>
+                {% else %}
+                {% if session.get('plano_ativo', True) %}
+                <li><a href="{{ url_for('calcular') }}" class="menu-botao-azul"><i class="fa-solid fa-mobile-screen-button"></i> Avaliador de iPhones</a></li>
+                {% endif %}
+                {% set is_super_admin = False %}
+                <li><a href="{{ url_for('admin_dashboard') }}"
+                       class="{% if not (is_super_admin or (session.get('is_admin')|int and session.get('permite_ajuste_valores')|int)) %}menu-card-bloqueado{% endif %}"
+                       {% if not (is_super_admin or (session.get('is_admin')|int and session.get('permite_ajuste_valores')|int)) %} tabindex="-1" onclick="return false;" {% endif %}>
+                    <span class="lock-icon" {% if is_super_admin or (session.get('is_admin')|int and session.get('permite_ajuste_valores')|int) %}style="display:none"{% endif %}>🔒</span>
+                    <i class="fa-solid fa-gauge"></i> Painel de Administração
+                </a></li>
+                <li><a href="{{ url_for('gerar_link_convite') }}"
+                       class="{% if not (is_super_admin or (session.get('is_admin')|int and session.get('permite_link_convidado')|int)) %}menu-card-bloqueado{% endif %}"
+                       {% if not (is_super_admin or (session.get('is_admin')|int and session.get('permite_link_convidado')|int)) %} tabindex="-1" onclick="return false;" {% endif %}>
+                    <span class="lock-icon" {% if is_super_admin or (session.get('is_admin')|int and session.get('permite_link_convidado')|int) %}style="display:none"{% endif %}>🔒</span>
+                    <i class="fa-solid fa-link"></i> Gerar Link de Convite
+                </a></li>
+                <li><a href="{{ url_for('gerenciar_modelos_admin') }}"
+                       class="{% if not (is_super_admin or (session.get('is_admin')|int and session.get('permite_ajuste_valores')|int)) %}menu-card-bloqueado{% endif %}"
+                       {% if not (is_super_admin or (session.get('is_admin')|int and session.get('permite_ajuste_valores')|int)) %} tabindex="-1" onclick="return false;" {% endif %}>
+                    <span class="lock-icon" {% if is_super_admin or (session.get('is_admin')|int and session.get('permite_ajuste_valores')|int) %}style="display:none"{% endif %}>🔒</span>
+                    <i class="fa-solid fa-cubes"></i> Gerenciar Modelos
+                </a></li>
+                <li><a href="{{ url_for('gerenciar_usuarios_admin') }}"
+                       class="{% if not (is_super_admin or (session.get('is_admin')|int and session.get('permite_ajuste_valores')|int)) %}menu-card-bloqueado{% endif %}"
+                       {% if not (is_super_admin or (session.get('is_admin')|int and session.get('permite_ajuste_valores')|int)) %} tabindex="-1" onclick="return false;" {% endif %}>
+                    <span class="lock-icon" {% if is_super_admin or (session.get('is_admin')|int and session.get('permite_ajuste_valores')|int) %}style="display:none"{% endif %}>🔒</span>
+                    <i class="fa-solid fa-users"></i> Gerenciar Usuários
+                </a></li>
+                {% if session.get('envia_email_orcamento') %}
+                <!-- Exemplo: botão para relatórios ou envio de email, se desejar -->
+                {% endif %}
+                <li><a href="{{ url_for('logout') }}" style="color:#fff; background:rgba(220,53,69,0.8); border-radius:6px; padding:8px 12px; margin:6px 0; display:block; text-align:center; font-weight:bold; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);"><i class="fa-solid fa-right-from-bracket"></i> Sair</a></li>
+                {% endif %}
+                </ul>
+        </aside>
+
+        <main class="main-content" id="meuConteudoPrincipal">
+            <header class="main-header">
+                <button id="hamburgerBtn" class="hamburger-button">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </header>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <div class="page-content">
+                <h2>Selecione o Modelo do seu iPhone</h2>
+                <p>Escolha o modelo do aparelho que você quer usar como parte do pagamento.</p>
+                
+                <div class="grid-modelos">
+                    {% for modelo in modelos %}
+                    <div class="card-modelo" data-modelo-id="{{ modelo['id'] }}">
+                        <img src="{{ url_for('static', filename=modelo['imagem_padrao_url']) }}" alt="{{ modelo['nome_modelo'] }}">
+                    <h3>{{ modelo['nome_modelo'] }}</h3>
+
+                    <div class="conteudo-expandido">
+                        <p>Selecione a cor</p>
+                        <div class="opcoes-cor" id="opcoes-cor-{{ modelo['id'] }}"></div>
+                        <p>Selecione o armazenamento</p>
+                        <div class="opcoes-armazenamento" id="opcoes-armazenamento-{{ modelo['id'] }}"></div>
+                <button class="btn-selecionar-modelo">Avançar</button>
+                    </div>
+                </div>
+                {% else %}
+                    <p>Nenhum modelo de iPhone disponível para avaliação no momento.</p>
+                {% endfor %}
+                    </div>
+                </div>
+                <div id="secao-avaliacao" class="avaliacao-container" style="display: none;">
+                    
+    <div id="aparelho-em-destaque" class="aparelho-destaque">
+        </div>
+
+    <div id="secao-questionario" class="questionario">
+        <button id="btn-voltar-selecao" class="btn-secundario">&larr; Voltar para Modelos</button>
+        <div id="lista-perguntas">
+            </div>
+            
+        <div class="item-pergunta">
+            <p>Digite aqui o IMEI do aparelho:</p>
+            <input type="text" id="imei-input" placeholder="IMEI do aparelho">
+        </div>
+        <div class="aviso-envio-email">
+        <i class="fa-solid fa-circle-info"></i> <p><strong>Atenção:</strong> Ao clicar em "Calcular Valor Final", os detalhes da sua avaliação serão enviados para nossa equipe. Um especialista entrará em contato em breve para apresentar as melhores opções de troca para o seu novo iPhone!</p>
+        </div>
+        <button id="btn-calcular-valor" class="btn-principal">Calcular Valor Final</button>
+
+        <div id="resultado-final" style="margin-top: 20px;">
+            </div>
+        </div>
+        </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='scriptValor.js') }}"></script>
+</body>
+</html>
