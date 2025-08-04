@@ -212,29 +212,29 @@ def popular_tabelas(cursor):
 
     modelos_para_inserir = [
         (1, 'iPhone 11', 1300.00, 'images/ip11branco.jpg', empresa_id_padrao),
-        (2, 'iPhone 11 Pro', 1600.00, 'images/ip11prodourado.PNG', empresa_id_padrao),
+        (2, 'iPhone 11 Pro', 1600.00, 'images/ip11prodourado.png', empresa_id_padrao),
         (3, 'iPhone 11 Pro Max', 1900.00, 'images/ip11promaxverde.jpg', empresa_id_padrao),
-        (4, 'iPhone 12 Mini', 1400.00, 'images/ip12miniazul.PNG', empresa_id_padrao),
-        (5, 'iPhone 12', 1500.00, 'images/ip12preto.PNG', empresa_id_padrao),
-        (6, 'iPhone 12 Pro', 1900.00, 'images/ip12prodourado.PNG', empresa_id_padrao),
-        (7, 'iPhone 12 Pro Max', 2300.00, 'images/ip12promaxbranco.PNG', empresa_id_padrao),
-        (8, 'iPhone 13 Mini', 1500.00, 'images/ip13minivermelho.PNG', empresa_id_padrao),
-        (9, 'iPhone 13', 1800.00, 'images/ip13branco.PNG', empresa_id_padrao),
-        (10, 'iPhone 13 Pro', 2500.00, 'images/ip13prodourado.PNG', empresa_id_padrao),
-        (11, 'iPhone 13 Pro Max', 2900.00, 'images/ip13promaxpreto.PNG', empresa_id_padrao),
-        (12, 'iPhone 14 Plus', 2000.00, 'images/ip14pluspreto.PNG', empresa_id_padrao),
-        (13, 'iPhone 14', 2200.00, 'images/ip14azul.PNG', empresa_id_padrao),
-        (14, 'iPhone 14 Pro', 2500.00, 'images/ip14proroxo.PNG', empresa_id_padrao),
-        (15, 'iPhone 14 Pro Max', 3000.00, 'images/ip14promaxdourado.PNG', empresa_id_padrao),
-        (16, 'iPhone 15 Plus', 2300.00, 'images/ip15plusbranco.PNG', empresa_id_padrao),
-        (17, 'iPhone 15', 2500.00, 'images/ip15branco.PNG', empresa_id_padrao),
-        (18, 'iPhone 15 Pro', 3000.00, 'images/ip15protitanio.PNG', empresa_id_padrao),
-        (19, 'iPhone 15 Pro Max', 3500.00, 'images/ip15promaxazul.PNG', empresa_id_padrao),
-        (20, 'iPhone 16e', 2500.00, 'images/ip16epreto.PNG', empresa_id_padrao),
-        (21, 'iPhone 16 Plus', 2500.00, 'images/ip16plusazul.PNG', empresa_id_padrao),
-        (22, 'iPhone 16', 2800.00, 'images/ip16verde.PNG', empresa_id_padrao),
-        (23, 'iPhone 16 Pro', 3400.00, 'images/ip16protitanio.PNG', empresa_id_padrao),
-        (24, 'iPhone 16 Pro Max', 4000.00, 'images/ip16promaxdourado.PNG', empresa_id_padrao)
+        (4, 'iPhone 12 Mini', 1400.00, 'images/ip12miniazul.png', empresa_id_padrao),
+        (5, 'iPhone 12', 1500.00, 'images/ip12preto.png', empresa_id_padrao),
+        (6, 'iPhone 12 Pro', 1900.00, 'images/ip12prodourado.png', empresa_id_padrao),
+        (7, 'iPhone 12 Pro Max', 2300.00, 'images/ip12promaxbranco.png', empresa_id_padrao),
+        (8, 'iPhone 13 Mini', 1500.00, 'images/ip13minivermelho.png', empresa_id_padrao),
+        (9, 'iPhone 13', 1800.00, 'images/ip13branco.png', empresa_id_padrao),
+        (10, 'iPhone 13 Pro', 2500.00, 'images/ip13prodourado.png', empresa_id_padrao),
+        (11, 'iPhone 13 Pro Max', 2900.00, 'images/ip13promaxpreto.png', empresa_id_padrao),
+        (12, 'iPhone 14 Plus', 2000.00, 'images/ip14pluspreto.png', empresa_id_padrao),
+        (13, 'iPhone 14', 2200.00, 'images/ip14azul.png', empresa_id_padrao),
+        (14, 'iPhone 14 Pro', 2500.00, 'images/ip14proroxo.png', empresa_id_padrao),
+        (15, 'iPhone 14 Pro Max', 3000.00, 'images/ip14promaxdourado.png', empresa_id_padrao),
+        (16, 'iPhone 15 Plus', 2300.00, 'images/ip15plusbranco.png', empresa_id_padrao),
+        (17, 'iPhone 15', 2500.00, 'images/ip15branco.png', empresa_id_padrao),
+        (18, 'iPhone 15 Pro', 3000.00, 'images/ip15protitanio.png', empresa_id_padrao),
+        (19, 'iPhone 15 Pro Max', 3500.00, 'images/ip15promaxazul.png', empresa_id_padrao),
+        (20, 'iPhone 16e', 2500.00, 'images/ip16epreto.png', empresa_id_padrao),
+        (21, 'iPhone 16 Plus', 2500.00, 'images/ip16plusazul.png', empresa_id_padrao),
+        (22, 'iPhone 16', 2800.00, 'images/ip16verde.png', empresa_id_padrao),
+        (23, 'iPhone 16 Pro', 3400.00, 'images/ip16protitanio.png', empresa_id_padrao),
+        (24, 'iPhone 16 Pro Max', 4000.00, 'images/ip16promaxdourado.png', empresa_id_padrao)
     ]
     
     cores_para_inserir = [
@@ -270,147 +270,147 @@ def popular_tabelas(cursor):
     
     modelos_cores_para_inserir = [
         # iPhone 11 (ID 1)
-        (1, 1, 'images/ip11preto.PNG', empresa_id_padrao),
+        (1, 1, 'images/ip11preto.png', empresa_id_padrao),
         (1, 2, 'images/ip11branco.jpg', empresa_id_padrao),
-        (1, 7, 'images/ip11amarelo.PNG', empresa_id_padrao),
-        (1, 8, 'images/mip11roxo.PNG', empresa_id_padrao),
-        (1, 10, 'images/ip11verde.PNG', empresa_id_padrao),
-        (1, 9, 'images/ip11vermelho.PNG', empresa_id_padrao),
+        (1, 7, 'images/ip11amarelo.png', empresa_id_padrao),
+        (1, 8, 'images/ip11roxo.png', empresa_id_padrao),
+        (1, 10, 'images/ip11verde.png', empresa_id_padrao),
+        (1, 9, 'images/ip11vermelho.png', empresa_id_padrao),
 
         # iPhone 11 Pro (ID 2)
-        (2, 1, 'images/ip11propreto.PNG', empresa_id_padrao),
+        (2, 1, 'images/ip11propreto.png', empresa_id_padrao),
         (2, 10, 'images/ip11proverde.jpg', empresa_id_padrao),
-        (2, 11, 'images/ip11prodourado.PNG', empresa_id_padrao),
-        (2, 2, 'images/ip11probranco.PNG', empresa_id_padrao),
+        (2, 11, 'images/ip11prodourado.png', empresa_id_padrao),
+        (2, 2, 'images/ip11probranco.png', empresa_id_padrao),
 
         # iPhone 11 Pro Max (ID 3)
-        (3, 1, 'images/ip11promaxpreto.PNG', empresa_id_padrao),
+        (3, 1, 'images/ip11promaxpreto.png', empresa_id_padrao),
         (3, 10, 'images/ip11promaxverde.jpg', empresa_id_padrao),
-        (3, 11, 'images/ip11promaxdourado.PNG', empresa_id_padrao),
-        (3, 2, 'images/ip11promaxbranco.PNG', empresa_id_padrao),
+        (3, 11, 'images/ip11promaxdourado.png', empresa_id_padrao),
+        (3, 2, 'images/ip11promaxbranco.png', empresa_id_padrao),
 
         # iPhone 12 Mini (ID 4)
-        (4, 1, 'images/ip12minipreto.PNG', empresa_id_padrao),
-        (4, 2, 'images/ip12minibranco.PNG', empresa_id_padrao),
-        (4, 3, 'images/ip12miniazul.PNG', empresa_id_padrao),
-        (4, 9, 'images/ip12minivermelho.PNG', empresa_id_padrao),
+        (4, 1, 'images/ip12minipreto.png', empresa_id_padrao),
+        (4, 2, 'images/ip12minibranco.png', empresa_id_padrao),
+        (4, 3, 'images/ip12miniazul.png', empresa_id_padrao),
+        (4, 9, 'images/ip12minivermelho.png', empresa_id_padrao),
 
         # iPhone 12 (ID 5)
-        (5, 1, 'images/ip12preto.PNG', empresa_id_padrao),
-        (5, 2, 'images/ip12branco.PNG', empresa_id_padrao),
-        (5, 3, 'images/ip12azul.PNG', empresa_id_padrao),
-        (5, 9, 'images/ip12vermelho.PNG', empresa_id_padrao),
+        (5, 1, 'images/ip12preto.png', empresa_id_padrao),
+        (5, 2, 'images/ip12branco.png', empresa_id_padrao),
+        (5, 3, 'images/ip12azul.png', empresa_id_padrao),
+        (5, 9, 'images/ip12vermelho.png', empresa_id_padrao),
 
         # iPhone 12 Pro (ID 6)
-        (6, 11, 'images/ip12prodourado.PNG', empresa_id_padrao),
-        (6, 3, 'images/ip12proazul.PNG', empresa_id_padrao),
-        (6, 1, 'images/ip12propreto.PNG', empresa_id_padrao),
+        (6, 11, 'images/ip12prodourado.png', empresa_id_padrao),
+        (6, 3, 'images/ip12proazul.png', empresa_id_padrao),
+        (6, 1, 'images/ip12propreto.png', empresa_id_padrao),
 
         # iPhone 12 Pro Max (ID 7)
-        (7, 11, 'images/ip12promaxdourado.PNG', empresa_id_padrao),
-        (7, 3, 'images/ip12promaxazul.PNG', empresa_id_padrao),
-        (7, 1, 'images/ip12promaxpreto.PNG', empresa_id_padrao),
+        (7, 11, 'images/ip12promaxdourado.png', empresa_id_padrao),
+        (7, 3, 'images/ip12promaxazul.png', empresa_id_padrao),
+        (7, 1, 'images/ip12promaxpreto.png', empresa_id_padrao),
 
         # iPhone 13 Mini (ID 8)
-        (8, 2, 'images/ip13minibranco.PNG', empresa_id_padrao),
-        (8, 5, 'images/ip13minimeianoite.PNG', empresa_id_padrao),
-        (8, 9, 'images/ip13minivermelho.PNG', empresa_id_padrao),
-        (8, 12, 'images/ip13minirosa.PNG', empresa_id_padrao),
-        (8, 3, 'images/ip13miniazul.PNG', empresa_id_padrao), 
+        (8, 2, 'images/ip13minibranco.png', empresa_id_padrao),
+        (8, 5, 'images/ip13minimeianoite.png', empresa_id_padrao),
+        (8, 9, 'images/ip13minivermelho.png', empresa_id_padrao),
+        (8, 12, 'images/ip13minirosa.png', empresa_id_padrao),
+        (8, 3, 'images/ip13miniazul.png', empresa_id_padrao), 
 
         # iPhone 13 (ID 9)
-        (9, 2, 'images/ip13branco.PNG', empresa_id_padrao),
-        (9, 5, 'images/ip13meianoite.PNG', empresa_id_padrao),
-        (9, 9, 'images/ip13vermelho.PNG', empresa_id_padrao),
-        (9, 3, 'images/ip13azul.PNG', empresa_id_padrao),
-        (9, 12, 'images/ip13rosa.PNG', empresa_id_padrao),
+        (9, 2, 'images/ip13branco.png', empresa_id_padrao),
+        (9, 5, 'images/ip13meianoite.png', empresa_id_padrao),
+        (9, 9, 'images/ip13vermelho.png', empresa_id_padrao),
+        (9, 3, 'images/ip13azul.png', empresa_id_padrao),
+        (9, 12, 'images/ip13rosa.png', empresa_id_padrao),
 
         # iPhone 13 Pro (ID 10)
-        (10, 11, 'images/ip13prodourado.PNG', empresa_id_padrao),
-        (10, 3, 'images/ip13proazul.PNG', empresa_id_padrao),
-        (10, 2, 'images/ip13probranco.PNG', empresa_id_padrao),
-        (10, 1, 'images/ip13propreto.PNG', empresa_id_padrao),
+        (10, 11, 'images/ip13prodourado.png', empresa_id_padrao),
+        (10, 3, 'images/ip13proazul.png', empresa_id_padrao),
+        (10, 2, 'images/ip13probranco.png', empresa_id_padrao),
+        (10, 1, 'images/ip13propreto.png', empresa_id_padrao),
 
         # iPhone 13 Pro Max (ID 11)
-        (11, 11, 'images/ip13promaxdourado.PNG', empresa_id_padrao),
-        (11, 3, 'images/ip13promaxazul.PNG', empresa_id_padrao),
-        (11, 2, 'images/ip13promaxbranco.PNG', empresa_id_padrao),
-        (11, 1, 'images/ip13promaxpreto.PNG', empresa_id_padrao),
+        (11, 11, 'images/ip13promaxdourado.png', empresa_id_padrao),
+        (11, 3, 'images/ip13promaxazul.png', empresa_id_padrao),
+        (11, 2, 'images/ip13promaxbranco.png', empresa_id_padrao),
+        (11, 1, 'images/ip13promaxpreto.png', empresa_id_padrao),
 
         # iPhone 14 (ID 13)
-        (13, 3, 'images/ip14azul.PNG', empresa_id_padrao),
-        (13, 5, 'images/ip14meianoite.PNG', empresa_id_padrao),
-        (13, 9, 'images/ip14vermelho.PNG', empresa_id_padrao),
-        (13, 2, 'images/ip14branco.PNG', empresa_id_padrao),
+        (13, 3, 'images/ip14azul.png', empresa_id_padrao),
+        (13, 5, 'images/ip14meianoite.png', empresa_id_padrao),
+        (13, 9, 'images/ip14vermelho.png', empresa_id_padrao),
+        (13, 2, 'images/ip14branco.png', empresa_id_padrao),
 
         # iPhone 14 Plus (ID 12)
-        (12, 3, 'images/ip14plusazul.PNG', empresa_id_padrao),
-        (12, 5, 'images/ip14plusmeianoite.PNG', empresa_id_padrao),
-        (12, 2, 'images/ip14plusbranco.PNG', empresa_id_padrao),
+        (12, 3, 'images/ip14plusazul.png', empresa_id_padrao),
+        (12, 5, 'images/ip14plusmeianoite.png', empresa_id_padrao),
+        (12, 2, 'images/ip14plusbranco.png', empresa_id_padrao),
 
         # iPhone 14 Pro (ID 14)
-        (14, 11, 'images/ip14prodourado.PNG', empresa_id_padrao),
-        (14, 4, 'images/ip14proroxo.PNG', empresa_id_padrao),
-        (14, 2, 'images/ip14probranco.PNG', empresa_id_padrao),
+        (14, 11, 'images/ip14prodourado.png', empresa_id_padrao),
+        (14, 4, 'images/ip14proroxo.png', empresa_id_padrao),
+        (14, 2, 'images/ip14probranco.png', empresa_id_padrao),
 
         # iPhone 14 Pro Max (ID 15)
-        (15, 11, 'images/ip14promaxdourado.PNG', empresa_id_padrao),
-        (15, 4, 'images/ip14promaxroxo.PNG', empresa_id_padrao),
-        (15, 2, 'images/ip14promaxbranco.PNG', empresa_id_padrao),
+        (15, 11, 'images/ip14promaxdourado.png', empresa_id_padrao),
+        (15, 4, 'images/ip14promaxroxo.png', empresa_id_padrao),
+        (15, 2, 'images/ip14promaxbranco.png', empresa_id_padrao),
 
         # iPhone 15 (ID 17)
-        (17, 2, 'images/ip15branco.PNG', empresa_id_padrao),
-        (17, 12, 'images/ip15rosa.PNG', empresa_id_padrao),
-        (17, 1, 'images/ip15preto.PNG', empresa_id_padrao),
-        (17, 10, 'images/ip15verde.PNG', empresa_id_padrao),
-        (17, 7, 'images/ip15amarelo.PNG', empresa_id_padrao),
+        (17, 2, 'images/ip15branco.png', empresa_id_padrao),
+        (17, 12, 'images/ip15rosa.png', empresa_id_padrao),
+        (17, 1, 'images/ip15preto.png', empresa_id_padrao),
+        (17, 10, 'images/ip15verde.png', empresa_id_padrao),
+        (17, 7, 'images/ip15amarelo.png', empresa_id_padrao),
         
         # iPhone 15 Plus (ID 16)
-        (16, 12, 'images/ip15plusrosa.PNG', empresa_id_padrao),
-        (16, 2, 'images/ip15plusbranco.PNG', empresa_id_padrao),
-        (16, 1, 'images/ip15pluspreto.PNG', empresa_id_padrao),
-        (16, 7, 'images/ip15plusamarelo.PNG', empresa_id_padrao),
-        (16, 10, 'images/ip15plusverde.PNG', empresa_id_padrao),
+        (16, 12, 'images/ip15plusrosa.png', empresa_id_padrao),
+        (16, 2, 'images/ip15plusbranco.png', empresa_id_padrao),
+        (16, 1, 'images/ip15pluspreto.png', empresa_id_padrao),
+        (16, 7, 'images/ip15plusamarelo.png', empresa_id_padrao),
+        (16, 10, 'images/ip15plusverde.png', empresa_id_padrao),
 
         # iPhone 15 Pro (ID 18)
-        (18, 6, 'images/ip15protitanio.PNG', empresa_id_padrao),
-        (18, 2, 'images/ip15probranco.PNG', empresa_id_padrao),
-        (18, 1, 'images/ip15propreto.PNG', empresa_id_padrao), 
+        (18, 6, 'images/ip15protitanio.png', empresa_id_padrao),
+        (18, 2, 'images/ip15probranco.png', empresa_id_padrao),
+        (18, 1, 'images/ip15propreto.png', empresa_id_padrao), 
 
         # iPhone 15 Pro Max (ID 19)
-        (19, 6, 'images/ip15promaxtitanio.PNG', empresa_id_padrao),
-        (19, 2, 'images/ip15promaxbranco.PNG', empresa_id_padrao),
-        (19, 1, 'images/ip15promaxpreto.PNG', empresa_id_padrao),
+        (19, 6, 'images/ip15promaxtitanio.png', empresa_id_padrao),
+        (19, 2, 'images/ip15promaxbranco.png', empresa_id_padrao),
+        (19, 1, 'images/ip15promaxpreto.png', empresa_id_padrao),
 
         # iPhone 16 (ID 22)
-        (22, 10, 'images/ip16verde.PNG', empresa_id_padrao),
-        (22, 3, 'images/ip16azul.PNG', empresa_id_padrao),
-        (22, 2, 'images/ip16branco.PNG', empresa_id_padrao),
-        (22, 1, 'images/ip16preto.PNG', empresa_id_padrao),
-        (22, 12, 'images/ip16rosa.PNG', empresa_id_padrao),
+        (22, 10, 'images/ip16verde.png', empresa_id_padrao),
+        (22, 3, 'images/ip16azul.png', empresa_id_padrao),
+        (22, 2, 'images/ip16branco.png', empresa_id_padrao),
+        (22, 1, 'images/ip16preto.png', empresa_id_padrao),
+        (22, 12, 'images/ip16rosa.png', empresa_id_padrao),
         
         # iPhone 16e (ID 20)
-        (20, 1, 'images/ip16epreto.PNG', empresa_id_padrao),
-        (20, 2, 'images/ip16ebranco.PNG', empresa_id_padrao),
+        (20, 1, 'images/ip16epreto.png', empresa_id_padrao),
+        (20, 2, 'images/ip16ebranco.png', empresa_id_padrao),
 
         # iPhone 16 Plus (ID 21)
-        (21, 3, 'images/ip16plusazul.PNG', empresa_id_padrao),
-        (21, 12, 'images/ip16plusrosa.PNG', empresa_id_padrao),
-        (21, 10, 'images/ip16plusverde.PNG', empresa_id_padrao),
-        (21, 1, 'images/ip16pluspreto.PNG', empresa_id_padrao),
-        (21, 2, 'images/ip16plusbranco.PNG', empresa_id_padrao),
+        (21, 3, 'images/ip16plusazul.png', empresa_id_padrao),
+        (21, 12, 'images/ip16plusrosa.png', empresa_id_padrao),
+        (21, 10, 'images/ip16plusverde.png', empresa_id_padrao),
+        (21, 1, 'images/ip16pluspreto.png', empresa_id_padrao),
+        (21, 2, 'images/ip16plusbranco.png', empresa_id_padrao),
 
         # iPhone 16 Pro (ID 23)
-        (23, 6, 'images/ip16protitanio.PNG', empresa_id_padrao),
-        (23, 1, 'images/ip16propreto.PNG', empresa_id_padrao),
-        (23, 11, 'images/ip16prodourado.PNG', empresa_id_padrao),
-        (23, 2, 'images/ip16probranco.PNG', empresa_id_padrao),
+        (23, 6, 'images/ip16protitanio.png', empresa_id_padrao),
+        (23, 1, 'images/ip16propreto.png', empresa_id_padrao),
+        (23, 11, 'images/ip16prodourado.png', empresa_id_padrao),
+        (23, 2, 'images/ip16probranco.png', empresa_id_padrao),
 
         # iPhone 16 Pro Max (ID 24)
-        (24, 1, 'images/ip16promaxpreto.PNG', empresa_id_padrao),
-        (24, 6, 'images/ip16promaxtitanio.PNG', empresa_id_padrao),
-        (24, 11, 'images/ip16promaxdourado.PNG', empresa_id_padrao),
-        (24, 2, 'images/ip16promaxbranco.PNG', empresa_id_padrao)
+        (24, 1, 'images/ip16promaxpreto.png', empresa_id_padrao),
+        (24, 6, 'images/ip16promaxtitanio.png', empresa_id_padrao),
+        (24, 11, 'images/ip16promaxdourado.png', empresa_id_padrao),
+        (24, 2, 'images/ip16promaxbranco.png', empresa_id_padrao)
     ]
 
     modelos_armazenamentos_para_inserir = [
