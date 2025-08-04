@@ -163,34 +163,34 @@ def login():
                     cursor.execute("SELECT permite_ajuste_valores, permite_link_convidado, envia_email_orcamento, envia_email_orcamento_link, plano_ativo FROM empresas WHERE id = %s", (empresa_id,))
                     info_empresa = cursor.fetchone()
                 
-                # Verificar se o plano da empresa está ativo
-                if info_empresa and not info_empresa['plano_ativo']:
-                    erro = "Seu plano está desativado. Entre em contato com o administrador."
-                    flash(erro, "danger")
-                    return render_template('index.html', erro=erro)
-                
-                session.clear()
-                session['user_id'] = registro_usuario_db['id']
-                session['nome_completo'] = registro_usuario_db['nome_completo']
-                session['usuario_email'] = registro_usuario_db['usuario']  # Armazena o email do usuário
-                session['is_admin'] = registro_usuario_db['is_admin']
-                session['empresa_id'] = empresa_id
-                if info_empresa:
-                    session['empresa_pode_gerir'] = info_empresa['permite_ajuste_valores']
-                    session['permite_link_convidado'] = info_empresa['permite_link_convidado']
-                    session['envia_email_orcamento'] = info_empresa['envia_email_orcamento']
-                    session['envia_email_orcamento_link'] = info_empresa['envia_email_orcamento_link']
-                    session['plano_ativo'] = info_empresa['plano_ativo']
+                    # Verificar se o plano da empresa está ativo
+                    if info_empresa and not info_empresa['plano_ativo']:
+                        erro = "Seu plano está desativado. Entre em contato com o administrador."
+                        flash(erro, "danger")
+                        return render_template('index.html', erro=erro)
+                    
+                    session.clear()
+                    session['user_id'] = registro_usuario_db['id']
+                    session['nome_completo'] = registro_usuario_db['nome_completo']
+                    session['usuario_email'] = registro_usuario_db['usuario']  # Armazena o email do usuário
+                    session['is_admin'] = registro_usuario_db['is_admin']
+                    session['empresa_id'] = empresa_id
+                    if info_empresa:
+                        session['empresa_pode_gerir'] = info_empresa['permite_ajuste_valores']
+                        session['permite_link_convidado'] = info_empresa['permite_link_convidado']
+                        session['envia_email_orcamento'] = info_empresa['envia_email_orcamento']
+                        session['envia_email_orcamento_link'] = info_empresa['envia_email_orcamento_link']
+                        session['plano_ativo'] = info_empresa['plano_ativo']
+                    else:
+                        session['empresa_pode_gerir'] = False
+                        session['permite_link_convidado'] = False
+                        session['envia_email_orcamento'] = False
+                        session['envia_email_orcamento_link'] = False
+                        session['plano_ativo'] = False
+                    print('DEBUG LOGIN SESSION:', dict(session))
+                    return redirect(url_for('calcular'))
                 else:
-                    session['empresa_pode_gerir'] = False
-                    session['permite_link_convidado'] = False
-                    session['envia_email_orcamento'] = False
-                    session['envia_email_orcamento_link'] = False
-                    session['plano_ativo'] = False
-                print('DEBUG LOGIN SESSION:', dict(session))
-                return redirect(url_for('calcular'))
-            else:
-                erro = "Usuário ou senha inválidos."
+                    erro = "Usuário ou senha inválidos."
 
             if erro:
                 flash(erro, "danger")
