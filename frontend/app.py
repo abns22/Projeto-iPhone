@@ -160,8 +160,8 @@ def login():
                         flash(erro, "danger")
                         return render_template('index.html', erro=erro)
 
-                                    cursor.execute("SELECT permite_ajuste_valores, permite_link_convidado, envia_email_orcamento, envia_email_orcamento_link, plano_ativo FROM empresas WHERE id = %s", (empresa_id,))
-                info_empresa = cursor.fetchone()
+                    cursor.execute("SELECT permite_ajuste_valores, permite_link_convidado, envia_email_orcamento, envia_email_orcamento_link, plano_ativo FROM empresas WHERE id = %s", (empresa_id,))
+                    info_empresa = cursor.fetchone()
                 
                 # Verificar se o plano da empresa está ativo
                 if info_empresa and not info_empresa['plano_ativo']:
@@ -189,9 +189,8 @@ def login():
                     session['plano_ativo'] = False
                 print('DEBUG LOGIN SESSION:', dict(session))
                 return redirect(url_for('calcular'))
-                else:
-
-                    erro = "Usuário ou senha inválidos."
+            else:
+                erro = "Usuário ou senha inválidos."
 
             if erro:
                 flash(erro, "danger")
