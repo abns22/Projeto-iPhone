@@ -13,14 +13,14 @@ def get_db_connection():
             user='abns22',
             password='icloudbz12031994@lF',
             host='abns22.mysql.pythonanywhere-services.com',
-            port=3306,
-            ssl_disabled=False,
-            ssl_verify_cert=False,
-            ssl_verify_identity=False
+            port=3306
         )
         return conn
     except mysql.connector.Error as e:
         print(f"ERRO DE CONEXÃO COM O MYSQL: {e}")
+        return None
+    except Exception as e:
+        print(f"ERRO GERAL DE CONEXÃO: {e}")
         return None
 
 def verificar_imagens():
@@ -93,9 +93,6 @@ def verificar_banco_dados():
 def verificar_urls():
     """Verifica se as URLs das imagens estão corretas"""
     print("\n=== VERIFICAÇÃO DE URLs ===")
-    
-    # Simular URLs do Flask
-    from flask import url_for
     
     # URLs de exemplo
     urls_teste = [
