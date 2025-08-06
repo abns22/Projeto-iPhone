@@ -39,27 +39,45 @@ mail = Mail(app)
 
 def get_db_connection():
     """
-    Estabelece e retorna uma nova conexão com o banco de dados MySQL,
-    configurada especificamente para o PythonAnywhere.
+    Estabelece e retorna uma nova conexão com o banco de dados MySQL.
+    Funciona tanto no Railway quanto no PythonAnywhere.
     """
     try:
-        # Configuração específica para PythonAnywhere
-        conn_args = {
-            'database': 'abns22$default',
-            'user': 'abns22',
-            'password': 'icloudbz12031994@lF',
-            'host': 'abns22.mysql.pythonanywhere-services.com',
-            'port': 3306,
-            'ssl_disabled': False,
-            'ssl_verify_cert': False,
-            'ssl_verify_identity': False
-        }
+        # Verificar se estamos no Railway (tem DATABASE_URL)
+        database_url = os.getenv('DATABASE_URL')
+        
+        if database_url:
+            # Configuração para Railway
+            import urllib.parse
+            url = urllib.parse.urlparse(database_url)
+            
+            conn_args = {
+                'database': url.path[1:],  # Remove a barra inicial
+                'user': url.username,
+                'password': url.password,
+                'host': url.hostname,
+                'port': url.port or 3306,
+                'autocommit': True
+            }
+        else:
+            # Configuração para PythonAnywhere ou local
+            conn_args = {
+                'database': os.getenv('DB_NAME', 'abns22$default'),
+                'user': os.getenv('DB_USER', 'abns22'),
+                'password': os.getenv('DB_PASS', 'icloudbz12031994@lF'),
+                'host': os.getenv('DB_HOST', 'abns22.mysql.pythonanywhere-services.com'),
+                'port': int(os.getenv('DB_PORT', 3306)),
+                'autocommit': True
+            }
 
         conn = mysql.connector.connect(**conn_args)
         return conn
 
     except mysql.connector.Error as e:
         print(f"ERRO DE CONEXÃO COM O MYSQL: {e}")
+        return None
+    except Exception as e:
+        print(f"ERRO GERAL DE CONEXÃO: {e}")
         return None
 
 def require_login():
@@ -1856,6 +1874,7 @@ if __name__ == '__main__':
     print("Iniciando correção automática das respostas...")
     garantir_respostas_completas()
     print("Correção concluída. Iniciando servidor...")
-    app.run(debug=True)
+    port = int(os.getenv('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
 
 
