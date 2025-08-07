@@ -835,7 +835,18 @@ def editar_modelo_admin(modelo_id):
                 (novo_nome, novo_valor_base, modelo_id, empresa_id_logada)
             )
 
-            # 2. Itera sobre os dados do formulário para encontrar e salvar os valores de impacto
+            # 2. Processa os modificadores de armazenamento
+            for key, value in request.form.items():
+                if key.startswith('modificador_armazenamento_'):
+                    armazenamento_id = key.replace('modificador_armazenamento_', '')
+                    novo_modificador = float(value) if value else 0.0
+                    
+                    cursor.execute(
+                        "UPDATE modelos_armazenamentos SET modificador_valor = %s WHERE modelo_id = %s AND armazenamento_id = %s AND empresa_id = %s",
+                        (novo_modificador, modelo_id, armazenamento_id, empresa_id_logada)
+                    )
+
+            # 3. Itera sobre os dados do formulário para encontrar e salvar os valores de impacto
             for key, value in request.form.items():
                 resposta_texto = None
                 if key.startswith('impacto_sim_'):
@@ -867,7 +878,18 @@ def editar_modelo_admin(modelo_id):
             flash("Modelo não encontrado.", "danger")
             return redirect(url_for('gerenciar_modelos_admin'))
 
-        # 2. CONSULTA SQL INTELIGENTE QUE RESOLVE A DUPLICAÇÃO
+        # 2. Busca os armazenamentos associados ao modelo
+        sql_armazenamentos = """
+            SELECT a.id, a.capacidade_gb, ma.modificador_valor
+            FROM armazenamentos a
+            JOIN modelos_armazenamentos ma ON a.id = ma.armazenamento_id
+            WHERE ma.modelo_id = %s AND ma.empresa_id = %s
+            ORDER BY a.capacidade_gb
+        """
+        cursor.execute(sql_armazenamentos, (modelo_id, empresa_id_logada))
+        armazenamentos = cursor.fetchall()
+
+        # 3. CONSULTA SQL INTELIGENTE QUE RESOLVE A DUPLICAÇÃO
         sql_perguntas = """
             SELECT
                 p.id, p.texto_pergunta,
@@ -884,6 +906,7 @@ def editar_modelo_admin(modelo_id):
         return render_template(
             'editar_modelo.html',
             modelo=modelo,                  # Passa o objeto do modelo
+            armazenamentos=armazenamentos,  # Passa a lista de armazenamentos
             perguntas=perguntas_com_impactos  # Passa a lista de perguntas únicas
         )
 

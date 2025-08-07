@@ -5,6 +5,121 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editando: {{ modelo['nome_modelo'] }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style_admin.css') }}">
+    <style>
+        .armazenamento-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .armazenamento-info-box {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .armazenamento-info-box h4 {
+            color: #1976d2;
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+        
+        .armazenamento-info-box p {
+            margin: 5px 0;
+            color: #424242;
+            font-size: 14px;
+        }
+        
+        .armazenamento-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .armazenamento-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .armazenamento-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .armazenamento-capacidade {
+            font-weight: bold;
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .valor-base-info {
+            font-size: 12px;
+            color: #666;
+            background: #f5f5f5;
+            padding: 5px 8px;
+            border-radius: 4px;
+        }
+        
+        .modificador-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .modificador-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .modificador-input:focus {
+            outline: none;
+            border-color: #2196f3;
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+        }
+        
+        .valor-final {
+            font-weight: bold;
+            color: #2e7d32;
+            font-size: 16px;
+            padding: 8px 12px;
+            background: #e8f5e8;
+            border-radius: 4px;
+            text-align: center;
+            min-width: 120px;
+        }
+        
+        .valor-negativo {
+            color: #d32f2f;
+            background: #ffebee;
+        }
+        
+        .valor-zero {
+            color: #666;
+            background: #f5f5f5;
+        }
+        
+        .explicacao-texto {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+    </style>
 </head>
 <body>
     <div class="admin-container">
@@ -25,19 +140,17 @@
         {% endwith %}
 
         <main>
-            <form method="POST">
+            <form method="POST" action="{{ url_for('editar_modelo_admin', modelo_id=modelo.id) }}">
                 <div class="admin-warning-box">
-            <div class="icon">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-            </div>
-            <div class="text-content">
-                <h3>Atenção: Área de Alto Impacto</h3>
-                <p>As alterações feitas nesta seção afetam <strong>TODOS</strong> os cálculos de avaliação para sua empresa. Use com extrema cautela, pois as modificações são <strong>permanentes e não podem ser desfeitas</strong>. 
-                Tenha certeza de alterar apenas os campos com <strong>VALORES NEGATIVOS</strong>.</p>
-            </div>
-            </div>
-                <main>
-    <form method="POST" action="{{ url_for('editar_modelo_admin', modelo_id=modelo.id) }}">
+                    <div class="icon">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="text-content">
+                        <h3>Atenção: Área de Alto Impacto</h3>
+                        <p>As alterações feitas nesta seção afetam <strong>TODOS</strong> os cálculos de avaliação para sua empresa. Use com extrema cautela, pois as modificações são <strong>permanentes e não podem ser desfeitas</strong>. 
+                        Tenha certeza de alterar apenas os campos com <strong>VALORES NEGATIVOS</strong>.</p>
+                    </div>
+                </div>
         
         <div class="form-section">
             <h2>Valores Base</h2>
@@ -48,6 +161,50 @@
             <div class="form-group">
                 <label for="valor_base_novo">Valor Base (R$):</label>
                 <input type="number" step="0.01" id="valor_base_novo" name="valor_base_novo" value="{{ '%.2f'|format(modelo.valor_base_novo|float) }}" required>
+            </div>
+        </div>
+
+        <div class="form-section armazenamento-section">
+            <h2>Valores por Armazenamento</h2>
+            
+            <div class="armazenamento-info-box">
+                <h4>📋 Como Funciona o Sistema de Valores por Armazenamento</h4>
+                <p><strong>Valor Base:</strong> R$ {{ '%.2f'|format(modelo.valor_base_novo|float) }} - Este é o valor de referência para o armazenamento padrão.</p>
+                <p><strong>Modificador:</strong> Use valores positivos (+) para aumentar ou negativos (-) para diminuir o valor base.</p>
+                <p><strong>Exemplo:</strong> Se o valor base é R$ 1500,00 e você coloca +200,00, o valor final será R$ 1700,00.</p>
+                <p><strong>⚠️ Importante:</strong> Os valores são atualizados em tempo real conforme você digita.</p>
+            </div>
+            
+            <div class="armazenamento-grid">
+                {% for armazenamento in armazenamentos %}
+                <div class="armazenamento-item">
+                    <div class="armazenamento-header">
+                        <span class="armazenamento-capacidade">{{ armazenamento.capacidade_gb }} GB</span>
+                        <span class="valor-base-info">Base: R$ {{ '%.2f'|format(modelo.valor_base_novo|float) }}</span>
+                    </div>
+                    
+                    <div class="modificador-group">
+                        <label for="modificador_{{ armazenamento.id }}">Modificador (R$):</label>
+                        <input type="number" 
+                               step="0.01" 
+                               class="modificador-input" 
+                               id="modificador_{{ armazenamento.id }}"
+                               name="modificador_armazenamento_{{ armazenamento.id }}"
+                               value="{{ '%.2f'|format(armazenamento.modificador_valor|float) if armazenamento.modificador_valor is not none else '0.00' }}"
+                               data-valor-base="{{ modelo.valor_base_novo }}"
+                               data-armazenamento-id="{{ armazenamento.id }}"
+                               placeholder="Ex: +200.00 ou -100.00">
+                    </div>
+                    
+                    <div class="valor-final" id="valor_final_{{ armazenamento.id }}">
+                        R$ {{ '%.2f'|format((modelo.valor_base_novo|float) + (armazenamento.modificador_valor|float if armazenamento.modificador_valor is not none else 0.0)) }}
+                    </div>
+                    
+                    <div class="explicacao-texto">
+                        Valor final = Base + Modificador
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
 
@@ -86,4 +243,38 @@
 </main>
 
     </div>
+
+    <script>
+        // Função para atualizar o valor final em tempo real
+        function atualizarValorFinal(input) {
+            const armazenamentoId = input.dataset.armazenamentoId;
+            const valorBase = parseFloat(input.dataset.valorBase);
+            const modificador = parseFloat(input.value) || 0;
+            const valorFinal = valorBase + modificador;
+            
+            const valorFinalElement = document.getElementById(`valor_final_${armazenamentoId}`);
+            valorFinalElement.textContent = `R$ ${valorFinal.toFixed(2)}`;
+            
+            // Aplicar classes CSS baseadas no valor
+            valorFinalElement.classList.remove('valor-negativo', 'valor-zero');
+            if (valorFinal < 0) {
+                valorFinalElement.classList.add('valor-negativo');
+            } else if (valorFinal === 0) {
+                valorFinalElement.classList.add('valor-zero');
+            }
+        }
+        
+        // Adicionar event listeners para todos os inputs de modificador
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputsModificador = document.querySelectorAll('.modificador-input');
+            inputsModificador.forEach(input => {
+                input.addEventListener('input', function() {
+                    atualizarValorFinal(this);
+                });
+                
+                // Atualizar valores iniciais
+                atualizarValorFinal(input);
+            });
+        });
+    </script>
 </body>
