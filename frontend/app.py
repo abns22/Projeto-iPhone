@@ -1735,6 +1735,7 @@ def calcular_convite(token):
 @app.route('/convite/<token>/api/modelo/<int:modelo_id>/perguntas')
 def get_perguntas_modelo_convite(token, modelo_id):
     """API para buscar perguntas do modelo (versão para convidados)."""
+    print(f"DEBUG: Acessando rota de perguntas para token={token}, modelo_id={modelo_id}")
     conn = None
     try:
         conn = get_db_connection()
@@ -1743,16 +1744,26 @@ def get_perguntas_modelo_convite(token, modelo_id):
         # Verifica se o link é válido
         cursor.execute("SELECT empresa_id FROM links_convidados WHERE token_unico = %s AND usado = FALSE", (token,))
         link = cursor.fetchone()
+        
+        # Consumir resultados pendentes para evitar "Unread result found"
+        cursor.fetchall()
 
         if not link:
+            print(f"DEBUG: Link inválido para token={token}")
             return jsonify({"erro": "Link inválido"}), 401
 
         empresa_id = link['empresa_id']
+        print(f"DEBUG: Empresa ID encontrada: {empresa_id}")
         
         # Verifica se o plano da empresa está ativo
         cursor.execute("SELECT plano_ativo FROM empresas WHERE id = %s", (empresa_id,))
         empresa = cursor.fetchone()
+        
+        # Consumir resultados pendentes para evitar "Unread result found"
+        cursor.fetchall()
+        
         if empresa and not empresa['plano_ativo']:
+            print(f"DEBUG: Plano da empresa {empresa_id} está desativado")
             return jsonify({"erro": "O plano da empresa está desativado"}), 403
 
         # Busca todas as perguntas de avaliação
@@ -1765,6 +1776,11 @@ def get_perguntas_modelo_convite(token, modelo_id):
         """)
 
         todas_perguntas = cursor.fetchall()
+        print(f"DEBUG: Encontradas {len(todas_perguntas)} perguntas")
+        
+        # Consumir resultados pendentes para evitar "Unread result found"
+        cursor.fetchall()
+        
         perguntas = []
 
         for pergunta in todas_perguntas:
@@ -1780,6 +1796,9 @@ def get_perguntas_modelo_convite(token, modelo_id):
             """, (pergunta_id, modelo_id, empresa_id))
 
             respostas_existentes = cursor.fetchall()
+            
+            # Consumir resultados pendentes para evitar "Unread result found"
+            cursor.fetchall()
 
             # Cria um dicionário para facilitar a busca
             respostas_dict = {r['resposta_que_gera_impacto']: r['valor_do_impacto'] for r in respostas_existentes}
@@ -1807,6 +1826,7 @@ def get_perguntas_modelo_convite(token, modelo_id):
                 'respostas': respostas
             })
 
+        print(f"DEBUG: Retornando {len(perguntas)} perguntas")
         return jsonify(perguntas)
 
     except Exception as e:
@@ -1820,6 +1840,7 @@ def get_perguntas_modelo_convite(token, modelo_id):
 @app.route('/convite/<token>/api/modelo/<int:modelo_id>/opcoes')
 def get_opcoes_modelo_convite(token, modelo_id):
     """API para buscar opções do modelo (versão para convidados)."""
+    print(f"DEBUG: Acessando rota de opções para token={token}, modelo_id={modelo_id}")
     conn = None
     try:
         conn = get_db_connection()
@@ -1830,14 +1851,17 @@ def get_opcoes_modelo_convite(token, modelo_id):
         link = cursor.fetchone()
 
         if not link:
+            print(f"DEBUG: Link inválido para token={token}")
             return jsonify({"erro": "Link inválido"}), 401
 
         empresa_id = link['empresa_id']
+        print(f"DEBUG: Empresa ID encontrada: {empresa_id}")
         
         # Verifica se o plano da empresa está ativo
         cursor.execute("SELECT plano_ativo FROM empresas WHERE id = %s", (empresa_id,))
         empresa = cursor.fetchone()
         if empresa and not empresa['plano_ativo']:
+            print(f"DEBUG: Plano da empresa {empresa_id} está desativado")
             return jsonify({"erro": "O plano da empresa está desativado"}), 403
 
         opcoes = {
@@ -1852,9 +1876,11 @@ def get_opcoes_modelo_convite(token, modelo_id):
         modelo_info_row = cursor.fetchone()
 
         if not modelo_info_row:
+            print(f"DEBUG: Modelo {modelo_id} não encontrado para empresa {empresa_id}")
             return jsonify({"erro": "Modelo não encontrado"}), 404
 
         opcoes['modelo_info'] = modelo_info_row
+        print(f"DEBUG: Modelo encontrado: {modelo_info_row}")
 
         # Busca cores
         sql_cores = """
@@ -1865,6 +1891,7 @@ def get_opcoes_modelo_convite(token, modelo_id):
         """
         cursor.execute(sql_cores, (modelo_id, empresa_id))
         opcoes["cores"] = cursor.fetchall()
+        print(f"DEBUG: Encontradas {len(opcoes['cores'])} cores")
 
         # Busca armazenamentos
         sql_armazenamentos = """
@@ -1875,10 +1902,12 @@ def get_opcoes_modelo_convite(token, modelo_id):
         """
         cursor.execute(sql_armazenamentos, (modelo_id, empresa_id))
         opcoes["armazenamentos"] = cursor.fetchall()
+        print(f"DEBUG: Encontrados {len(opcoes['armazenamentos'])} armazenamentos")
 
         return jsonify(opcoes)
 
     except mysql.connector.Error as e:
+        print(f"DEBUG: Erro MySQL: {e}")
         return jsonify({"erro": "Erro no servidor"}), 500
     finally:
         if conn:
@@ -1912,6 +1941,10 @@ def enviar_orcamento_convite(token):
         # Verifica se o plano da empresa está ativo
         cursor.execute("SELECT plano_ativo FROM empresas WHERE id = %s", (empresa_id,))
         empresa = cursor.fetchone()
+        
+        # Consumir resultados pendentes para evitar "Unread result found"
+        cursor.fetchall()
+        
         if empresa and not empresa['plano_ativo']:
             return jsonify({"erro": "O plano da empresa está desativado"}), 403
 
@@ -1922,6 +1955,9 @@ def enviar_orcamento_convite(token):
             WHERE nome_modelo = %s AND empresa_id = %s
         """, (modelo_nome, empresa_id))
         modelo_row = cursor.fetchone()
+        
+        # Consumir resultados pendentes para evitar "Unread result found"
+        cursor.fetchall()
 
         if not modelo_row:
             return jsonify({"erro": "Modelo não encontrado"}), 404

@@ -34,6 +34,10 @@ function enviarOrcamentoPorEmail(dados) {
 function fetchOpcoes(modeloId, cardClicado) {
     const token = window.CONVITE_TOKEN;
     const url = `/convite/${token}/api/modelo/${modeloId}/opcoes`;
+    console.log(`DEBUG: Tentando acessar opções URL: ${url}`);
+    console.log(`DEBUG: Token: ${token}`);
+    console.log(`DEBUG: Modelo ID: ${modeloId}`);
+    
     const opcoesCorDiv = cardClicado.querySelector('.opcoes-cor');
     const opcoesArmazenamentoDiv = cardClicado.querySelector('.opcoes-armazenamento');
     if (!opcoesCorDiv || !opcoesArmazenamentoDiv) return;
@@ -43,10 +47,12 @@ function fetchOpcoes(modeloId, cardClicado) {
     
     fetch(url)
         .then(response => {
+            console.log(`DEBUG: Resposta do servidor (opções): ${response.status} ${response.statusText}`);
             if (!response.ok) throw new Error(`Erro de rede: ${response.status}`);
             return response.json();
         })
         .then(data => {
+            console.log(`DEBUG: Dados de opções recebidos:`, data);
             opcoesCorDiv.innerHTML = '';
             opcoesArmazenamentoDiv.innerHTML = '';
             if (data.modelo_info) {
@@ -78,13 +84,24 @@ function fetchOpcoes(modeloId, cardClicado) {
 function fetchEExibePerguntas(modeloId) {
     const token = window.CONVITE_TOKEN;
     const url = `/convite/${token}/api/modelo/${modeloId}/perguntas`;
+    console.log(`DEBUG: Tentando acessar URL: ${url}`);
+    console.log(`DEBUG: Token: ${token}`);
+    console.log(`DEBUG: Modelo ID: ${modeloId}`);
+    
     const listaPerguntasDiv = document.getElementById('lista-perguntas');
     if (!listaPerguntasDiv) return;
 
     listaPerguntasDiv.innerHTML = '<p>Carregando perguntas...</p>';
     fetch(url)
-        .then(response => response.json())
+        .then(response => {
+            console.log(`DEBUG: Resposta do servidor: ${response.status} ${response.statusText}`);
+            if (!response.ok) {
+                throw new Error(`Erro de rede: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(perguntas => {
+            console.log(`DEBUG: Perguntas recebidas:`, perguntas);
             listaPerguntasDiv.innerHTML = '';
             perguntas.forEach(pergunta => {
                 const divPergunta = document.createElement('div');
@@ -109,7 +126,10 @@ function fetchEExibePerguntas(modeloId) {
                 listaPerguntasDiv.appendChild(divPergunta);
             });
         })
-        .catch(error => console.error("Erro ao buscar ou exibir perguntas:", error));
+        .catch(error => {
+            console.error("Erro ao buscar ou exibir perguntas:", error);
+            listaPerguntasDiv.innerHTML = '<p>Erro ao carregar perguntas. Por favor, tente novamente.</p>';
+        });
 }
 
 // Função para transição para tela de avaliação
@@ -173,6 +193,8 @@ function resetarEstadoAvaliacao() {
 // Inicialização quando o DOM estiver carregado
 document.addEventListener('DOMContentLoaded', function() {
     console.log("DOM carregado. Iniciando script de convite.");
+    console.log("DEBUG: CONVITE_TOKEN =", window.CONVITE_TOKEN);
+    console.log("DEBUG: DADOS_CLIENTE =", window.DADOS_CLIENTE);
     
     const gridModelos = document.querySelector('.grid-modelos');
     const secaoAvaliacao = document.getElementById('secao-avaliacao');
