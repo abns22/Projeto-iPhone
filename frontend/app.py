@@ -21,7 +21,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_NAME = os.getenv('DB_NAME')
 DB_USER = os.getenv('DB_USER')
 DB_PASS = os.getenv('DB_PASS')
-DB_HOST = os.getenv('abns22.mysql.pythonanywhere-services.com')
+DB_HOST = os.getenv('DB_HOST')
 DB_PORT = os.getenv('DB_PORT')
 SECRET_KEY = os.getenv('SECRET_KEY', 'icloudbz12031994@lF')
 
@@ -61,12 +61,18 @@ def get_db_connection():
             }
         else:
             # Configuração para PythonAnywhere ou local
+            db_host = os.getenv('DB_HOST')
+            db_user = os.getenv('DB_USER')
+            db_name = os.getenv('DB_NAME')
+            if not all([db_host, db_user, db_name]):
+                raise ValueError("Variáveis de ambiente do banco de dados (DB_HOST, DB_USER, DB_NAME) não estão configuradas para ambiente não-Railway.")
+
             conn_args = {
-                'database': os.getenv('DB_NAME', 'abns22$default'),
-                'user': os.getenv('DB_USER', 'abns22'),
-                'password': os.getenv('DB_PASS', 'icloudbz12031994@lF'),
-                'host': os.getenv('DB_HOST', 'abns22.mysql.pythonanywhere-services.com'),
-                'port': int(os.getenv('DB_PORT', 3306)),
+                'database': db_name,
+                'user': db_user,
+                'password': os.getenv('DB_PASS'), # DB_PASS pode ser vazio para conexões locais
+                'host': db_host,
+                'port': int(os.getenv('DB_PORT', 3306)), # Porta padrão 3306 se não especificada
                 'autocommit': True
             }
 
@@ -1876,5 +1882,3 @@ if __name__ == '__main__':
     print("Correção concluída. Iniciando servidor...")
     port = int(os.getenv('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
-
-

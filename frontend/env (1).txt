@@ -1,16 +1,8 @@
-# Configurações do Banco de Dados MySQL
-DB_HOST=abns22.mysql.pythonanywhere-services.com
-DB_USER=abns22
-DB_PASSWORD=icloudbz12031994@lF
-DB_NAME=abns22$default
-
-# Configurações de Email
+DATABASE_URL=mysql://root:HLckQmDnUoUFvhvOPJvychUWgBeOGnzt@mysql.railway.internal:3306/railway
+SECRET_KEY=icloudbz12031994@lF
 MAIL_SERVER=smtp.gmail.com
 MAIL_PORT=587
 MAIL_USE_TLS=True
 MAIL_USERNAME=ogordogamer2@gmail.com
 MAIL_PASSWORD=ylmu lcyn khlp ckpd
-
-# Configurações do Flask
-SECRET_KEY=icloudbz12031994@lF
 FLASK_ENV=production
