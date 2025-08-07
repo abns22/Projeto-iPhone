@@ -69,8 +69,12 @@
     <script>
         // Variáveis globais para uso do JS de cálculo
         window.CONVITE_TOKEN = "{{ token }}";
-        window.IS_CONVITE = true;
+        window.DADOS_CLIENTE = {
+            nome: "{{ link.nome_cliente }}",
+            email: "{{ link.email_cliente }}",
+            telefone: "{{ link.telefone_cliente }}"
+        };
     </script>
-    <script src="{{ url_for('static', filename='scriptValor.js') }}"></script>
+    <script src="{{ url_for('static', filename='scriptConvite.js') }}"></script>
 </body>
 </html> 

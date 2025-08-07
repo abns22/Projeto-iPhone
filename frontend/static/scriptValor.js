@@ -51,13 +51,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     btn.dataset.imagemUrl = cor.imagem_url;
                     opcoesCorDiv.appendChild(btn);
                 });
-                data.armazenamentos.forEach(arm => {
-                    const btn = document.createElement('button');
-                    btn.className = 'opcao-btn btn-armazenamento';
-                    btn.textContent = `${arm.capacidade_gb} GB`;
-                    btn.dataset.armazenamentoId = arm.id;
-                    opcoesArmazenamentoDiv.appendChild(btn);
-                });
+                            data.armazenamentos.forEach(arm => {
+                const btn = document.createElement('button');
+                btn.className = 'opcao-btn btn-armazenamento';
+                btn.textContent = `${arm.capacidade_gb} GB`;
+                btn.dataset.armazenamentoId = arm.id;
+                btn.dataset.modificadorValor = arm.modificador_valor || '0';
+                opcoesArmazenamentoDiv.appendChild(btn);
+            });
             })
             .catch(error => console.error('Erro na função fetchOpcoes:', error));
     }
@@ -224,8 +225,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert("Erro: Não foi possível encontrar o valor base do aparelho.");
                     return;
                 }
+                
+                // Aplicar modificador de armazenamento se disponível
+                let valorComArmazenamento = valorBase;
+                const armazenamentoSelecionado = secaoAvaliacao.dataset.armazenamentoSelecionado;
+                const cardModelo = document.querySelector('.card-modelo[data-modelo-id]');
+                
+                if (cardModelo && armazenamentoSelecionado) {
+                    // Buscar o modificador do armazenamento selecionado
+                    const armazenamentoBtn = cardModelo.querySelector('.btn-armazenamento.selecionado');
+                    if (armazenamentoBtn && armazenamentoBtn.dataset.modificadorValor) {
+                        const modificador = parseFloat(armazenamentoBtn.dataset.modificadorValor);
+                        if (!isNaN(modificador)) {
+                            valorComArmazenamento += modificador;
+                            console.log(`Aplicando modificador de armazenamento: ${modificador}, valor final: ${valorComArmazenamento}`);
+                        }
+                    }
+                }
+                
                 let todasRespondidas = true;
-                let valorFinal = valorBase;
+                let valorFinal = valorComArmazenamento;
                 const resumoDiagnostico = [];
                 const todasAsPerguntasDivs = document.querySelectorAll('#lista-perguntas .item-pergunta');
                 todasAsPerguntasDivs.forEach(divPergunta => {
