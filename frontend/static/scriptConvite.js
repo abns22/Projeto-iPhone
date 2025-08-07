@@ -67,6 +67,7 @@ function fetchOpcoes(modeloId, cardClicado) {
                 btn.textContent = `${arm.capacidade_gb} GB`;
                 btn.dataset.armazenamentoId = arm.id;
                 btn.dataset.modificadorValor = arm.modificador_valor || '0';
+                console.log(`Criando botão de armazenamento: ${arm.capacidade_gb}GB, modificador: ${arm.modificador_valor}`);
                 opcoesArmazenamentoDiv.appendChild(btn);
             });
         })
@@ -141,6 +142,15 @@ function transicaoParaTelaDeAvaliacao(cardClicado) {
     secaoAvaliacao.dataset.valorBase = valorBase;
     secaoAvaliacao.dataset.corSelecionada = corBtn.textContent;
     secaoAvaliacao.dataset.armazenamentoSelecionado = armBtn.textContent;
+    secaoAvaliacao.dataset.modificadorArmazenamento = armBtn.dataset.modificadorValor || '0';
+    
+    // Debug: verificar dados passados para a seção de avaliação
+    console.log("Dados passados para seção de avaliação:");
+    console.log("- Valor base:", valorBase);
+    console.log("- Cor:", corBtn.textContent);
+    console.log("- Armazenamento:", armBtn.textContent);
+    console.log("- Modificador:", armBtn.dataset.modificadorValor);
+    
     fetchEExibePerguntas(cardClicado.dataset.modeloId);
 }
 
@@ -248,19 +258,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Aplicar modificador de armazenamento se disponível
                 let valorComArmazenamento = valorBase;
-                const armazenamentoSelecionado = secaoAvaliacao.dataset.armazenamentoSelecionado;
-                const cardModelo = document.querySelector('.card-modelo[data-modelo-id]');
+                const modificadorArmazenamento = parseFloat(secaoAvaliacao.dataset.modificadorArmazenamento || '0');
                 
-                if (cardModelo && armazenamentoSelecionado) {
-                    // Buscar o modificador do armazenamento selecionado
-                    const armazenamentoBtn = cardModelo.querySelector('.btn-armazenamento.selecionado');
-                    if (armazenamentoBtn && armazenamentoBtn.dataset.modificadorValor) {
-                        const modificador = parseFloat(armazenamentoBtn.dataset.modificadorValor);
-                        if (!isNaN(modificador)) {
-                            valorComArmazenamento += modificador;
-                            console.log(`Aplicando modificador de armazenamento: ${modificador}, valor final: ${valorComArmazenamento}`);
-                        }
-                    }
+                // Debug: verificar dados do armazenamento
+                console.log("Valor base:", valorBase);
+                console.log("Modificador de armazenamento:", modificadorArmazenamento);
+                
+                if (!isNaN(modificadorArmazenamento)) {
+                    valorComArmazenamento += modificadorArmazenamento;
+                    console.log(`Aplicando modificador de armazenamento: ${modificadorArmazenamento}, valor final: ${valorComArmazenamento}`);
+                } else {
+                    console.log("Modificador de armazenamento inválido");
                 }
                 
                 let todasRespondidas = true;
@@ -298,7 +306,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const nomeCor = secaoAvaliacao.dataset.corSelecionada;
                 const capacidadeArmazenamento = secaoAvaliacao.dataset.armazenamentoSelecionado;
 
+                // Debug: verificar dados do cliente
+                console.log("Dados do cliente:", window.DADOS_CLIENTE);
+                
                 const dadosDoOrcamento = {
+                    nomeCliente: window.DADOS_CLIENTE.nome,
+                    emailCliente: window.DADOS_CLIENTE.email,
+                    telefoneCliente: window.DADOS_CLIENTE.telefone,
                     modelo: nomeModelo,
                     cor: nomeCor,
                     armazenamento: capacidadeArmazenamento,
@@ -306,6 +320,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     valor: valorFinal.toFixed(2),
                     resumo: resumoDiagnostico
                 };
+                
+                // Debug: verificar dados do orçamento
+                console.log("Dados do orçamento:", dadosDoOrcamento);
 
                 if(divResultado) {
                     divResultado.innerHTML = `

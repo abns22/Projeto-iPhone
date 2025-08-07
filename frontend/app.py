@@ -1732,6 +1732,91 @@ def calcular_convite(token):
 
     return redirect(url_for('login'))
 
+@app.route('/convite/<token>/api/modelo/<int:modelo_id>/perguntas')
+def get_perguntas_modelo_convite(token, modelo_id):
+    """API para buscar perguntas do modelo (versão para convidados)."""
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Verifica se o link é válido
+        cursor.execute("SELECT empresa_id FROM links_convidados WHERE token_unico = %s AND usado = FALSE", (token,))
+        link = cursor.fetchone()
+
+        if not link:
+            return jsonify({"erro": "Link inválido"}), 401
+
+        empresa_id = link['empresa_id']
+        
+        # Verifica se o plano da empresa está ativo
+        cursor.execute("SELECT plano_ativo FROM empresas WHERE id = %s", (empresa_id,))
+        empresa = cursor.fetchone()
+        if empresa and not empresa['plano_ativo']:
+            return jsonify({"erro": "O plano da empresa está desativado"}), 403
+
+        # Busca todas as perguntas de avaliação
+        cursor.execute("""
+            SELECT
+                p.id AS pergunta_id,
+                p.texto_pergunta
+            FROM perguntas_avaliacao p
+            ORDER BY p.id
+        """)
+
+        todas_perguntas = cursor.fetchall()
+        perguntas = []
+
+        for pergunta in todas_perguntas:
+            pergunta_id = pergunta['pergunta_id']
+
+            # Busca as respostas existentes para esta pergunta e modelo
+            cursor.execute("""
+                SELECT
+                    ir.resposta_que_gera_impacto,
+                    ir.valor_do_impacto
+                FROM impacto_respostas ir
+                WHERE ir.pergunta_id = %s AND ir.modelo_id = %s AND ir.empresa_id = %s
+            """, (pergunta_id, modelo_id, empresa_id))
+
+            respostas_existentes = cursor.fetchall()
+
+            # Cria um dicionário para facilitar a busca
+            respostas_dict = {r['resposta_que_gera_impacto']: r['valor_do_impacto'] for r in respostas_existentes}
+
+            # Garante que sempre tenha as duas opções
+            respostas = []
+
+            # Adiciona resposta "Sim"
+            impacto_sim = respostas_dict.get('Sim', 0.0)
+            respostas.append({
+                'texto': 'Sim',
+                'impacto': float(impacto_sim)
+            })
+
+            # Adiciona resposta "Não"
+            impacto_nao = respostas_dict.get('Não', 0.0)
+            respostas.append({
+                'texto': 'Não',
+                'impacto': float(impacto_nao)
+            })
+
+            perguntas.append({
+                'pergunta_id': pergunta_id,
+                'texto_pergunta': pergunta['texto_pergunta'],
+                'respostas': respostas
+            })
+
+        return jsonify(perguntas)
+
+    except Exception as e:
+        print(f"Erro ao buscar perguntas: {e}")
+        return jsonify({"erro": "Falha ao buscar perguntas"}), 500
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+
 @app.route('/convite/<token>/api/modelo/<int:modelo_id>/opcoes')
 def get_opcoes_modelo_convite(token, modelo_id):
     """API para buscar opções do modelo (versão para convidados)."""
