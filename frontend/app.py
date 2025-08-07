@@ -561,39 +561,87 @@ def enviar_orcamento():
         modelo_id = modelo_row['id']
         valor_base_db = modelo_row['valor_base_novo']
 
-        # Buscar dados do usuário logado no banco de dados
-        cursor.execute("SELECT nome_completo, telefone FROM usuarios WHERE id = %s", (usuario_id_logado,))
-        dados_usuario = cursor.fetchone()
-        
-        # Usar dados do frontend se fornecidos, senão usar dados do usuário logado
-        nome_cliente_final = dados.get('nomeCliente') or dados_usuario.get('nome_completo', 'Não informado')
-        telefone_cliente_final = dados.get('telefoneCliente') or dados_usuario.get('telefone', 'Não informado')
-        
-        # Debug: verificar dados coletados
-        print(f"DEBUG - Dados do frontend: nomeCliente={dados.get('nomeCliente')}, telefoneCliente={dados.get('telefoneCliente')}")
-        print(f"DEBUG - Dados do usuário: nome={dados_usuario.get('nome_completo')}, telefone={dados_usuario.get('telefone')}")
-        print(f"DEBUG - Dados finais: nome={nome_cliente_final}, telefone={telefone_cliente_final}")
-        cor_selecionada = dados.get('cor', 'N/A')
+        try:
+            # Buscar dados do usuário logado no banco de dados
+            cursor.execute("SELECT nome_completo, telefone FROM usuarios WHERE id = %s", (usuario_id_logado,))
+            dados_usuario = cursor.fetchone()
+            
+            if dados_usuario is None:
+                dados_usuario = {'nome_completo': 'Não informado', 'telefone': 'Não informado'}
+            
+            # Usar dados do frontend se fornecidos, senão usar dados do usuário logado
+            nome_cliente_final = dados.get('nomeCliente')
+            if not nome_cliente_final or nome_cliente_final == 'None':
+                nome_cliente_final = dados_usuario.get('nome_completo', 'Não informado')
+            
+            telefone_cliente_final = dados.get('telefoneCliente')
+            if not telefone_cliente_final or telefone_cliente_final == 'None':
+                telefone_cliente_final = dados_usuario.get('telefone', 'Não informado')
+            
+            # Debug: verificar dados coletados
+            print(f"DEBUG - Dados do frontend: nomeCliente={dados.get('nomeCliente')}, telefoneCliente={dados.get('telefoneCliente')}")
+            print(f"DEBUG - Dados do usuário: nome={dados_usuario.get('nome_completo')}, telefone={dados_usuario.get('telefone')}")
+            print(f"DEBUG - Dados finais: nome={nome_cliente_final}, telefone={telefone_cliente_final}")
+            
+            # Garantir que cursor.fetchone() foi chamado antes de qualquer outra operação
+            cursor.fetchall()  # Limpa qualquer resultado pendente
+            
+            cor_selecionada = dados.get('cor', 'N/A')
+        except Exception as e:
+            print(f"Erro ao processar dados do cliente: {e}")
+            nome_cliente_final = "Não informado"
+            telefone_cliente_final = "Não informado"
+            cor_selecionada = dados.get('cor', 'N/A')
         armazenamento_selecionado = dados.get('armazenamento', 'N/A')
         imei = dados.get('imei', 'N/A')
         valor_final_calculado = float(dados.get('valor', 0.0))
         resumo_json = json.dumps(dados.get('resumo', []))
 
-        sql_insert = """
-            INSERT INTO avaliacoes_concluidas (
-                empresa_id, usuario_id, nome_cliente_final, email_cliente_final, telefone_cliente_final,
-                modelo_iphone_id, cor_selecionada, armazenamento_selecionado, imei,
-                valor_base_calculado, valor_final_calculado, resumo_respostas
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """
-        cursor.execute(sql_insert, (
-            empresa_id_logada, usuario_id_logado, nome_cliente_final, email_usuario_logado, telefone_cliente_final,
-            modelo_id, cor_selecionada, armazenamento_selecionado, imei,
-            valor_base_db, valor_final_calculado, resumo_json
-        ))
-
-        conn.commit()
-        print("Avaliação salva com sucesso no banco de dados PostgreSQL.")
+        try:
+            # Limpar qualquer resultado pendente antes de executar o INSERT
+            cursor.fetchall()
+            
+            sql_insert = """
+                INSERT INTO avaliacoes_concluidas (
+                    empresa_id, usuario_id, nome_cliente_final, email_cliente_final, telefone_cliente_final,
+                    modelo_iphone_id, cor_selecionada, armazenamento_selecionado, imei,
+                    valor_base_calculado, valor_final_calculado, resumo_respostas
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            
+            # Debug dos valores antes do INSERT
+            print("\nDEBUG - Valores para INSERT:")
+            print(f"empresa_id_logada: {empresa_id_logada}")
+            print(f"usuario_id_logado: {usuario_id_logado}")
+            print(f"nome_cliente_final: {nome_cliente_final}")
+            print(f"email_usuario_logado: {email_usuario_logado}")
+            print(f"telefone_cliente_final: {telefone_cliente_final}")
+            print(f"modelo_id: {modelo_id}")
+            print(f"cor_selecionada: {cor_selecionada}")
+            print(f"armazenamento_selecionado: {armazenamento_selecionado}")
+            print(f"imei: {imei}")
+            print(f"valor_base_db: {valor_base_db}")
+            print(f"valor_final_calculado: {valor_final_calculado}")
+            
+            cursor.execute(sql_insert, (
+                empresa_id_logada, usuario_id_logado, nome_cliente_final, email_usuario_logado, telefone_cliente_final,
+                modelo_id, cor_selecionada, armazenamento_selecionado, imei,
+                valor_base_db, valor_final_calculado, resumo_json
+            ))
+            
+            conn.commit()
+            print("✅ Avaliação salva com sucesso no banco de dados.")
+            
+        except mysql.connector.Error as e:
+            print(f"❌ Erro MySQL ao salvar avaliação: {e}")
+            if conn:
+                conn.rollback()
+            raise
+        except Exception as e:
+            print(f"❌ Erro inesperado ao salvar avaliação: {e}")
+            if conn:
+                conn.rollback()
+            raise
 
     except mysql.connector.Error as e:
         if conn: conn.rollback()
@@ -652,23 +700,44 @@ def enviar_orcamento():
 
             if email_destino and email_destino.strip():
                 try:
+                    print("\n=== PREPARANDO ENVIO DE EMAIL ===")
+                    print(f"Configurações:")
+                    print(f"- Servidor: {app.config['MAIL_SERVER']}")
+                    print(f"- Porta: {app.config['MAIL_PORT']}")
+                    print(f"- TLS: {app.config['MAIL_USE_TLS']}")
+                    print(f"- SSL: {app.config['MAIL_USE_SSL']}")
+                    print(f"- Destinatário: {email_destino}")
+                    
                     # Limpa caracteres especiais do assunto
                     assunto_limpo = f"Novo Orçamento de Avaliação para {dados.get('modelo')}".encode('ascii', 'ignore').decode('ascii')
+                    print(f"Assunto preparado: {assunto_limpo}")
 
                     msg = Message(
                         subject=assunto_limpo,
                         sender=("Sua Calculadora de iPhones", app.config['MAIL_USERNAME']),
                         recipients=[email_destino.strip()]
                     )
+                    
                     # Limpa caracteres especiais do corpo
                     corpo_limpo = corpo_email.encode('utf-8', 'ignore').decode('utf-8')
                     msg.body = corpo_limpo
-                    mail.send(msg)
-                    print(f"Email enviado com sucesso para: {email_destino}")
+                    
+                    print("Mensagem preparada, tentando enviar...")
+                    
+                    with app.app_context():
+                        mail.send(msg)
+                    print("✅ Email enviado com sucesso!")
+                    
                 except Exception as e:
-                    print(f"Erro ao enviar email para {email_destino}: {e}")
+                    print("\n❌ ERRO NO ENVIO DE EMAIL")
+                    print(f"Tipo do erro: {type(e).__name__}")
+                    print(f"Mensagem: {str(e)}")
+                    print(f"Detalhes:")
+                    print(f"- Email destino: {email_destino}")
+                    print(f"- Empresa ID: {empresa_id_logada}")
+                    raise
             else:
-                print(f"Email da empresa não encontrado ou vazio para empresa ID: {empresa_id_logada}")
+                print(f"❌ Email da empresa não encontrado ou vazio para empresa ID: {empresa_id_logada}")
 
         return jsonify({"mensagem": "Orçamento enviado com sucesso para a nossa equipe e registrado!"})
 
@@ -1825,15 +1894,27 @@ def enviar_orcamento_convite(token):
             envia_email = bool(link['envia_email_orcamento_link'])
 
         if envia_email and email_destino and email_destino.strip():
+            # Buscar modelo de interesse da sessão
+            modelo_interesse = session.get(f'modelo_interesse_{token}', 'Não informado')
+            print(f"\nDEBUG - Dados do Email:")
+            print(f"- Nome: {nome_cliente}")
+            print(f"- Email: {email_cliente}")
+            print(f"- Telefone: {telefone_cliente}")
+            print(f"- Modelo de Interesse: {modelo_interesse}")
+            print(f"- Modelo Avaliado: {dados.get('modelo')}")
+            
             corpo_email = f"""
             Novo Orçamento via Link de Convite!
             ------------------------------------
-            Cliente: {nome_cliente}
-            E-mail: {email_cliente}
-            Telefone: {telefone_cliente}
-            Modelo de Interesse: {modelo_interesse}
-
-            Detalhes do Aparelho:
+            Dados do Cliente:
+            - Nome: {nome_cliente}
+            - E-mail: {email_cliente}
+            - Telefone: {telefone_cliente}
+            
+            Preferência do Cliente:
+            - Modelo de Interesse: {modelo_interesse}
+            
+            Detalhes do Aparelho Avaliado:
             - Modelo: {dados.get('modelo')}
             - Cor: {cor_selecionada}
             - Armazenamento: {armazenamento_selecionado}
