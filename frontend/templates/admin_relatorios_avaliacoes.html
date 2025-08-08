@@ -391,8 +391,11 @@
                         return;
                     }
                     
-                    // Renderizar detalhes completos
-                    conteudo.innerHTML = `
+                                         // Debug: mostrar estrutura das respostas no console
+                     console.log('Estrutura das respostas:', data.respostas);
+                     
+                     // Renderizar detalhes completos
+                     conteudo.innerHTML = `
                         <div class="row">
                             <!-- Informações Gerais -->
                             <div class="col-md-6 mb-4">
@@ -536,21 +539,32 @@
                                                         <th>Impacto</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody>
-                                                    ${Object.entries(data.respostas).map(([pergunta, resposta]) => `
-                                                    <tr>
-                                                        <td><strong>${pergunta}</strong></td>
-                                                        <td>
-                                                            <span class="badge ${resposta === 'Sim' ? 'bg-success' : resposta === 'Não' ? 'bg-danger' : 'bg-secondary'}">
-                                                                ${resposta}
-                                                            </span>
-                                                        </td>
-                                                        <td>
-                                                            <small class="text-muted">Calculado automaticamente</small>
-                                                        </td>
-                                                    </tr>
-                                                    `).join('')}
-                                                </tbody>
+                                                                                                 <tbody>
+                                                     ${Object.entries(data.respostas).map(([pergunta, resposta]) => {
+                                                         // Agora as respostas já são strings simples do backend
+                                                         const respostaTexto = String(resposta);
+                                                         let badgeClass = 'bg-secondary';
+                                                         
+                                                         if (respostaTexto === 'Sim') badgeClass = 'bg-success';
+                                                         else if (respostaTexto === 'Não') badgeClass = 'bg-danger';
+                                                         else if (respostaTexto.includes('Sim')) badgeClass = 'bg-success';
+                                                         else if (respostaTexto.includes('Não')) badgeClass = 'bg-danger';
+                                                         
+                                                         return `
+                                                         <tr>
+                                                             <td><strong>${pergunta}</strong></td>
+                                                             <td>
+                                                                 <span class="badge ${badgeClass}">
+                                                                     ${respostaTexto}
+                                                                 </span>
+                                                             </td>
+                                                             <td>
+                                                                 <small class="text-muted">Calculado automaticamente</small>
+                                                             </td>
+                                                         </tr>
+                                                         `;
+                                                     }).join('')}
+                                                 </tbody>
                                             </table>
                                         </div>
                                     </div>

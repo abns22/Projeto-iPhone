@@ -2863,8 +2863,26 @@ def detalhes_avaliacao(avaliacao_id):
         
         # Processar resumo de respostas
         try:
-            resumo_respostas = json.loads(avaliacao['resumo_respostas']) if avaliacao['resumo_respostas'] else {}
-        except (json.JSONDecodeError, TypeError):
+            if avaliacao['resumo_respostas']:
+                resumo_respostas = json.loads(avaliacao['resumo_respostas'])
+                # Garantir que as respostas sejam strings simples
+                resumo_respostas_limpo = {}
+                for pergunta, resposta in resumo_respostas.items():
+                    if isinstance(resposta, dict):
+                        # Se for um objeto, extrair a resposta principal
+                        if 'resposta' in resposta:
+                            resumo_respostas_limpo[pergunta] = resposta['resposta']
+                        elif 'valor' in resposta:
+                            resumo_respostas_limpo[pergunta] = str(resposta['valor'])
+                        else:
+                            resumo_respostas_limpo[pergunta] = str(resposta)
+                    else:
+                        resumo_respostas_limpo[pergunta] = str(resposta)
+                resumo_respostas = resumo_respostas_limpo
+            else:
+                resumo_respostas = {}
+        except (json.JSONDecodeError, TypeError) as e:
+            print(f"Erro ao processar resumo de respostas: {e}")
             resumo_respostas = {}
         
         # Calcular diferença de valores
