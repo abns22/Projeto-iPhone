@@ -70,9 +70,22 @@
                         <a href="{{ url_for('relatorios_dashboard') }}" class="btn btn-outline-secondary me-2">
                             <i class="fas fa-arrow-left me-2"></i>Voltar ao Dashboard
                         </a>
-                        <button class="btn btn-export" onclick="exportarDados()">
-                            <i class="fas fa-download me-2"></i>Exportar
-                        </button>
+                        <div class="dropdown">
+                            <button class="btn btn-export dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-download me-2"></i>Exportar
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="exportarDados('csv')">
+                                    <i class="fas fa-file-csv me-2"></i>CSV
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportarDados('excel')">
+                                    <i class="fas fa-file-excel me-2"></i>Excel
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportarDados('pdf')">
+                                    <i class="fas fa-file-pdf me-2"></i>PDF
+                                </a></li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -360,15 +373,16 @@
             modal.show();
         }
 
-        function exportarDados() {
+        function exportarDados(formato) {
             // Obter parâmetros atuais da URL para manter os filtros
             const params = new URLSearchParams(window.location.search);
+            params.set('formato', formato);
             
-            // Simular exportação por agora
-            alert('Funcionalidade de exportação em desenvolvimento!\n\nEm breve você poderá exportar os dados em:\n- Excel (.xlsx)\n- CSV\n- PDF');
+            // Construir URL de exportação
+            const url = '/admin/relatorios/exportar/avaliacoes?' + params.toString();
             
-            // Quando implementado, seria algo assim:
-            // window.open('/admin/relatorios/avaliacoes/exportar?' + params.toString());
+            // Abrir em nova janela para download
+            window.open(url, '_blank');
         }
 
         // Função para ordenar tabela (futuro)

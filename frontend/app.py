@@ -2212,18 +2212,27 @@ def relatorios_usuarios():
 
     except mysql.connector.Error as e:
         flash('Erro ao carregar dados dos usuários.', 'danger')
-        print(f"Erro ao buscar dados de usuários: {e}")
+        print(f"Erro MySQL ao buscar dados de usuários: {e}")
+    except Exception as e:
+        flash('Erro inesperado ao carregar relatório de usuários.', 'danger')
+        print(f"Erro inesperado na rota relatorios_usuarios: {e}")
     finally:
         if conn:
             cursor.close()
             conn.close()
 
     info_empresa = get_info_empresa_logada()
-    return render_template('admin_relatorios_usuarios.html',
-                         dados_usuarios=dados_usuarios,
-                         info_empresa=info_empresa,
-                         is_admin=session.get('is_admin'),
-                         empresa_pode_gerir=session.get('empresa_pode_gerir'))
+    
+    try:
+        return render_template('admin_relatorios_usuarios.html',
+                             dados_usuarios=dados_usuarios,
+                             info_empresa=info_empresa,
+                             is_admin=session.get('is_admin'),
+                             empresa_pode_gerir=session.get('empresa_pode_gerir'))
+    except Exception as e:
+        print(f"Erro no template admin_relatorios_usuarios.html: {e}")
+        flash('Erro ao carregar template de relatórios.', 'danger')
+        return redirect(url_for('relatorios_dashboard'))
 
 @app.route('/admin/relatorios/financeiro')
 def relatorios_financeiro():
@@ -2395,6 +2404,502 @@ def relatorios_tendencias():
                          info_empresa=info_empresa,
                          is_admin=session.get('is_admin'),
                          empresa_pode_gerir=session.get('empresa_pode_gerir'))
+
+# ===== SISTEMA DE EXPORTAÇÃO DE RELATÓRIOS =====
+
+@app.route('/admin/relatorios/exportar/<tipo>')
+def exportar_relatorio(tipo):
+    """Exporta relatórios em diferentes formatos."""
+    resp = require_login() or require_admin() or require_empresa_permissao()
+    if resp: return resp
+
+    empresa_id_logada = session.get('empresa_id')
+    if not empresa_id_logada:
+        return jsonify({"erro": "Usuário não está associado a uma empresa válida"}), 400
+
+    formato = request.args.get('formato', 'csv')  # csv, excel, pdf
+    
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        if tipo == 'avaliacoes':
+            # Aplicar filtros da URL
+            modelo_filtro = request.args.get('modelo', '')
+            usuario_filtro = request.args.get('usuario', '')
+            data_inicio = request.args.get('data_inicio', '')
+            data_fim = request.args.get('data_fim', '')
+            
+            where_conditions = ["ac.empresa_id = %s"]
+            params = [empresa_id_logada]
+
+            if modelo_filtro:
+                where_conditions.append("mi.nome_modelo = %s")
+                params.append(modelo_filtro)
+            if usuario_filtro:
+                where_conditions.append("u.nome_completo = %s")
+                params.append(usuario_filtro)
+            if data_inicio:
+                where_conditions.append("DATE(ac.data_avaliacao) >= %s")
+                params.append(data_inicio)
+            if data_fim:
+                where_conditions.append("DATE(ac.data_avaliacao) <= %s")
+                params.append(data_fim)
+
+            where_clause = " AND ".join(where_conditions)
+
+            cursor.execute(f"""
+                SELECT 
+                    ac.nome_cliente_final as 'Cliente',
+                    ac.email_cliente_final as 'Email',
+                    ac.telefone_cliente_final as 'Telefone',
+                    mi.nome_modelo as 'Modelo',
+                    ac.cor_selecionada as 'Cor',
+                    ac.armazenamento_selecionado as 'Armazenamento',
+                    ac.valor_base_calculado as 'Valor Base',
+                    ac.valor_final_calculado as 'Valor Final',
+                    u.nome_completo as 'Usuário',
+                    DATE_FORMAT(ac.data_avaliacao, '%d/%m/%Y %H:%i') as 'Data',
+                    ac.imei as 'IMEI'
+                FROM avaliacoes_concluidas ac
+                JOIN modelos_iphone mi ON ac.modelo_iphone_id = mi.id
+                LEFT JOIN usuarios u ON ac.usuario_id = u.id
+                WHERE {where_clause}
+                ORDER BY ac.data_avaliacao DESC
+                LIMIT 1000
+            """, params)
+            
+        elif tipo == 'usuarios':
+            cursor.execute("""
+                SELECT 
+                    u.nome_completo as 'Usuário',
+                    u.usuario as 'Email',
+                    COUNT(ac.id) as 'Total Avaliações',
+                    COALESCE(AVG(ac.valor_final_calculado), 0) as 'Valor Médio',
+                    COALESCE(MIN(ac.valor_final_calculado), 0) as 'Menor Valor',
+                    COALESCE(MAX(ac.valor_final_calculado), 0) as 'Maior Valor',
+                    MAX(ac.data_avaliacao) as 'Última Avaliação'
+                FROM usuarios u
+                LEFT JOIN avaliacoes_concluidas ac ON u.id = ac.usuario_id
+                WHERE u.empresa_id = %s
+                GROUP BY u.id, u.nome_completo, u.usuario
+                ORDER BY COUNT(ac.id) DESC
+            """, (empresa_id_logada,))
+
+        elif tipo == 'financeiro':
+            cursor.execute("""
+                SELECT 
+                    mi.nome_modelo as 'Modelo',
+                    COUNT(*) as 'Quantidade',
+                    AVG(ac.valor_final_calculado) as 'Valor Médio Final',
+                    AVG(ac.valor_base_calculado) as 'Valor Base Médio',
+                    AVG(ac.valor_final_calculado - ac.valor_base_calculado) as 'Depreciação Média',
+                    (AVG(ac.valor_final_calculado - ac.valor_base_calculado) / AVG(ac.valor_base_calculado)) * 100 as 'Percentual Depreciação'
+                FROM avaliacoes_concluidas ac
+                JOIN modelos_iphone mi ON ac.modelo_iphone_id = mi.id
+                WHERE ac.empresa_id = %s
+                GROUP BY mi.nome_modelo
+                ORDER BY COUNT(*) DESC
+            """, (empresa_id_logada,))
+
+        dados = cursor.fetchall()
+
+        if formato == 'csv':
+            return gerar_csv(dados, tipo)
+        elif formato == 'excel':
+            return gerar_excel(dados, tipo)
+        elif formato == 'pdf':
+            return gerar_pdf(dados, tipo)
+        else:
+            return jsonify({"erro": "Formato não suportado"}), 400
+
+    except mysql.connector.Error as e:
+        print(f"Erro ao exportar dados: {e}")
+        return jsonify({"erro": "Erro ao buscar dados"}), 500
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+
+def gerar_csv(dados, tipo):
+    """Gera arquivo CSV."""
+    from flask import Response
+    import csv
+    from io import StringIO
+    
+    output = StringIO()
+    
+    if dados:
+        writer = csv.DictWriter(output, fieldnames=dados[0].keys())
+        writer.writeheader()
+        
+        for linha in dados:
+            # Converter valores None e formatar números
+            linha_limpa = {}
+            for key, value in linha.items():
+                if value is None:
+                    linha_limpa[key] = ''
+                elif isinstance(value, float):
+                    linha_limpa[key] = f"{value:.2f}"
+                else:
+                    linha_limpa[key] = str(value)
+            writer.writerow(linha_limpa)
+    
+    output.seek(0)
+    
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={
+            'Content-Disposition': f'attachment; filename=relatorio_{tipo}_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+        }
+    )
+
+def gerar_excel(dados, tipo):
+    """Gera arquivo Excel (simulado como CSV por simplicidade)."""
+    # Para implementação completa, usar openpyxl
+    return gerar_csv(dados, tipo)
+
+def gerar_pdf(dados, tipo):
+    """Gera arquivo PDF (simulado como texto por simplicidade)."""
+    from flask import Response
+    
+    conteudo = f"RELATÓRIO {tipo.upper()}\n"
+    conteudo += f"Gerado em: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n"
+    conteudo += "="*50 + "\n\n"
+    
+    if dados:
+        # Cabeçalhos
+        headers = list(dados[0].keys())
+        conteudo += " | ".join(headers) + "\n"
+        conteudo += "-" * (len(" | ".join(headers))) + "\n"
+        
+        # Dados
+        for linha in dados:
+            valores = []
+            for value in linha.values():
+                if value is None:
+                    valores.append("N/A")
+                elif isinstance(value, float):
+                    valores.append(f"{value:.2f}")
+                else:
+                    valores.append(str(value))
+            conteudo += " | ".join(valores) + "\n"
+    
+    return Response(
+        conteudo,
+        mimetype='text/plain',
+        headers={
+            'Content-Disposition': f'attachment; filename=relatorio_{tipo}_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
+        }
+    )
+
+# ===== RELATÓRIO DE LINKS DE CONVITE =====
+
+@app.route('/admin/relatorios/convites')
+def relatorios_convites():
+    """Relatório de links de convite."""
+    resp = require_login() or require_admin() or require_empresa_permissao()
+    if resp: return resp
+
+    empresa_id_logada = session.get('empresa_id')
+    if not empresa_id_logada:
+        flash("Usuário não está associado a uma empresa válida", "danger")
+        return redirect(url_for('login'))
+
+    conn = None
+    dados_convites = {
+        'resumo': {},
+        'links_ativos': [],
+        'links_usados': [],
+        'links_expirados': [],
+        'estatisticas': {}
+    }
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Resumo geral
+        cursor.execute("""
+            SELECT 
+                COUNT(*) as total_links,
+                COUNT(CASE WHEN usado = 1 THEN 1 END) as links_usados,
+                COUNT(CASE WHEN usado = 0 AND data_expiracao > NOW() THEN 1 END) as links_ativos,
+                COUNT(CASE WHEN usado = 0 AND data_expiracao <= NOW() THEN 1 END) as links_expirados,
+                (COUNT(CASE WHEN usado = 1 THEN 1 END) / COUNT(*)) * 100 as taxa_conversao
+            FROM links_convidados 
+            WHERE empresa_id = %s
+        """, (empresa_id_logada,))
+        dados_convites['resumo'] = cursor.fetchone()
+
+        # Links ativos
+        cursor.execute("""
+            SELECT lc.*, u.nome_completo as criado_por,
+                   TIMESTAMPDIFF(HOUR, NOW(), lc.data_expiracao) as horas_restantes
+            FROM links_convidados lc
+            JOIN usuarios u ON lc.usuario_id = u.id
+            WHERE lc.empresa_id = %s AND lc.usado = 0 AND lc.data_expiracao > NOW()
+            ORDER BY lc.data_expiracao ASC
+        """, (empresa_id_logada,))
+        dados_convites['links_ativos'] = cursor.fetchall()
+
+        # Links usados (últimos 20)
+        cursor.execute("""
+            SELECT lc.*, u.nome_completo as criado_por
+            FROM links_convidados lc
+            JOIN usuarios u ON lc.usuario_id = u.id
+            WHERE lc.empresa_id = %s AND lc.usado = 1
+            ORDER BY lc.data_uso DESC
+            LIMIT 20
+        """, (empresa_id_logada,))
+        dados_convites['links_usados'] = cursor.fetchall()
+
+        # Estatísticas por usuário
+        cursor.execute("""
+            SELECT 
+                u.nome_completo,
+                COUNT(lc.id) as links_criados,
+                COUNT(CASE WHEN lc.usado = 1 THEN 1 END) as links_convertidos,
+                (COUNT(CASE WHEN lc.usado = 1 THEN 1 END) / COUNT(lc.id)) * 100 as taxa_conversao_usuario
+            FROM usuarios u
+            LEFT JOIN links_convidados lc ON u.id = lc.usuario_id
+            WHERE u.empresa_id = %s
+            GROUP BY u.id, u.nome_completo
+            HAVING COUNT(lc.id) > 0
+            ORDER BY links_convertidos DESC
+        """, (empresa_id_logada,))
+        dados_convites['estatisticas'] = cursor.fetchall()
+
+    except mysql.connector.Error as e:
+        flash('Erro ao carregar dados dos convites.', 'danger')
+        print(f"Erro ao buscar dados de convites: {e}")
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+
+    info_empresa = get_info_empresa_logada()
+    return render_template('admin_relatorios_convites.html',
+                         dados=dados_convites,
+                         info_empresa=info_empresa,
+                         is_admin=session.get('is_admin'),
+                         empresa_pode_gerir=session.get('empresa_pode_gerir'))
+
+# ===== SISTEMA DE COMPARATIVOS =====
+
+@app.route('/admin/relatorios/comparativos')
+def relatorios_comparativos():
+    """Relatório de comparativos entre períodos."""
+    resp = require_login() or require_admin() or require_empresa_permissao()
+    if resp: return resp
+
+    empresa_id_logada = session.get('empresa_id')
+    if not empresa_id_logada:
+        flash("Usuário não está associado a uma empresa válida", "danger")
+        return redirect(url_for('login'))
+
+    # Parâmetros de comparação
+    periodo1_inicio = request.args.get('periodo1_inicio', '')
+    periodo1_fim = request.args.get('periodo1_fim', '')
+    periodo2_inicio = request.args.get('periodo2_inicio', '')
+    periodo2_fim = request.args.get('periodo2_fim', '')
+
+    # Se não especificado, comparar mês atual vs mês anterior
+    if not all([periodo1_inicio, periodo1_fim, periodo2_inicio, periodo2_fim]):
+        hoje = datetime.datetime.now()
+        primeiro_dia_mes_atual = hoje.replace(day=1)
+        ultimo_dia_mes_atual = hoje
+        
+        primeiro_dia_mes_anterior = (primeiro_dia_mes_atual - datetime.timedelta(days=1)).replace(day=1)
+        ultimo_dia_mes_anterior = primeiro_dia_mes_atual - datetime.timedelta(days=1)
+        
+        periodo1_inicio = primeiro_dia_mes_atual.strftime('%Y-%m-%d')
+        periodo1_fim = ultimo_dia_mes_atual.strftime('%Y-%m-%d')
+        periodo2_inicio = primeiro_dia_mes_anterior.strftime('%Y-%m-%d')
+        periodo2_fim = ultimo_dia_mes_anterior.strftime('%Y-%m-%d')
+
+    conn = None
+    dados_comparativos = {
+        'periodo1': {'inicio': periodo1_inicio, 'fim': periodo1_fim, 'dados': {}},
+        'periodo2': {'inicio': periodo2_inicio, 'fim': periodo2_fim, 'dados': {}},
+        'comparacao': {}
+    }
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Dados do período 1
+        cursor.execute("""
+            SELECT 
+                COUNT(*) as total_avaliacoes,
+                AVG(valor_final_calculado) as valor_medio,
+                SUM(valor_final_calculado) as valor_total,
+                COUNT(DISTINCT modelo_iphone_id) as modelos_diferentes,
+                COUNT(DISTINCT CASE WHEN usuario_id IS NOT NULL THEN usuario_id END) as usuarios_ativos
+            FROM avaliacoes_concluidas 
+            WHERE empresa_id = %s AND DATE(data_avaliacao) BETWEEN %s AND %s
+        """, (empresa_id_logada, periodo1_inicio, periodo1_fim))
+        dados_comparativos['periodo1']['dados'] = cursor.fetchone()
+
+        # Dados do período 2
+        cursor.execute("""
+            SELECT 
+                COUNT(*) as total_avaliacoes,
+                AVG(valor_final_calculado) as valor_medio,
+                SUM(valor_final_calculado) as valor_total,
+                COUNT(DISTINCT modelo_iphone_id) as modelos_diferentes,
+                COUNT(DISTINCT CASE WHEN usuario_id IS NOT NULL THEN usuario_id END) as usuarios_ativos
+            FROM avaliacoes_concluidas 
+            WHERE empresa_id = %s AND DATE(data_avaliacao) BETWEEN %s AND %s
+        """, (empresa_id_logada, periodo2_inicio, periodo2_fim))
+        dados_comparativos['periodo2']['dados'] = cursor.fetchone()
+
+        # Calcular comparações percentuais
+        p1 = dados_comparativos['periodo1']['dados']
+        p2 = dados_comparativos['periodo2']['dados']
+        
+        dados_comparativos['comparacao'] = {
+            'avaliacoes': calcular_variacao(p1['total_avaliacoes'], p2['total_avaliacoes']),
+            'valor_medio': calcular_variacao(p1['valor_medio'] or 0, p2['valor_medio'] or 0),
+            'valor_total': calcular_variacao(p1['valor_total'] or 0, p2['valor_total'] or 0),
+            'modelos': calcular_variacao(p1['modelos_diferentes'], p2['modelos_diferentes']),
+            'usuarios': calcular_variacao(p1['usuarios_ativos'], p2['usuarios_ativos'])
+        }
+
+    except mysql.connector.Error as e:
+        flash('Erro ao carregar dados comparativos.', 'danger')
+        print(f"Erro ao buscar dados comparativos: {e}")
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+
+    info_empresa = get_info_empresa_logada()
+    return render_template('admin_relatorios_comparativos.html',
+                         dados=dados_comparativos,
+                         info_empresa=info_empresa,
+                         is_admin=session.get('is_admin'),
+                         empresa_pode_gerir=session.get('empresa_pode_gerir'))
+
+def calcular_variacao(valor_atual, valor_anterior):
+    """Calcula a variação percentual entre dois valores."""
+    if valor_anterior == 0:
+        return {'percentual': 0, 'tipo': 'neutro', 'valor_atual': valor_atual, 'valor_anterior': valor_anterior}
+    
+    variacao = ((valor_atual - valor_anterior) / valor_anterior) * 100
+    tipo = 'positivo' if variacao > 0 else 'negativo' if variacao < 0 else 'neutro'
+    
+    return {
+        'percentual': round(variacao, 1),
+        'tipo': tipo,
+        'valor_atual': valor_atual,
+        'valor_anterior': valor_anterior
+    }
+
+# ===== SISTEMA DE ALERTAS AUTOMÁTICOS =====
+
+@app.route('/admin/relatorios/alertas')
+def configurar_alertas():
+    """Configuração de alertas automáticos."""
+    resp = require_login() or require_admin() or require_empresa_permissao()
+    if resp: return resp
+
+    info_empresa = get_info_empresa_logada()
+    return render_template('admin_relatorios_alertas.html',
+                         info_empresa=info_empresa,
+                         is_admin=session.get('is_admin'),
+                         empresa_pode_gerir=session.get('empresa_pode_gerir'))
+
+def verificar_alertas_automaticos():
+    """Função para verificar e enviar alertas automáticos (executar via cron/scheduler)."""
+    # Esta função seria chamada periodicamente (ex: diariamente)
+    
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Buscar todas as empresas ativas
+        cursor.execute("SELECT id, nome_empresa, email_contato_principal FROM empresas WHERE plano_ativo = 1")
+        empresas = cursor.fetchall()
+
+        for empresa in empresas:
+            empresa_id = empresa['id']
+            
+            # Verificar se houve queda significativa nas avaliações
+            cursor.execute("""
+                SELECT 
+                    COUNT(CASE WHEN DATE(data_avaliacao) = CURDATE() THEN 1 END) as hoje,
+                    COUNT(CASE WHEN DATE(data_avaliacao) = DATE_SUB(CURDATE(), INTERVAL 1 DAY) THEN 1 END) as ontem,
+                    COUNT(CASE WHEN DATE(data_avaliacao) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) THEN 1 END) as ultima_semana
+                FROM avaliacoes_concluidas 
+                WHERE empresa_id = %s
+            """, (empresa_id,))
+            
+            stats = cursor.fetchone()
+            
+            alertas = []
+            
+            # Alerta: Nenhuma avaliação hoje
+            if stats['hoje'] == 0 and stats['ontem'] > 0:
+                alertas.append("⚠️ Nenhuma avaliação realizada hoje")
+            
+            # Alerta: Queda significativa
+            if stats['ontem'] > 0 and stats['hoje'] < (stats['ontem'] * 0.5):
+                alertas.append(f"📉 Queda de {((stats['ontem'] - stats['hoje']) / stats['ontem'] * 100):.0f}% nas avaliações")
+            
+            # Alerta: Semana muito baixa
+            if stats['ultima_semana'] < 5:
+                alertas.append("📊 Menos de 5 avaliações na última semana")
+            
+            # Enviar alertas por email se houver
+            if alertas and empresa['email_contato_principal']:
+                enviar_alerta_email(empresa, alertas)
+    
+    except Exception as e:
+        print(f"Erro ao verificar alertas automáticos: {e}")
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+
+def enviar_alerta_email(empresa, alertas):
+    """Envia email com alertas para a empresa."""
+    try:
+        assunto = f"Alerta Automático - {empresa['nome_empresa']}"
+        
+        corpo = f"""
+        Olá equipe da {empresa['nome_empresa']},
+        
+        Detectamos algumas situações que merecem atenção:
+        
+        """
+        
+        for alerta in alertas:
+            corpo += f"• {alerta}\n"
+        
+        corpo += f"""
+        
+        Acesse o dashboard para mais detalhes: [LINK_DO_SISTEMA]
+        
+        Este é um alerta automático do sistema.
+        """
+        
+        msg = Message(
+            subject=assunto,
+            sender=("Sistema de Alertas", app.config['MAIL_USERNAME']),
+            recipients=[empresa['email_contato_principal']]
+        )
+        msg.body = corpo
+        
+        mail.send(msg)
+        print(f"Alerta enviado para {empresa['nome_empresa']}")
+        
+    except Exception as e:
+        print(f"Erro ao enviar alerta para {empresa['nome_empresa']}: {e}")
 
 @app.route('/convite/<token>/api/enviar-orcamento', methods=['POST'])
 def enviar_orcamento_convite(token):

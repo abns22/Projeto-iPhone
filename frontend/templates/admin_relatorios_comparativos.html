@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório Comparativo - {{ info_empresa.nome_empresa if info_empresa else 'Sistema' }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style_admin.css') }}" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .compare-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease-in-out;
+        }
+        .compare-card:hover {
+            transform: translateY(-5px);
+        }
+        .nav-pills .nav-link {
+            border-radius: 25px;
+            margin: 0 5px;
+        }
+        .nav-pills .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .periodo-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 20px;
+        }
+        .periodo1 {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+        .periodo2 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .variacao-positiva {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .variacao-negativa {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .variacao-neutra {
+            color: #6c757d;
+            font-weight: bold;
+        }
+        .comparison-arrow {
+            font-size: 1.5em;
+            margin: 0 10px;
+        }
+        .chart-container {
+            height: 300px;
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="h2 mb-0">
+                            <i class="fas fa-balance-scale text-warning me-2"></i>
+                            Relatório Comparativo
+                        </h1>
+                        <p class="text-muted">Compare performance entre diferentes períodos</p>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('relatorios_dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Voltar ao Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <ul class="nav nav-pills justify-content-center">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_dashboard') }}">
+                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_avaliacoes') }}">
+                            <i class="fas fa-list me-2"></i>Avaliações
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_usuarios') }}">
+                            <i class="fas fa-users me-2"></i>Por Usuário
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_financeiro') }}">
+                            <i class="fas fa-dollar-sign me-2"></i>Financeiro
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_tendencias') }}">
+                            <i class="fas fa-chart-line me-2"></i>Tendências
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_convites') }}">
+                            <i class="fas fa-link me-2"></i>Convites
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('relatorios_comparativos') }}">
+                            <i class="fas fa-balance-scale me-2"></i>Comparativos
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Filtros de Período -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card compare-card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-calendar-alt text-primary me-2"></i>
+                            Selecionar Períodos para Comparação
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="GET" class="periodo-card">
+                            <div class="row g-3">
+                                <div class="col-lg-3">
+                                    <label class="form-label"><strong>Período 1 - Início</strong></label>
+                                    <input type="date" class="form-control" name="periodo1_inicio" 
+                                           value="{{ dados.periodo1.inicio }}">
+                                </div>
+                                <div class="col-lg-3">
+                                    <label class="form-label"><strong>Período 1 - Fim</strong></label>
+                                    <input type="date" class="form-control" name="periodo1_fim" 
+                                           value="{{ dados.periodo1.fim }}">
+                                </div>
+                                <div class="col-lg-3">
+                                    <label class="form-label"><strong>Período 2 - Início</strong></label>
+                                    <input type="date" class="form-control" name="periodo2_inicio" 
+                                           value="{{ dados.periodo2.inicio }}">
+                                </div>
+                                <div class="col-lg-3">
+                                    <label class="form-label"><strong>Período 2 - Fim</strong></label>
+                                    <input type="date" class="form-control" name="periodo2_fim" 
+                                           value="{{ dados.periodo2.fim }}">
+                                </div>
+                                <div class="col-12 text-center">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-search me-2"></i>Comparar Períodos
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumo dos Períodos -->
+        <div class="row mb-4">
+            <div class="col-lg-5">
+                <div class="card compare-card periodo1">
+                    <div class="card-body text-center">
+                        <h4>Período 1</h4>
+                        <p class="mb-3">{{ dados.periodo1.inicio }} a {{ dados.periodo1.fim }}</p>
+                        {% if dados.periodo1.dados %}
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <h3>{{ dados.periodo1.dados.total_avaliacoes or 0 }}</h3>
+                                <small>Avaliações</small>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <h3>R$ {{ "%.0f"|format(dados.periodo1.dados.valor_medio or 0) }}</h3>
+                                <small>Valor Médio</small>
+                            </div>
+                            <div class="col-6">
+                                <h3>R$ {{ "%.0f"|format(dados.periodo1.dados.valor_total or 0) }}</h3>
+                                <small>Valor Total</small>
+                            </div>
+                            <div class="col-6">
+                                <h3>{{ dados.periodo1.dados.usuarios_ativos or 0 }}</h3>
+                                <small>Usuários Ativos</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-2 d-flex align-items-center justify-content-center">
+                <div class="text-center">
+                    <i class="fas fa-exchange-alt comparison-arrow text-primary"></i>
+                    <div class="mt-2">
+                        <small class="text-muted">VS</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-5">
+                <div class="card compare-card periodo2">
+                    <div class="card-body text-center">
+                        <h4>Período 2</h4>
+                        <p class="mb-3">{{ dados.periodo2.inicio }} a {{ dados.periodo2.fim }}</p>
+                        {% if dados.periodo2.dados %}
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <h3>{{ dados.periodo2.dados.total_avaliacoes or 0 }}</h3>
+                                <small>Avaliações</small>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <h3>R$ {{ "%.0f"|format(dados.periodo2.dados.valor_medio or 0) }}</h3>
+                                <small>Valor Médio</small>
+                            </div>
+                            <div class="col-6">
+                                <h3>R$ {{ "%.0f"|format(dados.periodo2.dados.valor_total or 0) }}</h3>
+                                <small>Valor Total</small>
+                            </div>
+                            <div class="col-6">
+                                <h3>{{ dados.periodo2.dados.usuarios_ativos or 0 }}</h3>
+                                <small>Usuários Ativos</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Análise Comparativa -->
+        {% if dados.comparacao %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card compare-card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-bar text-success me-2"></i>
+                            Análise Comparativa
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-lg-6 mb-4">
+                                <div class="chart-container">
+                                    <canvas id="comparacaoChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Métrica</th>
+                                                <th>Período 1</th>
+                                                <th>Período 2</th>
+                                                <th>Variação</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><strong>Total de Avaliações</strong></td>
+                                                <td>{{ dados.comparacao.avaliacoes.valor_atual }}</td>
+                                                <td>{{ dados.comparacao.avaliacoes.valor_anterior }}</td>
+                                                <td>
+                                                    <span class="variacao-{{ dados.comparacao.avaliacoes.tipo }}">
+                                                        {% if dados.comparacao.avaliacoes.percentual > 0 %}+{% endif %}{{ dados.comparacao.avaliacoes.percentual }}%
+                                                        {% if dados.comparacao.avaliacoes.tipo == 'positivo' %}
+                                                            <i class="fas fa-arrow-up ms-1"></i>
+                                                        {% elif dados.comparacao.avaliacoes.tipo == 'negativo' %}
+                                                            <i class="fas fa-arrow-down ms-1"></i>
+                                                        {% else %}
+                                                            <i class="fas fa-minus ms-1"></i>
+                                                        {% endif %}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Valor Médio</strong></td>
+                                                <td>R$ {{ "%.2f"|format(dados.comparacao.valor_medio.valor_atual) }}</td>
+                                                <td>R$ {{ "%.2f"|format(dados.comparacao.valor_medio.valor_anterior) }}</td>
+                                                <td>
+                                                    <span class="variacao-{{ dados.comparacao.valor_medio.tipo }}">
+                                                        {% if dados.comparacao.valor_medio.percentual > 0 %}+{% endif %}{{ dados.comparacao.valor_medio.percentual }}%
+                                                        {% if dados.comparacao.valor_medio.tipo == 'positivo' %}
+                                                            <i class="fas fa-arrow-up ms-1"></i>
+                                                        {% elif dados.comparacao.valor_medio.tipo == 'negativo' %}
+                                                            <i class="fas fa-arrow-down ms-1"></i>
+                                                        {% else %}
+                                                            <i class="fas fa-minus ms-1"></i>
+                                                        {% endif %}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Valor Total</strong></td>
+                                                <td>R$ {{ "%.2f"|format(dados.comparacao.valor_total.valor_atual) }}</td>
+                                                <td>R$ {{ "%.2f"|format(dados.comparacao.valor_total.valor_anterior) }}</td>
+                                                <td>
+                                                    <span class="variacao-{{ dados.comparacao.valor_total.tipo }}">
+                                                        {% if dados.comparacao.valor_total.percentual > 0 %}+{% endif %}{{ dados.comparacao.valor_total.percentual }}%
+                                                        {% if dados.comparacao.valor_total.tipo == 'positivo' %}
+                                                            <i class="fas fa-arrow-up ms-1"></i>
+                                                        {% elif dados.comparacao.valor_total.tipo == 'negativo' %}
+                                                            <i class="fas fa-arrow-down ms-1"></i>
+                                                        {% else %}
+                                                            <i class="fas fa-minus ms-1"></i>
+                                                        {% endif %}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Usuários Ativos</strong></td>
+                                                <td>{{ dados.comparacao.usuarios.valor_atual }}</td>
+                                                <td>{{ dados.comparacao.usuarios.valor_anterior }}</td>
+                                                <td>
+                                                    <span class="variacao-{{ dados.comparacao.usuarios.tipo }}">
+                                                        {% if dados.comparacao.usuarios.percentual > 0 %}+{% endif %}{{ dados.comparacao.usuarios.percentual }}%
+                                                        {% if dados.comparacao.usuarios.tipo == 'positivo' %}
+                                                            <i class="fas fa-arrow-up ms-1"></i>
+                                                        {% elif dados.comparacao.usuarios.tipo == 'negativo' %}
+                                                            <i class="fas fa-arrow-down ms-1"></i>
+                                                        {% else %}
+                                                            <i class="fas fa-minus ms-1"></i>
+                                                        {% endif %}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Insights -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card compare-card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-lightbulb text-warning me-2"></i>
+                            Insights da Comparação
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle me-2"></i>Análise Automática:</h6>
+                            <ul class="mb-0">
+                                {% if dados.comparacao.avaliacoes.tipo == 'positivo' %}
+                                <li>✅ <strong>Crescimento nas avaliações:</strong> Houve um aumento de {{ dados.comparacao.avaliacoes.percentual }}% no número de avaliações.</li>
+                                {% elif dados.comparacao.avaliacoes.tipo == 'negativo' %}
+                                <li>⚠️ <strong>Queda nas avaliações:</strong> Houve uma redução de {{ dados.comparacao.avaliacoes.percentual }}% no número de avaliações.</li>
+                                {% endif %}
+                                
+                                {% if dados.comparacao.valor_medio.tipo == 'positivo' %}
+                                <li>💰 <strong>Melhoria no valor médio:</strong> O valor médio das avaliações aumentou {{ dados.comparacao.valor_medio.percentual }}%.</li>
+                                {% elif dados.comparacao.valor_medio.tipo == 'negativo' %}
+                                <li>📉 <strong>Redução no valor médio:</strong> O valor médio das avaliações diminuiu {{ dados.comparacao.valor_medio.percentual }}%.</li>
+                                {% endif %}
+                                
+                                {% if dados.comparacao.usuarios.tipo == 'positivo' %}
+                                <li>👥 <strong>Mais usuários ativos:</strong> {{ dados.comparacao.usuarios.percentual }}% mais usuários realizaram avaliações.</li>
+                                {% elif dados.comparacao.usuarios.tipo == 'negativo' %}
+                                <li>👤 <strong>Menos usuários ativos:</strong> {{ dados.comparacao.usuarios.percentual }}% menos usuários realizaram avaliações.</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Dados da comparação
+        const dadosComparacao = {{ dados.comparacao | tojson }};
+        
+        if (dadosComparacao) {
+            // Gráfico de barras comparativo
+            const ctx = document.getElementById('comparacaoChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Avaliações', 'Valor Médio', 'Valor Total', 'Usuários Ativos'],
+                    datasets: [
+                        {
+                            label: 'Período 1',
+                            data: [
+                                dadosComparacao.avaliacoes.valor_atual,
+                                dadosComparacao.valor_medio.valor_atual,
+                                dadosComparacao.valor_total.valor_atual / 1000, // Dividir por 1000 para melhor visualização
+                                dadosComparacao.usuarios.valor_atual
+                            ],
+                            backgroundColor: '#11998e80',
+                            borderColor: '#11998e',
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Período 2',
+                            data: [
+                                dadosComparacao.avaliacoes.valor_anterior,
+                                dadosComparacao.valor_medio.valor_anterior,
+                                dadosComparacao.valor_total.valor_anterior / 1000, // Dividir por 1000 para melhor visualização
+                                dadosComparacao.usuarios.valor_anterior
+                            ],
+                            backgroundColor: '#667eea80',
+                            borderColor: '#667eea',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let value = context.parsed.y;
+                                    if (context.dataIndex === 1) { // Valor médio
+                                        return context.dataset.label + ': R$ ' + value.toFixed(2);
+                                    } else if (context.dataIndex === 2) { // Valor total
+                                        return context.dataset.label + ': R$ ' + (value * 1000).toFixed(2);
+                                    } else {
+                                        return context.dataset.label + ': ' + value;
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
