@@ -543,8 +543,8 @@ main p {
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     transition: all 0.3s ease;
     width: 100%;
-    height: 80px;
-    min-height: 80px;
+    height: 100px;
+    min-height: 100px;
 }
 
 .header-container {
@@ -554,8 +554,8 @@ main p {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 80px;
-    min-height: 80px;
+    height: 100px;
+    min-height: 100px;
     position: relative;
 }
 
@@ -568,8 +568,8 @@ main p {
 }
 
 .header-logo img {
-    height: 50px;
-    width: 50px;
+    height: 60px;
+    width: 60px;
     object-fit: contain;
     border-radius: 8px;
     background: rgba(255,255,255,0.1);
@@ -583,7 +583,7 @@ main p {
 
 .header-logo-text h1 {
     margin: 0;
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     font-weight: 700;
     line-height: 1.2;
 }
@@ -664,7 +664,8 @@ main p {
 @media (max-width: 768px) {
     .header-container {
         padding: 0 15px;
-        height: 60px;
+        height: 90px;
+        min-height: 90px;
     }
     
     .header-logo-text h1 {
@@ -673,7 +674,7 @@ main p {
     
     .header-nav {
         position: fixed;
-        top: 60px;
+        top: 90px;
         left: 0;
         right: 0;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -706,7 +707,7 @@ main p {
     }
     
     .main-content-with-header {
-        margin-top: 60px;
+        margin-top: 90px;
         padding: 15px;
     }
 }
@@ -1041,45 +1042,7 @@ body {
     overflow-x: hidden;
 }
 
-/* Garantir que o header fique fixo corretamente */
-.main-header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 0;
-    z-index: 1000;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
-    width: 100%;
-    height: 80px;
-    min-height: 80px;
-}
 
-/* Ajustar container do header */
-.header-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 80px;
-    min-height: 80px;
-    position: relative;
-}
-
-/* Garantir que o conteúdo principal não sobreponha o header */
-.main-content-with-header {
-    margin-top: 80px;
-    min-height: calc(100vh - 80px);
-    padding: 20px;
-    background: #f8f9fa;
-    position: relative;
-    z-index: 1;
-}
 
 /* ===== ESTILOS CONSISTENTES PARA CARDS DE MODELOS ===== */
 .grid-modelos {
@@ -1154,15 +1117,17 @@ body {
 @media (max-width: 768px) {
     .header-container {
         padding: 0 15px;
-        height: 60px;
+        height: 90px;
+        min-height: 90px;
     }
     
     .main-header {
-        height: 60px;
+        height: 90px;
+        min-height: 90px;
     }
     
     .main-content-with-header {
-        margin-top: 60px;
+        margin-top: 90px;
         padding: 15px;
     }
     
