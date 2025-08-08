@@ -684,6 +684,7 @@ main p {
         transform: translateY(-100%);
         transition: transform 0.3s ease;
         box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        z-index: 1000;
     }
     
     .header-nav.mobile-open {
@@ -700,6 +701,15 @@ main p {
     
     .header-mobile-toggle {
         display: block;
+        background: none;
+        border: none;
+        color: white;
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 6px;
+        transition: background 0.3s ease;
+        z-index: 1001;
     }
     
     .header-nav.desktop-only {

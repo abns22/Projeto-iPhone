@@ -259,9 +259,11 @@
                                         </td>
                                         <td>
                                             {% if usuario.total_avaliacoes > 0 %}
-                                                {% if usuario.ultima_avaliacao and (usuario.ultima_avaliacao | string)[:10] == (moment().format('YYYY-MM-DD')) %}
+                                                {% set hoje = moment().format('YYYY-MM-DD') %}
+                                                {% set ultima_avaliacao_str = usuario.ultima_avaliacao.strftime('%Y-%m-%d') if usuario.ultima_avaliacao else '' %}
+                                                {% if usuario.ultima_avaliacao and ultima_avaliacao_str == hoje %}
                                                     <span class="badge bg-success">Ativo hoje</span>
-                                                {% elif usuario.ultima_avaliacao and ((usuario.ultima_avaliacao | string)[:10] >= ((moment().subtract(7, 'days')).format('YYYY-MM-DD'))) %}
+                                                {% elif usuario.ultima_avaliacao and ultima_avaliacao_str >= (moment().subtract(7, 'days')).format('YYYY-MM-DD') %}
                                                     <span class="badge bg-warning">Ativo esta semana</span>
                                                 {% else %}
                                                     <span class="badge bg-secondary">Inativo</span>
