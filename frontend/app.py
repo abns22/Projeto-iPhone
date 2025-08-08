@@ -2811,7 +2811,15 @@ def detalhes_avaliacao(avaliacao_id):
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         
-        # Buscar dados completos da avaliação
+        # Primeiro, vamos verificar se a avaliação existe
+        cursor.execute("SELECT * FROM avaliacoes_concluidas WHERE id = %s AND empresa_id = %s", 
+                      (avaliacao_id, empresa_id_logada))
+        avaliacao_basica = cursor.fetchone()
+        
+        if not avaliacao_basica:
+            return jsonify({'erro': 'Avaliação não encontrada'}), 404
+        
+        # Agora buscar dados completos com joins
         query = """
             SELECT 
                 ac.*,
@@ -2829,52 +2837,74 @@ def detalhes_avaliacao(avaliacao_id):
         avaliacao = cursor.fetchone()
         
         if not avaliacao:
-            return jsonify({'erro': 'Avaliação não encontrada'}), 404
+            # Se não encontrou com joins, usar dados básicos
+            avaliacao = avaliacao_basica
+            avaliacao['modelo_nome'] = 'N/A'
+            avaliacao['usuario_nome'] = None
+            avaliacao['nome_empresa'] = 'N/A'
         
         # Buscar histórico de modificações de preço (se existir)
-        # Por enquanto, vamos simular com os dados disponíveis
         historico_precos = []
-        if avaliacao['valor_base_calculado'] != avaliacao['valor_final_calculado']:
-            historico_precos.append({
-                'tipo': 'Valor Base',
-                'valor': float(avaliacao['valor_base_calculado']),
-                'descricao': 'Valor inicial do modelo'
-            })
-            historico_precos.append({
-                'tipo': 'Valor Final',
-                'valor': float(avaliacao['valor_final_calculado']),
-                'descricao': 'Valor após aplicação dos impactos'
-            })
+        try:
+            if avaliacao['valor_base_calculado'] != avaliacao['valor_final_calculado']:
+                historico_precos.append({
+                    'tipo': 'Valor Base',
+                    'valor': float(avaliacao['valor_base_calculado']),
+                    'descricao': 'Valor inicial do modelo'
+                })
+                historico_precos.append({
+                    'tipo': 'Valor Final',
+                    'valor': float(avaliacao['valor_final_calculado']),
+                    'descricao': 'Valor após aplicação dos impactos'
+                })
+        except (TypeError, ValueError) as e:
+            print(f"Erro ao processar valores: {e}")
+            historico_precos = []
         
         # Processar resumo de respostas
         try:
             resumo_respostas = json.loads(avaliacao['resumo_respostas']) if avaliacao['resumo_respostas'] else {}
-        except:
+        except (json.JSONDecodeError, TypeError):
             resumo_respostas = {}
         
         # Calcular diferença de valores
-        diferenca_valor = float(avaliacao['valor_final_calculado']) - float(avaliacao['valor_base_calculado'])
-        percentual_variacao = (diferenca_valor / float(avaliacao['valor_base_calculado'])) * 100 if float(avaliacao['valor_base_calculado']) > 0 else 0
+        try:
+            valor_base = float(avaliacao['valor_base_calculado']) if avaliacao['valor_base_calculado'] else 0
+            valor_final = float(avaliacao['valor_final_calculado']) if avaliacao['valor_final_calculado'] else 0
+            diferenca_valor = valor_final - valor_base
+            percentual_variacao = (diferenca_valor / valor_base) * 100 if valor_base > 0 else 0
+        except (TypeError, ValueError) as e:
+            print(f"Erro ao calcular valores: {e}")
+            diferenca_valor = 0
+            percentual_variacao = 0
+            valor_base = 0
+            valor_final = 0
+        
+        # Formatar data
+        try:
+            data_formatada = avaliacao['data_avaliacao'].strftime('%d/%m/%Y às %H:%M') if avaliacao['data_avaliacao'] else 'N/A'
+        except AttributeError:
+            data_formatada = 'N/A'
         
         dados_detalhes = {
             'avaliacao': {
                 'id': avaliacao['id'],
-                'data_avaliacao': avaliacao['data_avaliacao'].strftime('%d/%m/%Y às %H:%M') if avaliacao['data_avaliacao'] else 'N/A',
-                'modelo': avaliacao['modelo_nome'],
-                'cor': avaliacao['cor_selecionada'],
-                'armazenamento': avaliacao['armazenamento_selecionado'],
-                'imei': avaliacao['imei'],
-                'valor_base': float(avaliacao['valor_base_calculado']),
-                'valor_final': float(avaliacao['valor_final_calculado']),
+                'data_avaliacao': data_formatada,
+                'modelo': avaliacao.get('modelo_nome', 'N/A') or 'N/A',
+                'cor': avaliacao.get('cor_selecionada', 'N/A') or 'N/A',
+                'armazenamento': avaliacao.get('armazenamento_selecionado', 'N/A') or 'N/A',
+                'imei': avaliacao.get('imei') or None,
+                'valor_base': valor_base,
+                'valor_final': valor_final,
                 'diferenca': diferenca_valor,
                 'percentual_variacao': percentual_variacao,
-                'usuario': avaliacao['usuario_nome'] or 'Sistema',
-                'empresa': avaliacao['nome_empresa']
+                'usuario': avaliacao.get('usuario_nome') or 'Sistema',
+                'empresa': avaliacao.get('nome_empresa', 'N/A') or 'N/A'
             },
             'cliente': {
-                'nome': avaliacao['nome_cliente_final'],
-                'email': avaliacao['email_cliente_final'],
-                'telefone': avaliacao['telefone_cliente_final']
+                'nome': avaliacao.get('nome_cliente_final') or None,
+                'email': avaliacao.get('email_cliente_final') or None,
+                'telefone': avaliacao.get('telefone_cliente_final') or None
             },
             'respostas': resumo_respostas,
             'historico_precos': historico_precos
@@ -2886,7 +2916,9 @@ def detalhes_avaliacao(avaliacao_id):
         
     except Exception as e:
         print(f"Erro ao buscar detalhes da avaliação: {e}")
-        return jsonify({'erro': 'Erro interno do servidor'}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({'erro': f'Erro interno do servidor: {str(e)}'}), 500
 
 
 @app.route('/convite/<token>/api/enviar-orcamento', methods=['POST'])
