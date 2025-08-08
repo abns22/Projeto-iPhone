@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório por Usuário - {{ info_empresa.nome_empresa if info_empresa else 'Sistema' }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style_admin.css') }}" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .user-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease-in-out;
+        }
+        .user-card:hover {
+            transform: translateY(-5px);
+        }
+        .nav-pills .nav-link {
+            border-radius: 25px;
+            margin: 0 5px;
+        }
+        .nav-pills .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .performance-badge {
+            font-size: 1.2em;
+            padding: 0.5em 1em;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+        }
+        .ranking-card {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+        .ranking-card.second {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .ranking-card.third {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="h2 mb-0">
+                            <i class="fas fa-users text-primary me-2"></i>
+                            Relatório por Usuário
+                        </h1>
+                        <p class="text-muted">Performance e estatísticas de cada usuário da equipe</p>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('relatorios_dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Voltar ao Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <ul class="nav nav-pills justify-content-center">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_dashboard') }}">
+                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_avaliacoes') }}">
+                            <i class="fas fa-list me-2"></i>Avaliações
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('relatorios_usuarios') }}">
+                            <i class="fas fa-users me-2"></i>Por Usuário
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_financeiro') }}">
+                            <i class="fas fa-dollar-sign me-2"></i>Financeiro
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_tendencias') }}">
+                            <i class="fas fa-chart-line me-2"></i>Tendências
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Top Performers -->
+        {% if dados_usuarios %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <h4 class="mb-3">
+                    <i class="fas fa-trophy text-warning me-2"></i>
+                    Top Performers
+                </h4>
+            </div>
+            {% for usuario in dados_usuarios[:3] %}
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="card user-card {% if loop.index == 1 %}ranking-card{% elif loop.index == 2 %}ranking-card second{% elif loop.index == 3 %}ranking-card third{% endif %}">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            {% if loop.index == 1 %}
+                                <i class="fas fa-crown fa-3x mb-2" style="color: #ffd700;"></i>
+                            {% elif loop.index == 2 %}
+                                <i class="fas fa-medal fa-3x mb-2" style="color: #c0c0c0;"></i>
+                            {% elif loop.index == 3 %}
+                                <i class="fas fa-award fa-3x mb-2" style="color: #cd7f32;"></i>
+                            {% endif %}
+                        </div>
+                        <h5 class="card-title">{{ usuario.nome_completo }}</h5>
+                        <div class="row text-center mt-3">
+                            <div class="col-6">
+                                <h3 class="mb-0">{{ usuario.total_avaliacoes or 0 }}</h3>
+                                <small>Avaliações</small>
+                            </div>
+                            <div class="col-6">
+                                <h3 class="mb-0">R$ {{ "%.0f"|format(usuario.valor_medio or 0) }}</h3>
+                                <small>Valor Médio</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Charts Section -->
+        <div class="row mb-4">
+            <!-- Gráfico de Barras - Avaliações por Usuário -->
+            <div class="col-lg-6 mb-4">
+                <div class="card user-card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-bar text-primary me-2"></i>
+                            Avaliações por Usuário
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="avaliacoesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráfico de Barras - Valor Médio por Usuário -->
+            <div class="col-lg-6 mb-4">
+                <div class="card user-card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-dollar-sign text-success me-2"></i>
+                            Valor Médio por Usuário
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="valorMedioChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabela Detalhada -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card user-card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-table text-primary me-2"></i>
+                            Detalhamento por Usuário
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        {% if dados_usuarios %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Posição</th>
+                                        <th>Usuário</th>
+                                        <th>Email</th>
+                                        <th>Total Avaliações</th>
+                                        <th>Valor Médio</th>
+                                        <th>Menor Valor</th>
+                                        <th>Maior Valor</th>
+                                        <th>Última Avaliação</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for usuario in dados_usuarios %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge {% if loop.index <= 3 %}bg-warning{% else %}bg-secondary{% endif %} performance-badge">
+                                                #{{ loop.index }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <strong>{{ usuario.nome_completo }}</strong>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ usuario.email }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ usuario.total_avaliacoes or 0 }}</span>
+                                        </td>
+                                        <td>
+                                            <strong class="text-success">
+                                                R$ {{ "%.2f"|format(usuario.valor_medio or 0) }}
+                                            </strong>
+                                        </td>
+                                        <td>
+                                            {% if usuario.menor_valor %}
+                                                R$ {{ "%.2f"|format(usuario.menor_valor) }}
+                                            {% else %}
+                                                <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if usuario.maior_valor %}
+                                                <strong class="text-primary">R$ {{ "%.2f"|format(usuario.maior_valor) }}</strong>
+                                            {% else %}
+                                                <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if usuario.ultima_avaliacao %}
+                                                <small>{{ usuario.ultima_avaliacao.strftime('%d/%m/%Y') }}</small>
+                                            {% else %}
+                                                <span class="text-muted">Nunca</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if usuario.total_avaliacoes > 0 %}
+                                                {% if usuario.ultima_avaliacao and (usuario.ultima_avaliacao | string)[:10] == (moment().format('YYYY-MM-DD')) %}
+                                                    <span class="badge bg-success">Ativo hoje</span>
+                                                {% elif usuario.ultima_avaliacao and ((usuario.ultima_avaliacao | string)[:10] >= ((moment().subtract(7, 'days')).format('YYYY-MM-DD'))) %}
+                                                    <span class="badge bg-warning">Ativo esta semana</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Inativo</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-danger">Sem avaliações</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Nenhum usuário encontrado</h5>
+                            <p class="text-muted">Aguarde usuários realizarem avaliações para visualizar os dados.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Dados dos usuários
+        const dadosUsuarios = {{ dados_usuarios | tojson }};
+        
+        // Cores para os gráficos
+        const cores = [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+            '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF',
+            '#4BC0C0', '#FF6384', '#36A2EB', '#FFCE56'
+        ];
+
+        if (dadosUsuarios && dadosUsuarios.length > 0) {
+            // Gráfico de Avaliações por Usuário
+            const ctxAvaliacoes = document.getElementById('avaliacoesChart').getContext('2d');
+            new Chart(ctxAvaliacoes, {
+                type: 'bar',
+                data: {
+                    labels: dadosUsuarios.map(u => u.nome_completo),
+                    datasets: [{
+                        label: 'Avaliações',
+                        data: dadosUsuarios.map(u => u.total_avaliacoes || 0),
+                        backgroundColor: cores.slice(0, dadosUsuarios.length),
+                        borderColor: cores.slice(0, dadosUsuarios.length),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Gráfico de Valor Médio por Usuário
+            const ctxValor = document.getElementById('valorMedioChart').getContext('2d');
+            new Chart(ctxValor, {
+                type: 'bar',
+                data: {
+                    labels: dadosUsuarios.map(u => u.nome_completo),
+                    datasets: [{
+                        label: 'Valor Médio (R$)',
+                        data: dadosUsuarios.map(u => u.valor_medio || 0),
+                        backgroundColor: cores.slice(0, dadosUsuarios.length).map(cor => cor + '80'), // Adiciona transparência
+                        borderColor: cores.slice(0, dadosUsuarios.length),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'R$ ' + context.parsed.y.toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'R$ ' + value.toFixed(0);
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            // Mostrar mensagem quando não há dados
+            document.getElementById('avaliacoesChart').parentElement.innerHTML = 
+                '<div class="text-center py-5"><i class="fas fa-chart-bar fa-3x text-muted mb-3"></i><p class="text-muted">Nenhum dado disponível</p></div>';
+            document.getElementById('valorMedioChart').parentElement.innerHTML = 
+                '<div class="text-center py-5"><i class="fas fa-chart-bar fa-3x text-muted mb-3"></i><p class="text-muted">Nenhum dado disponível</p></div>';
+        }
+    </script>
+</body>
+</html>

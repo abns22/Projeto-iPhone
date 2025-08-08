@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatórios - {{ info_empresa.nome_empresa if info_empresa else 'Sistema' }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style_admin.css') }}" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .dashboard-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease-in-out;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+        }
+        .kpi-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .kpi-card.success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        .kpi-card.warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .kpi-card.info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 20px 0;
+        }
+        .recent-table {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .nav-pills .nav-link {
+            border-radius: 25px;
+            margin: 0 5px;
+        }
+        .nav-pills .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .stats-icon {
+            font-size: 2.5rem;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="h2 mb-0">
+                            <i class="fas fa-chart-bar text-primary me-2"></i>
+                            Relatórios e Análises
+                        </h1>
+                        <p class="text-muted">Dashboard completo de avaliações e performance</p>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Voltar ao Admin
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <ul class="nav nav-pills justify-content-center">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('relatorios_dashboard') }}">
+                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_avaliacoes') }}">
+                            <i class="fas fa-list me-2"></i>Avaliações
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_usuarios') }}">
+                            <i class="fas fa-users me-2"></i>Por Usuário
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_financeiro') }}">
+                            <i class="fas fa-dollar-sign me-2"></i>Financeiro
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_tendencias') }}">
+                            <i class="fas fa-chart-line me-2"></i>Tendências
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card dashboard-card kpi-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-clipboard-list stats-icon mb-3"></i>
+                        <h3 class="mb-1">{{ dados.total_avaliacoes }}</h3>
+                        <p class="mb-0">Total de Avaliações</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card dashboard-card kpi-card success">
+                    <div class="card-body text-center">
+                        <i class="fas fa-dollar-sign stats-icon mb-3"></i>
+                        <h3 class="mb-1">R$ {{ "%.2f"|format(dados.valor_medio) }}</h3>
+                        <p class="mb-0">Valor Médio</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card dashboard-card kpi-card warning">
+                    <div class="card-body text-center">
+                        <i class="fas fa-mobile-alt stats-icon mb-3"></i>
+                        <h3 class="mb-1">{{ dados.modelo_mais_avaliado }}</h3>
+                        <p class="mb-0">Modelo Top</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card dashboard-card kpi-card info">
+                    <div class="card-body text-center">
+                        <i class="fas fa-chart-line stats-icon mb-3"></i>
+                        <h3 class="mb-1">
+                            {% if dados.crescimento_mensal > 0 %}
+                                +{{ dados.crescimento_mensal }}%
+                            {% elif dados.crescimento_mensal < 0 %}
+                                {{ dados.crescimento_mensal }}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </h3>
+                        <p class="mb-0">Crescimento Mensal</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts and Details -->
+        <div class="row">
+            <!-- Pizza Chart -->
+            <div class="col-lg-8 mb-4">
+                <div class="card dashboard-card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-pie text-primary me-2"></i>
+                            Distribuição por Modelo
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="modelosPizzaChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPIs Detalhados -->
+            <div class="col-lg-4 mb-4">
+                <div class="card dashboard-card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-info-circle text-primary me-2"></i>
+                            Estatísticas Detalhadas
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if dados.kpis %}
+                        <div class="mb-3">
+                            <small class="text-muted">Menor Valor</small>
+                            <div class="h5 text-success">R$ {{ "%.2f"|format(dados.kpis.menor_valor or 0) }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">Maior Valor</small>
+                            <div class="h5 text-primary">R$ {{ "%.2f"|format(dados.kpis.maior_valor or 0) }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">Modelos Diferentes</small>
+                            <div class="h5 text-info">{{ dados.kpis.modelos_diferentes or 0 }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">Avaliações Hoje</small>
+                            <div class="h5 text-warning">{{ dados.kpis.avaliacoes_hoje or 0 }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">Avaliações Esta Semana</small>
+                            <div class="h5 text-secondary">{{ dados.kpis.avaliacoes_semana or 0 }}</div>
+                        </div>
+                        {% else %}
+                        <p class="text-muted">Nenhuma estatística disponível</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Evaluations -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card dashboard-card">
+                    <div class="card-header bg-transparent">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-clock text-primary me-2"></i>
+                                Avaliações Recentes
+                            </h5>
+                            <a href="{{ url_for('relatorios_avaliacoes') }}" class="btn btn-sm btn-outline-primary">
+                                Ver Todas
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="recent-table">
+                            {% if dados.avaliacoes_recentes %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Cliente</th>
+                                            <th>Modelo</th>
+                                            <th>Cor</th>
+                                            <th>Valor</th>
+                                            <th>Data</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for avaliacao in dados.avaliacoes_recentes %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ avaliacao.nome_cliente_final or 'N/A' }}</strong>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">{{ avaliacao.nome_modelo }}</span>
+                                            </td>
+                                            <td>{{ avaliacao.cor_selecionada }}</td>
+                                            <td>
+                                                <strong class="text-success">R$ {{ "%.2f"|format(avaliacao.valor_final_calculado) }}</strong>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">
+                                                    {{ avaliacao.data_avaliacao.strftime('%d/%m/%Y %H:%M') if avaliacao.data_avaliacao else 'N/A' }}
+                                                </small>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Nenhuma avaliação encontrada</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Configuração do gráfico de pizza
+        const ctx = document.getElementById('modelosPizzaChart').getContext('2d');
+        
+        // Cores vibrantes para o gráfico
+        const cores = [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+            '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF',
+            '#4BC0C0', '#FF6384', '#36A2EB', '#FFCE56'
+        ];
+
+        // Dados do gráfico
+        const dadosGrafico = {{ dados.avaliacoes_por_modelo | tojson }};
+        
+        if (dadosGrafico && dadosGrafico.length > 0) {
+            const chart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: dadosGrafico.map(item => item.nome_modelo),
+                    datasets: [{
+                        data: dadosGrafico.map(item => item.quantidade),
+                        backgroundColor: cores.slice(0, dadosGrafico.length),
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed * 100) / total).toFixed(1);
+                                    return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            // Mostrar mensagem quando não há dados
+            document.getElementById('modelosPizzaChart').parentElement.innerHTML = 
+                '<div class="text-center py-5"><i class="fas fa-chart-pie fa-3x text-muted mb-3"></i><p class="text-muted">Nenhum dado disponível para o gráfico</p></div>';
+        }
+
+        // Atualizar dados em tempo real (opcional)
+        function atualizarDados() {
+            fetch('/admin/relatorios/api/dados-grafico')
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.length > 0) {
+                        // Atualizar gráfico com novos dados
+                        console.log('Dados atualizados:', data);
+                    }
+                })
+                .catch(error => console.error('Erro ao atualizar dados:', error));
+        }
+
+        // Atualizar a cada 5 minutos (opcional)
+        // setInterval(atualizarDados, 300000);
+    </script>
+</body>
+</html>

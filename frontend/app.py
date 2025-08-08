@@ -1914,6 +1914,488 @@ def get_opcoes_modelo_convite(token, modelo_id):
             cursor.close()
             conn.close()
 
+# ===== SISTEMA DE RELATÓRIOS =====
+
+@app.route('/admin/relatorios')
+def relatorios_dashboard():
+    """Dashboard principal de relatórios com resumo geral."""
+    resp = require_login() or require_admin() or require_empresa_permissao()
+    if resp: return resp
+
+    empresa_id_logada = session.get('empresa_id')
+    if not empresa_id_logada:
+        flash("Usuário não está associado a uma empresa válida", "danger")
+        return redirect(url_for('login'))
+
+    info_empresa = get_info_empresa_logada()
+    
+    conn = None
+    dados_dashboard = {
+        'total_avaliacoes': 0,
+        'valor_medio': 0,
+        'modelo_mais_avaliado': 'N/A',
+        'crescimento_mensal': 0,
+        'avaliacoes_por_modelo': [],
+        'avaliacoes_recentes': [],
+        'kpis': {}
+    }
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Total de avaliações
+        cursor.execute("""
+            SELECT COUNT(*) as total FROM avaliacoes_concluidas 
+            WHERE empresa_id = %s
+        """, (empresa_id_logada,))
+        dados_dashboard['total_avaliacoes'] = cursor.fetchone()['total']
+
+        # Valor médio das avaliações
+        cursor.execute("""
+            SELECT AVG(valor_final_calculado) as media FROM avaliacoes_concluidas 
+            WHERE empresa_id = %s
+        """, (empresa_id_logada,))
+        resultado = cursor.fetchone()
+        dados_dashboard['valor_medio'] = float(resultado['media']) if resultado['media'] else 0
+
+        # Modelo mais avaliado
+        cursor.execute("""
+            SELECT mi.nome_modelo, COUNT(*) as quantidade
+            FROM avaliacoes_concluidas ac
+            JOIN modelos_iphone mi ON ac.modelo_iphone_id = mi.id
+            WHERE ac.empresa_id = %s
+            GROUP BY mi.nome_modelo
+            ORDER BY quantidade DESC
+            LIMIT 1
+        """, (empresa_id_logada,))
+        modelo_top = cursor.fetchone()
+        if modelo_top:
+            dados_dashboard['modelo_mais_avaliado'] = modelo_top['nome_modelo']
+
+        # Avaliações por modelo para o gráfico pizza
+        cursor.execute("""
+            SELECT mi.nome_modelo, COUNT(*) as quantidade
+            FROM avaliacoes_concluidas ac
+            JOIN modelos_iphone mi ON ac.modelo_iphone_id = mi.id
+            WHERE ac.empresa_id = %s
+            GROUP BY mi.nome_modelo
+            ORDER BY quantidade DESC
+        """, (empresa_id_logada,))
+        dados_dashboard['avaliacoes_por_modelo'] = cursor.fetchall()
+
+        # Crescimento mensal (comparação com mês anterior)
+        cursor.execute("""
+            SELECT 
+                COUNT(CASE WHEN MONTH(data_avaliacao) = MONTH(NOW()) AND YEAR(data_avaliacao) = YEAR(NOW()) THEN 1 END) as mes_atual,
+                COUNT(CASE WHEN MONTH(data_avaliacao) = MONTH(NOW() - INTERVAL 1 MONTH) AND YEAR(data_avaliacao) = YEAR(NOW() - INTERVAL 1 MONTH) THEN 1 END) as mes_anterior
+            FROM avaliacoes_concluidas 
+            WHERE empresa_id = %s
+        """, (empresa_id_logada,))
+        crescimento = cursor.fetchone()
+        if crescimento and crescimento['mes_anterior'] > 0:
+            dados_dashboard['crescimento_mensal'] = round(
+                ((crescimento['mes_atual'] - crescimento['mes_anterior']) / crescimento['mes_anterior']) * 100, 1
+            )
+
+        # Avaliações recentes (últimas 5)
+        cursor.execute("""
+            SELECT ac.nome_cliente_final, mi.nome_modelo, ac.valor_final_calculado, 
+                   ac.data_avaliacao, ac.cor_selecionada
+            FROM avaliacoes_concluidas ac
+            JOIN modelos_iphone mi ON ac.modelo_iphone_id = mi.id
+            WHERE ac.empresa_id = %s
+            ORDER BY ac.data_avaliacao DESC
+            LIMIT 5
+        """, (empresa_id_logada,))
+        dados_dashboard['avaliacoes_recentes'] = cursor.fetchall()
+
+        # KPIs adicionais
+        cursor.execute("""
+            SELECT 
+                COUNT(*) as total_avaliacoes,
+                AVG(valor_final_calculado) as valor_medio,
+                MIN(valor_final_calculado) as menor_valor,
+                MAX(valor_final_calculado) as maior_valor,
+                COUNT(DISTINCT modelo_iphone_id) as modelos_diferentes,
+                COUNT(CASE WHEN DATE(data_avaliacao) = CURDATE() THEN 1 END) as avaliacoes_hoje,
+                COUNT(CASE WHEN WEEK(data_avaliacao) = WEEK(NOW()) AND YEAR(data_avaliacao) = YEAR(NOW()) THEN 1 END) as avaliacoes_semana
+            FROM avaliacoes_concluidas 
+            WHERE empresa_id = %s
+        """, (empresa_id_logada,))
+        dados_dashboard['kpis'] = cursor.fetchone()
+
+    except mysql.connector.Error as e:
+        flash('Erro ao carregar dados dos relatórios.', 'danger')
+        print(f"Erro ao buscar dados do dashboard: {e}")
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+
+    return render_template('admin_relatorios_dashboard.html', 
+                         dados=dados_dashboard, 
+                         info_empresa=info_empresa,
+                         is_admin=session.get('is_admin'),
+                         empresa_pode_gerir=session.get('empresa_pode_gerir'))
+
+@app.route('/admin/relatorios/api/dados-grafico')
+def api_dados_grafico():
+    """API para fornecer dados do gráfico pizza."""
+    resp = require_login() or require_admin() or require_empresa_permissao()
+    if resp: return resp
+
+    empresa_id_logada = session.get('empresa_id')
+    if not empresa_id_logada:
+        return jsonify({"erro": "Usuário não está associado a uma empresa válida"}), 400
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT mi.nome_modelo as label, COUNT(*) as value
+            FROM avaliacoes_concluidas ac
+            JOIN modelos_iphone mi ON ac.modelo_iphone_id = mi.id
+            WHERE ac.empresa_id = %s
+            GROUP BY mi.nome_modelo
+            ORDER BY value DESC
+        """, (empresa_id_logada,))
+        
+        dados = cursor.fetchall()
+        return jsonify(dados)
+
+    except mysql.connector.Error as e:
+        return jsonify({"erro": "Erro ao buscar dados"}), 500
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+
+@app.route('/admin/relatorios/avaliacoes')
+def relatorios_avaliacoes():
+    """Relatório detalhado de avaliações concluídas."""
+    resp = require_login() or require_admin() or require_empresa_permissao()
+    if resp: return resp
+
+    empresa_id_logada = session.get('empresa_id')
+    if not empresa_id_logada:
+        flash("Usuário não está associado a uma empresa válida", "danger")
+        return redirect(url_for('login'))
+
+    # Parâmetros de filtro
+    modelo_filtro = request.args.get('modelo', '')
+    usuario_filtro = request.args.get('usuario', '')
+    data_inicio = request.args.get('data_inicio', '')
+    data_fim = request.args.get('data_fim', '')
+    
+    conn = None
+    avaliacoes = []
+    modelos_disponiveis = []
+    usuarios_disponiveis = []
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Buscar modelos para filtro
+        cursor.execute("""
+            SELECT DISTINCT nome_modelo FROM modelos_iphone 
+            WHERE empresa_id = %s ORDER BY nome_modelo
+        """, (empresa_id_logada,))
+        modelos_disponiveis = cursor.fetchall()
+
+        # Buscar usuários para filtro
+        cursor.execute("""
+            SELECT DISTINCT u.nome_completo, u.id 
+            FROM usuarios u
+            JOIN avaliacoes_concluidas ac ON u.id = ac.usuario_id
+            WHERE u.empresa_id = %s ORDER BY u.nome_completo
+        """, (empresa_id_logada,))
+        usuarios_disponiveis = cursor.fetchall()
+
+        # Construir query com filtros
+        where_conditions = ["ac.empresa_id = %s"]
+        params = [empresa_id_logada]
+
+        if modelo_filtro:
+            where_conditions.append("mi.nome_modelo = %s")
+            params.append(modelo_filtro)
+
+        if usuario_filtro:
+            where_conditions.append("u.nome_completo = %s")
+            params.append(usuario_filtro)
+
+        if data_inicio:
+            where_conditions.append("DATE(ac.data_avaliacao) >= %s")
+            params.append(data_inicio)
+
+        if data_fim:
+            where_conditions.append("DATE(ac.data_avaliacao) <= %s")
+            params.append(data_fim)
+
+        where_clause = " AND ".join(where_conditions)
+
+        # Buscar avaliações com filtros
+        cursor.execute(f"""
+            SELECT ac.*, mi.nome_modelo, u.nome_completo as nome_usuario,
+                   DATE_FORMAT(ac.data_avaliacao, '%d/%m/%Y %H:%i') as data_formatada
+            FROM avaliacoes_concluidas ac
+            JOIN modelos_iphone mi ON ac.modelo_iphone_id = mi.id
+            LEFT JOIN usuarios u ON ac.usuario_id = u.id
+            WHERE {where_clause}
+            ORDER BY ac.data_avaliacao DESC
+            LIMIT 100
+        """, params)
+        
+        avaliacoes = cursor.fetchall()
+
+    except mysql.connector.Error as e:
+        flash('Erro ao carregar avaliações.', 'danger')
+        print(f"Erro ao buscar avaliações: {e}")
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+
+    info_empresa = get_info_empresa_logada()
+    return render_template('admin_relatorios_avaliacoes.html',
+                         avaliacoes=avaliacoes,
+                         modelos_disponiveis=modelos_disponiveis,
+                         usuarios_disponiveis=usuarios_disponiveis,
+                         filtros={
+                             'modelo': modelo_filtro,
+                             'usuario': usuario_filtro,
+                             'data_inicio': data_inicio,
+                             'data_fim': data_fim
+                         },
+                         info_empresa=info_empresa,
+                         is_admin=session.get('is_admin'),
+                         empresa_pode_gerir=session.get('empresa_pode_gerir'))
+
+@app.route('/admin/relatorios/usuarios')
+def relatorios_usuarios():
+    """Relatório de performance por usuário."""
+    resp = require_login() or require_admin() or require_empresa_permissao()
+    if resp: return resp
+
+    empresa_id_logada = session.get('empresa_id')
+    if not empresa_id_logada:
+        flash("Usuário não está associado a uma empresa válida", "danger")
+        return redirect(url_for('login'))
+
+    conn = None
+    dados_usuarios = []
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT 
+                u.nome_completo,
+                u.usuario as email,
+                COUNT(ac.id) as total_avaliacoes,
+                AVG(ac.valor_final_calculado) as valor_medio,
+                MIN(ac.valor_final_calculado) as menor_valor,
+                MAX(ac.valor_final_calculado) as maior_valor,
+                MAX(ac.data_avaliacao) as ultima_avaliacao
+            FROM usuarios u
+            LEFT JOIN avaliacoes_concluidas ac ON u.id = ac.usuario_id
+            WHERE u.empresa_id = %s
+            GROUP BY u.id, u.nome_completo, u.usuario
+            ORDER BY total_avaliacoes DESC
+        """, (empresa_id_logada,))
+        
+        dados_usuarios = cursor.fetchall()
+
+    except mysql.connector.Error as e:
+        flash('Erro ao carregar dados dos usuários.', 'danger')
+        print(f"Erro ao buscar dados de usuários: {e}")
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+
+    info_empresa = get_info_empresa_logada()
+    return render_template('admin_relatorios_usuarios.html',
+                         dados_usuarios=dados_usuarios,
+                         info_empresa=info_empresa,
+                         is_admin=session.get('is_admin'),
+                         empresa_pode_gerir=session.get('empresa_pode_gerir'))
+
+@app.route('/admin/relatorios/financeiro')
+def relatorios_financeiro():
+    """Relatório de análise financeira."""
+    resp = require_login() or require_admin() or require_empresa_permissao()
+    if resp: return resp
+
+    empresa_id_logada = session.get('empresa_id')
+    if not empresa_id_logada:
+        flash("Usuário não está associado a uma empresa válida", "danger")
+        return redirect(url_for('login'))
+
+    conn = None
+    dados_financeiros = {
+        'resumo_geral': {},
+        'por_modelo': [],
+        'evolucao_mensal': []
+    }
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Resumo geral
+        cursor.execute("""
+            SELECT 
+                COUNT(*) as total_avaliacoes,
+                SUM(valor_final_calculado) as valor_total,
+                AVG(valor_final_calculado) as valor_medio,
+                MIN(valor_final_calculado) as menor_valor,
+                MAX(valor_final_calculado) as maior_valor,
+                AVG(valor_base_calculado) as valor_base_medio,
+                AVG(valor_final_calculado - valor_base_calculado) as depreciacao_media
+            FROM avaliacoes_concluidas 
+            WHERE empresa_id = %s
+        """, (empresa_id_logada,))
+        dados_financeiros['resumo_geral'] = cursor.fetchone()
+
+        # Análise por modelo
+        cursor.execute("""
+            SELECT 
+                mi.nome_modelo,
+                COUNT(*) as quantidade,
+                AVG(ac.valor_final_calculado) as valor_medio,
+                AVG(ac.valor_base_calculado) as valor_base_medio,
+                AVG(ac.valor_final_calculado - ac.valor_base_calculado) as depreciacao_media,
+                (AVG(ac.valor_final_calculado - ac.valor_base_calculado) / AVG(ac.valor_base_calculado)) * 100 as percentual_depreciacao
+            FROM avaliacoes_concluidas ac
+            JOIN modelos_iphone mi ON ac.modelo_iphone_id = mi.id
+            WHERE ac.empresa_id = %s
+            GROUP BY mi.nome_modelo
+            ORDER BY quantidade DESC
+        """, (empresa_id_logada,))
+        dados_financeiros['por_modelo'] = cursor.fetchall()
+
+        # Evolução mensal
+        cursor.execute("""
+            SELECT 
+                DATE_FORMAT(data_avaliacao, '%Y-%m') as mes,
+                COUNT(*) as quantidade,
+                AVG(valor_final_calculado) as valor_medio,
+                SUM(valor_final_calculado) as valor_total
+            FROM avaliacoes_concluidas 
+            WHERE empresa_id = %s
+            GROUP BY DATE_FORMAT(data_avaliacao, '%Y-%m')
+            ORDER BY mes DESC
+            LIMIT 12
+        """, (empresa_id_logada,))
+        dados_financeiros['evolucao_mensal'] = cursor.fetchall()
+
+    except mysql.connector.Error as e:
+        flash('Erro ao carregar dados financeiros.', 'danger')
+        print(f"Erro ao buscar dados financeiros: {e}")
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+
+    info_empresa = get_info_empresa_logada()
+    return render_template('admin_relatorios_financeiro.html',
+                         dados=dados_financeiros,
+                         info_empresa=info_empresa,
+                         is_admin=session.get('is_admin'),
+                         empresa_pode_gerir=session.get('empresa_pode_gerir'))
+
+@app.route('/admin/relatorios/tendencias')
+def relatorios_tendencias():
+    """Relatório de tendências temporais."""
+    resp = require_login() or require_admin() or require_empresa_permissao()
+    if resp: return resp
+
+    empresa_id_logada = session.get('empresa_id')
+    if not empresa_id_logada:
+        flash("Usuário não está associado a uma empresa válida", "danger")
+        return redirect(url_for('login'))
+
+    conn = None
+    dados_tendencias = {
+        'avaliacoes_por_dia': [],
+        'cores_populares': [],
+        'armazenamentos_populares': [],
+        'horarios_pico': []
+    }
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Avaliações por dia (últimos 30 dias)
+        cursor.execute("""
+            SELECT 
+                DATE(data_avaliacao) as data,
+                COUNT(*) as quantidade
+            FROM avaliacoes_concluidas 
+            WHERE empresa_id = %s AND data_avaliacao >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            GROUP BY DATE(data_avaliacao)
+            ORDER BY data DESC
+        """, (empresa_id_logada,))
+        dados_tendencias['avaliacoes_por_dia'] = cursor.fetchall()
+
+        # Cores mais populares
+        cursor.execute("""
+            SELECT 
+                cor_selecionada,
+                COUNT(*) as quantidade
+            FROM avaliacoes_concluidas 
+            WHERE empresa_id = %s
+            GROUP BY cor_selecionada
+            ORDER BY quantidade DESC
+            LIMIT 10
+        """, (empresa_id_logada,))
+        dados_tendencias['cores_populares'] = cursor.fetchall()
+
+        # Armazenamentos mais populares
+        cursor.execute("""
+            SELECT 
+                armazenamento_selecionado,
+                COUNT(*) as quantidade
+            FROM avaliacoes_concluidas 
+            WHERE empresa_id = %s
+            GROUP BY armazenamento_selecionado
+            ORDER BY quantidade DESC
+        """, (empresa_id_logada,))
+        dados_tendencias['armazenamentos_populares'] = cursor.fetchall()
+
+        # Horários de pico
+        cursor.execute("""
+            SELECT 
+                HOUR(data_avaliacao) as hora,
+                COUNT(*) as quantidade
+            FROM avaliacoes_concluidas 
+            WHERE empresa_id = %s
+            GROUP BY HOUR(data_avaliacao)
+            ORDER BY quantidade DESC
+        """, (empresa_id_logada,))
+        dados_tendencias['horarios_pico'] = cursor.fetchall()
+
+    except mysql.connector.Error as e:
+        flash('Erro ao carregar dados de tendências.', 'danger')
+        print(f"Erro ao buscar dados de tendências: {e}")
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+
+    info_empresa = get_info_empresa_logada()
+    return render_template('admin_relatorios_tendencias.html',
+                         dados=dados_tendencias,
+                         info_empresa=info_empresa,
+                         is_admin=session.get('is_admin'),
+                         empresa_pode_gerir=session.get('empresa_pode_gerir'))
+
 @app.route('/convite/<token>/api/enviar-orcamento', methods=['POST'])
 def enviar_orcamento_convite(token):
     """Envia orçamento do convidado."""

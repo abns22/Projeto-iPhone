@@ -59,10 +59,13 @@
                     <h3>Gerar Link de Convite</h3>
                     <p>Crie links únicos para clientes fazerem orçamentos sem login.</p>
                 </a>
-                <div class="admin-menu-card disabled">
-                    <h3>Relatórios</h3>
-                    <p>Visualize estatísticas de avaliações (em breve).</p>
-                </div>
+                <a href="{{ url_for('relatorios_dashboard') }}"
+                   class="admin-menu-card{% if not (is_admin|int and empresa_pode_gerir|int) %} menu-card-bloqueado{% endif %}"
+                   {% if not (is_admin|int and empresa_pode_gerir|int) %} tabindex="-1" onclick="return false;" {% endif %}>
+                    <span class="lock-icon" {% if is_admin|int and empresa_pode_gerir|int %}style="display:none"{% endif %}>🔒</span>
+                    <h3>📊 Relatórios</h3>
+                    <p>Visualize estatísticas detalhadas de avaliações e performance.</p>
+                </a>
             </div>
         </main>
     </div>

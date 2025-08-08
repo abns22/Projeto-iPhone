@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Avaliações - {{ info_empresa.nome_empresa if info_empresa else 'Sistema' }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style_admin.css') }}" rel="stylesheet">
+    <style>
+        .filter-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .table-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .nav-pills .nav-link {
+            border-radius: 25px;
+            margin: 0 5px;
+        }
+        .nav-pills .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .badge-custom {
+            font-size: 0.85em;
+            padding: 0.5em 0.8em;
+        }
+        .table th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+        }
+        .table-hover tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.1);
+        }
+        .btn-export {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border: none;
+            color: white;
+        }
+        .btn-export:hover {
+            background: linear-gradient(135deg, #0d8377 0%, #2dd65a 100%);
+            color: white;
+        }
+        .filter-form {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="h2 mb-0">
+                            <i class="fas fa-list-alt text-primary me-2"></i>
+                            Relatório de Avaliações
+                        </h1>
+                        <p class="text-muted">Visualização detalhada de todas as avaliações realizadas</p>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('relatorios_dashboard') }}" class="btn btn-outline-secondary me-2">
+                            <i class="fas fa-arrow-left me-2"></i>Voltar ao Dashboard
+                        </a>
+                        <button class="btn btn-export" onclick="exportarDados()">
+                            <i class="fas fa-download me-2"></i>Exportar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <ul class="nav nav-pills justify-content-center">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_dashboard') }}">
+                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('relatorios_avaliacoes') }}">
+                            <i class="fas fa-list me-2"></i>Avaliações
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_usuarios') }}">
+                            <i class="fas fa-users me-2"></i>Por Usuário
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_financeiro') }}">
+                            <i class="fas fa-dollar-sign me-2"></i>Financeiro
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_tendencias') }}">
+                            <i class="fas fa-chart-line me-2"></i>Tendências
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card filter-card">
+                    <div class="card-body">
+                        <form method="GET" class="filter-form">
+                            <div class="row g-3">
+                                <div class="col-lg-3 col-md-6">
+                                    <label for="modelo" class="form-label">
+                                        <i class="fas fa-mobile-alt me-1"></i>Modelo
+                                    </label>
+                                    <select class="form-select" id="modelo" name="modelo">
+                                        <option value="">Todos os modelos</option>
+                                        {% for modelo in modelos_disponiveis %}
+                                        <option value="{{ modelo.nome_modelo }}" 
+                                                {% if filtros.modelo == modelo.nome_modelo %}selected{% endif %}>
+                                            {{ modelo.nome_modelo }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-lg-3 col-md-6">
+                                    <label for="usuario" class="form-label">
+                                        <i class="fas fa-user me-1"></i>Usuário
+                                    </label>
+                                    <select class="form-select" id="usuario" name="usuario">
+                                        <option value="">Todos os usuários</option>
+                                        {% for usuario in usuarios_disponiveis %}
+                                        <option value="{{ usuario.nome_completo }}" 
+                                                {% if filtros.usuario == usuario.nome_completo %}selected{% endif %}>
+                                            {{ usuario.nome_completo }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-lg-2 col-md-6">
+                                    <label for="data_inicio" class="form-label">
+                                        <i class="fas fa-calendar-alt me-1"></i>Data Início
+                                    </label>
+                                    <input type="date" class="form-control" id="data_inicio" name="data_inicio" 
+                                           value="{{ filtros.data_inicio }}">
+                                </div>
+                                <div class="col-lg-2 col-md-6">
+                                    <label for="data_fim" class="form-label">
+                                        <i class="fas fa-calendar-alt me-1"></i>Data Fim
+                                    </label>
+                                    <input type="date" class="form-control" id="data_fim" name="data_fim" 
+                                           value="{{ filtros.data_fim }}">
+                                </div>
+                                <div class="col-lg-2 col-md-12 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary me-2 flex-fill">
+                                        <i class="fas fa-search me-2"></i>Filtrar
+                                    </button>
+                                    <a href="{{ url_for('relatorios_avaliacoes') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumo dos Resultados -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">
+                            <i class="fas fa-list-ol text-primary me-2"></i>
+                            {{ avaliacoes|length }} avaliação(ões) encontrada(s)
+                        </h5>
+                        {% if filtros.modelo or filtros.usuario or filtros.data_inicio or filtros.data_fim %}
+                        <small class="text-muted">
+                            Filtros ativos: 
+                            {% if filtros.modelo %}<span class="badge bg-primary me-1">{{ filtros.modelo }}</span>{% endif %}
+                            {% if filtros.usuario %}<span class="badge bg-success me-1">{{ filtros.usuario }}</span>{% endif %}
+                            {% if filtros.data_inicio %}<span class="badge bg-info me-1">A partir de {{ filtros.data_inicio }}</span>{% endif %}
+                            {% if filtros.data_fim %}<span class="badge bg-warning me-1">Até {{ filtros.data_fim }}</span>{% endif %}
+                        </small>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <small class="text-muted">Limitado a 100 resultados</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabela de Avaliações -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card table-card">
+                    <div class="card-body p-0">
+                        {% if avaliacoes %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" id="tabelaAvaliacoes">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 15%">Cliente</th>
+                                        <th style="width: 12%">Modelo</th>
+                                        <th style="width: 10%">Cor</th>
+                                        <th style="width: 10%">Armazenamento</th>
+                                        <th style="width: 10%">Valor Final</th>
+                                        <th style="width: 12%">Usuário</th>
+                                        <th style="width: 10%">Data</th>
+                                        <th style="width: 8%">Contato</th>
+                                        <th style="width: 8%">IMEI</th>
+                                        <th style="width: 5%">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for avaliacao in avaliacoes %}
+                                    <tr>
+                                        <td>
+                                            <div>
+                                                <strong>{{ avaliacao.nome_cliente_final or 'N/A' }}</strong>
+                                                {% if avaliacao.email_cliente_final %}
+                                                <br><small class="text-muted">{{ avaliacao.email_cliente_final }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-custom bg-primary">
+                                                {{ avaliacao.nome_modelo }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-custom bg-secondary">
+                                                {{ avaliacao.cor_selecionada }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-custom bg-info">
+                                                {{ avaliacao.armazenamento_selecionado }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <strong class="text-success">
+                                                R$ {{ "%.2f"|format(avaliacao.valor_final_calculado) }}
+                                            </strong>
+                                            {% if avaliacao.valor_base_calculado %}
+                                            <br><small class="text-muted">
+                                                Base: R$ {{ "%.2f"|format(avaliacao.valor_base_calculado) }}
+                                            </small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if avaliacao.nome_usuario %}
+                                                <small>{{ avaliacao.nome_usuario }}</small>
+                                            {% else %}
+                                                <span class="badge bg-warning">Convite</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small>{{ avaliacao.data_formatada or 'N/A' }}</small>
+                                        </td>
+                                        <td>
+                                            {% if avaliacao.telefone_cliente_final %}
+                                            <small>{{ avaliacao.telefone_cliente_final }}</small>
+                                            {% else %}
+                                            <small class="text-muted">N/A</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if avaliacao.imei %}
+                                            <small class="font-monospace">{{ avaliacao.imei[:8] }}...</small>
+                                            {% else %}
+                                            <small class="text-muted">N/A</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-primary btn-sm" 
+                                                        onclick="verDetalhes({{ avaliacao.id }})"
+                                                        title="Ver Detalhes">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Nenhuma avaliação encontrada</h5>
+                            <p class="text-muted">Tente ajustar os filtros ou aguarde novas avaliações serem realizadas.</p>
+                            <a href="{{ url_for('relatorios_avaliacoes') }}" class="btn btn-primary">
+                                <i class="fas fa-refresh me-2"></i>Limpar Filtros
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Detalhes -->
+    <div class="modal fade" id="modalDetalhes" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-info-circle text-primary me-2"></i>
+                        Detalhes da Avaliação
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="conteudoDetalhes">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Carregando...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function verDetalhes(avaliacaoId) {
+            const modal = new bootstrap.Modal(document.getElementById('modalDetalhes'));
+            const conteudo = document.getElementById('conteudoDetalhes');
+            
+            // Buscar dados da avaliação (simulado por agora)
+            conteudo.innerHTML = `
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Funcionalidade em desenvolvimento. ID da avaliação: ${avaliacaoId}
+                </div>
+                <p>Em breve você poderá ver:</p>
+                <ul>
+                    <li>Resumo completo das respostas da avaliação</li>
+                    <li>Histórico de modificações de preço</li>
+                    <li>Dados completos do cliente</li>
+                    <li>Informações técnicas do aparelho</li>
+                </ul>
+            `;
+            
+            modal.show();
+        }
+
+        function exportarDados() {
+            // Obter parâmetros atuais da URL para manter os filtros
+            const params = new URLSearchParams(window.location.search);
+            
+            // Simular exportação por agora
+            alert('Funcionalidade de exportação em desenvolvimento!\n\nEm breve você poderá exportar os dados em:\n- Excel (.xlsx)\n- CSV\n- PDF');
+            
+            // Quando implementado, seria algo assim:
+            // window.open('/admin/relatorios/avaliacoes/exportar?' + params.toString());
+        }
+
+        // Função para ordenar tabela (futuro)
+        function ordenarTabela(coluna) {
+            console.log('Ordenar por:', coluna);
+            // Implementar ordenação
+        }
+
+        // Auto-refresh opcional (comentado por padrão)
+        // setInterval(() => {
+        //     if (confirm('Deseja atualizar os dados?')) {
+        //         window.location.reload();
+        //     }
+        // }, 300000); // 5 minutos
+    </script>
+</body>
+</html>
