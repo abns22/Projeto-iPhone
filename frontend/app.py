@@ -2799,6 +2799,95 @@ def calcular_variacao(valor_atual, valor_anterior):
         'valor_anterior': valor_anterior
     }
 
+@app.route('/admin/relatorios/detalhes-avaliacao/<int:avaliacao_id>')
+def detalhes_avaliacao(avaliacao_id):
+    """Retorna detalhes completos de uma avaliação específica."""
+    if not session.get('user_id') or not session.get('is_admin'):
+        return jsonify({'erro': 'Acesso negado'}), 403
+    
+    empresa_id_logada = session.get('empresa_id')
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Buscar dados completos da avaliação
+        query = """
+            SELECT 
+                ac.*,
+                mi.nome as modelo_nome,
+                mi.valor_base as modelo_valor_base,
+                u.nome_completo as usuario_nome,
+                e.nome_empresa
+            FROM avaliacoes_concluidas ac
+            LEFT JOIN modelos_iphone mi ON ac.modelo_iphone_id = mi.id AND ac.empresa_id = mi.empresa_id
+            LEFT JOIN usuarios u ON ac.usuario_id = u.id
+            LEFT JOIN empresas e ON ac.empresa_id = e.id
+            WHERE ac.id = %s AND ac.empresa_id = %s
+        """
+        cursor.execute(query, (avaliacao_id, empresa_id_logada))
+        avaliacao = cursor.fetchone()
+        
+        if not avaliacao:
+            return jsonify({'erro': 'Avaliação não encontrada'}), 404
+        
+        # Buscar histórico de modificações de preço (se existir)
+        # Por enquanto, vamos simular com os dados disponíveis
+        historico_precos = []
+        if avaliacao['valor_base_calculado'] != avaliacao['valor_final_calculado']:
+            historico_precos.append({
+                'tipo': 'Valor Base',
+                'valor': float(avaliacao['valor_base_calculado']),
+                'descricao': 'Valor inicial do modelo'
+            })
+            historico_precos.append({
+                'tipo': 'Valor Final',
+                'valor': float(avaliacao['valor_final_calculado']),
+                'descricao': 'Valor após aplicação dos impactos'
+            })
+        
+        # Processar resumo de respostas
+        try:
+            resumo_respostas = json.loads(avaliacao['resumo_respostas']) if avaliacao['resumo_respostas'] else {}
+        except:
+            resumo_respostas = {}
+        
+        # Calcular diferença de valores
+        diferenca_valor = float(avaliacao['valor_final_calculado']) - float(avaliacao['valor_base_calculado'])
+        percentual_variacao = (diferenca_valor / float(avaliacao['valor_base_calculado'])) * 100 if float(avaliacao['valor_base_calculado']) > 0 else 0
+        
+        dados_detalhes = {
+            'avaliacao': {
+                'id': avaliacao['id'],
+                'data_avaliacao': avaliacao['data_avaliacao'].strftime('%d/%m/%Y às %H:%M') if avaliacao['data_avaliacao'] else 'N/A',
+                'modelo': avaliacao['modelo_nome'],
+                'cor': avaliacao['cor_selecionada'],
+                'armazenamento': avaliacao['armazenamento_selecionado'],
+                'imei': avaliacao['imei'],
+                'valor_base': float(avaliacao['valor_base_calculado']),
+                'valor_final': float(avaliacao['valor_final_calculado']),
+                'diferenca': diferenca_valor,
+                'percentual_variacao': percentual_variacao,
+                'usuario': avaliacao['usuario_nome'] or 'Sistema',
+                'empresa': avaliacao['nome_empresa']
+            },
+            'cliente': {
+                'nome': avaliacao['nome_cliente_final'],
+                'email': avaliacao['email_cliente_final'],
+                'telefone': avaliacao['telefone_cliente_final']
+            },
+            'respostas': resumo_respostas,
+            'historico_precos': historico_precos
+        }
+        
+        cursor.close()
+        conn.close()
+        return jsonify(dados_detalhes)
+        
+    except Exception as e:
+        print(f"Erro ao buscar detalhes da avaliação: {e}")
+        return jsonify({'erro': 'Erro interno do servidor'}), 500
+
 
 @app.route('/convite/<token>/api/enviar-orcamento', methods=['POST'])
 def enviar_orcamento_convite(token):

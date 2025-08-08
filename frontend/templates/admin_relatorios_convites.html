@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Convites - {{ info_empresa.nome_empresa if info_empresa else 'Sistema' }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style_admin.css') }}" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .convite-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease-in-out;
+        }
+        .convite-card:hover {
+            transform: translateY(-5px);
+        }
+        .nav-pills .nav-link {
+            border-radius: 25px;
+            margin: 0 5px;
+        }
+        .nav-pills .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .kpi-convite {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .kpi-convite.success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        .kpi-convite.warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .kpi-convite.info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .stats-icon {
+            font-size: 2.5rem;
+            opacity: 0.8;
+        }
+        .link-ativo {
+            background: linear-gradient(135deg, #11998e20 0%, #38ef7d20 100%);
+            border-left: 4px solid #11998e;
+        }
+        .link-usado {
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+            border-left: 4px solid #667eea;
+        }
+        .link-expirado {
+            background: linear-gradient(135deg, #f093fb20 0%, #f5576c20 100%);
+            border-left: 4px solid #f093fb;
+        }
+        .tempo-restante {
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        .chart-container {
+            height: 300px;
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="h2 mb-0">
+                            <i class="fas fa-link text-info me-2"></i>
+                            Relatório de Links de Convite
+                        </h1>
+                        <p class="text-muted">Performance e estatísticas dos links de convite</p>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('relatorios_dashboard') }}" class="btn btn-outline-secondary me-2">
+                            <i class="fas fa-arrow-left me-2"></i>Voltar ao Dashboard
+                        </a>
+                        <a href="{{ url_for('gerar_link_convite') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Novo Link
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <ul class="nav nav-pills justify-content-center">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_dashboard') }}">
+                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_avaliacoes') }}">
+                            <i class="fas fa-list me-2"></i>Avaliações
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_usuarios') }}">
+                            <i class="fas fa-users me-2"></i>Por Usuário
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_financeiro') }}">
+                            <i class="fas fa-dollar-sign me-2"></i>Financeiro
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_tendencias') }}">
+                            <i class="fas fa-chart-line me-2"></i>Tendências
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('relatorios_convites') }}">
+                            <i class="fas fa-link me-2"></i>Convites
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_comparativos') }}">
+                            <i class="fas fa-balance-scale me-2"></i>Comparativos
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- KPIs dos Convites -->
+        {% if dados.resumo %}
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card convite-card kpi-convite">
+                    <div class="card-body text-center">
+                        <i class="fas fa-link stats-icon mb-3"></i>
+                        <h3 class="mb-1">{{ dados.resumo.total_links or 0 }}</h3>
+                        <p class="mb-0">Total de Links</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card convite-card kpi-convite success">
+                    <div class="card-body text-center">
+                        <i class="fas fa-check-circle stats-icon mb-3"></i>
+                        <h3 class="mb-1">{{ dados.resumo.links_usados or 0 }}</h3>
+                        <p class="mb-0">Links Convertidos</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card convite-card kpi-convite info">
+                    <div class="card-body text-center">
+                        <i class="fas fa-hourglass-half stats-icon mb-3"></i>
+                        <h3 class="mb-1">{{ dados.resumo.links_ativos or 0 }}</h3>
+                        <p class="mb-0">Links Ativos</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="card convite-card kpi-convite warning">
+                    <div class="card-body text-center">
+                        <i class="fas fa-percentage stats-icon mb-3"></i>
+                        <h3 class="mb-1">{{ "%.1f"|format(dados.resumo.taxa_conversao or 0) }}%</h3>
+                        <p class="mb-0">Taxa de Conversão</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Charts e Estatísticas -->
+        <div class="row mb-4">
+            <!-- Gráfico de Performance -->
+            <div class="col-lg-8 mb-4">
+                <div class="card convite-card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-bar text-primary me-2"></i>
+                            Performance por Usuário
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status dos Links -->
+            <div class="col-lg-4 mb-4">
+                <div class="card convite-card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-pie text-success me-2"></i>
+                            Status dos Links
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="statusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Links Ativos -->
+        {% if dados.links_ativos %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card convite-card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-clock text-success me-2"></i>
+                            Links Ativos ({{ dados.links_ativos|length }})
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for link in dados.links_ativos %}
+                            <div class="col-lg-6 col-md-12 mb-3">
+                                <div class="p-3 rounded link-ativo">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <strong>Criado por:</strong> {{ link.criado_por }}<br>
+                                            <small class="text-muted">{{ link.data_criacao.strftime('%d/%m/%Y %H:%M') if link.data_criacao else 'N/A' }}</small>
+                                        </div>
+                                        <div class="text-end">
+                                            {% if link.horas_restantes > 0 %}
+                                                <span class="badge bg-success tempo-restante">
+                                                    {{ link.horas_restantes }}h restantes
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-warning tempo-restante">
+                                                    Expirando em breve
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <small class="font-monospace text-muted">
+                                            ...{{ link.token_unico[-8:] if link.token_unico else 'N/A' }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Links Convertidos -->
+        {% if dados.links_usados %}
+        <div class="row">
+            <div class="col-12">
+                <div class="card convite-card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-check-circle text-primary me-2"></i>
+                            Links Convertidos Recentemente ({{ dados.links_usados|length }})
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Contato</th>
+                                        <th>Criado por</th>
+                                        <th>Data de Uso</th>
+                                        <th>Tempo até Conversão</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for link in dados.links_usados %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ link.nome_cliente or 'N/A' }}</strong>
+                                        </td>
+                                        <td>
+                                            {% if link.email_cliente %}
+                                                {{ link.email_cliente }}<br>
+                                            {% endif %}
+                                            {% if link.telefone_cliente %}
+                                                <small class="text-muted">{{ link.telefone_cliente }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ link.criado_por }}</td>
+                                        <td>
+                                            <small>{{ link.data_uso.strftime('%d/%m/%Y %H:%M') if link.data_uso else 'N/A' }}</small>
+                                        </td>
+                                        <td>
+                                            {% if link.data_criacao and link.data_uso %}
+                                                {% set delta = link.data_uso - link.data_criacao %}
+                                                {% if delta.days > 0 %}
+                                                    <span class="badge bg-info">{{ delta.days }}d {{ (delta.seconds // 3600) }}h</span>
+                                                {% else %}
+                                                    <span class="badge bg-success">{{ (delta.seconds // 3600) }}h {{ ((delta.seconds % 3600) // 60) }}m</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Mensagem quando não há dados -->
+        {% if not dados.resumo or dados.resumo.total_links == 0 %}
+        <div class="row">
+            <div class="col-12">
+                <div class="card convite-card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-link fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nenhum link de convite encontrado</h5>
+                        <p class="text-muted">Comece criando seu primeiro link de convite para atrair mais clientes.</p>
+                        <a href="{{ url_for('gerar_link_convite') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Criar Primeiro Link
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Dados dos convites
+        const dadosEstatisticas = {{ dados.estatisticas | tojson }};
+        const dadosResumo = {{ dados.resumo | tojson }};
+        
+        // Cores para os gráficos
+        const cores = ['#11998e', '#667eea', '#f093fb', '#4facfe', '#38ef7d', '#764ba2'];
+
+        // Gráfico de Performance por Usuário
+        if (dadosEstatisticas && dadosEstatisticas.length > 0) {
+            const ctxPerformance = document.getElementById('performanceChart').getContext('2d');
+            new Chart(ctxPerformance, {
+                type: 'bar',
+                data: {
+                    labels: dadosEstatisticas.map(u => u.nome_completo),
+                    datasets: [
+                        {
+                            label: 'Links Criados',
+                            data: dadosEstatisticas.map(u => u.links_criados || 0),
+                            backgroundColor: cores[0] + '80',
+                            borderColor: cores[0],
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Links Convertidos',
+                            data: dadosEstatisticas.map(u => u.links_convertidos || 0),
+                            backgroundColor: cores[1] + '80',
+                            borderColor: cores[1],
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            document.getElementById('performanceChart').parentElement.innerHTML = 
+                '<div class="text-center py-5"><i class="fas fa-chart-bar fa-3x text-muted mb-3"></i><p class="text-muted">Nenhum dado disponível</p></div>';
+        }
+
+        // Gráfico de Status dos Links
+        if (dadosResumo && dadosResumo.total_links > 0) {
+            const ctxStatus = document.getElementById('statusChart').getContext('2d');
+            new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Convertidos', 'Ativos', 'Expirados'],
+                    datasets: [{
+                        data: [
+                            dadosResumo.links_usados || 0,
+                            dadosResumo.links_ativos || 0,
+                            dadosResumo.links_expirados || 0
+                        ],
+                        backgroundColor: [cores[1], cores[0], cores[2]],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            document.getElementById('statusChart').parentElement.innerHTML = 
+                '<div class="text-center py-5"><i class="fas fa-chart-pie fa-3x text-muted mb-3"></i><p class="text-muted">Nenhum dado disponível</p></div>';
+        }
+    </script>
+</body>
+</html>

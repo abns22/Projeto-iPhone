@@ -120,6 +120,16 @@
                             <i class="fas fa-chart-line me-2"></i>Tendências
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_convites') }}">
+                            <i class="fas fa-link me-2"></i>Convites
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('relatorios_comparativos') }}">
+                            <i class="fas fa-balance-scale me-2"></i>Comparativos
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -355,22 +365,244 @@
             const modal = new bootstrap.Modal(document.getElementById('modalDetalhes'));
             const conteudo = document.getElementById('conteudoDetalhes');
             
-            // Buscar dados da avaliação (simulado por agora)
+            // Mostrar loading
             conteudo.innerHTML = `
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>
-                    Funcionalidade em desenvolvimento. ID da avaliação: ${avaliacaoId}
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Carregando...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Carregando detalhes da avaliação...</p>
                 </div>
-                <p>Em breve você poderá ver:</p>
-                <ul>
-                    <li>Resumo completo das respostas da avaliação</li>
-                    <li>Histórico de modificações de preço</li>
-                    <li>Dados completos do cliente</li>
-                    <li>Informações técnicas do aparelho</li>
-                </ul>
             `;
             
             modal.show();
+            
+            // Buscar dados da avaliação via API
+            fetch(`/admin/relatorios/detalhes-avaliacao/${avaliacaoId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.erro) {
+                        conteudo.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                ${data.erro}
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    // Renderizar detalhes completos
+                    conteudo.innerHTML = `
+                        <div class="row">
+                            <!-- Informações Gerais -->
+                            <div class="col-md-6 mb-4">
+                                <div class="card border-primary">
+                                    <div class="card-header bg-primary text-white">
+                                        <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informações Gerais</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <strong>ID:</strong><br>
+                                                <span class="text-muted">#${data.avaliacao.id}</span>
+                                            </div>
+                                            <div class="col-6">
+                                                <strong>Data:</strong><br>
+                                                <span class="text-muted">${data.avaliacao.data_avaliacao}</span>
+                                            </div>
+                                        </div>
+                                        <hr>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <strong>Modelo:</strong><br>
+                                                <span class="text-primary">${data.avaliacao.modelo}</span>
+                                            </div>
+                                            <div class="col-6">
+                                                <strong>Usuário:</strong><br>
+                                                <span class="text-muted">${data.avaliacao.usuario}</span>
+                                            </div>
+                                        </div>
+                                        <hr>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <strong>Cor:</strong><br>
+                                                <span class="text-muted">${data.avaliacao.cor}</span>
+                                            </div>
+                                            <div class="col-6">
+                                                <strong>Armazenamento:</strong><br>
+                                                <span class="text-muted">${data.avaliacao.armazenamento}</span>
+                                            </div>
+                                        </div>
+                                        ${data.avaliacao.imei ? `
+                                        <hr>
+                                        <div class="row">
+                                            <div class="col-12">
+                                                <strong>IMEI:</strong><br>
+                                                <small class="font-monospace text-muted">${data.avaliacao.imei}</small>
+                                            </div>
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Valores -->
+                            <div class="col-md-6 mb-4">
+                                <div class="card border-success">
+                                    <div class="card-header bg-success text-white">
+                                        <h6 class="mb-0"><i class="fas fa-dollar-sign me-2"></i>Valores</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <strong>Valor Base:</strong><br>
+                                                <span class="text-muted">R$ ${data.avaliacao.valor_base.toFixed(2)}</span>
+                                            </div>
+                                            <div class="col-6">
+                                                <strong>Valor Final:</strong><br>
+                                                <span class="text-success fw-bold">R$ ${data.avaliacao.valor_final.toFixed(2)}</span>
+                                            </div>
+                                        </div>
+                                        <hr>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <strong>Diferença:</strong><br>
+                                                <span class="${data.avaliacao.diferenca >= 0 ? 'text-success' : 'text-danger'}">
+                                                    R$ ${data.avaliacao.diferenca.toFixed(2)}
+                                                </span>
+                                            </div>
+                                            <div class="col-6">
+                                                <strong>Variação:</strong><br>
+                                                <span class="${data.avaliacao.percentual_variacao >= 0 ? 'text-success' : 'text-danger'}">
+                                                    ${data.avaliacao.percentual_variacao.toFixed(1)}%
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Dados do Cliente -->
+                        ${data.cliente.nome || data.cliente.email || data.cliente.telefone ? `
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card border-info">
+                                    <div class="card-header bg-info text-white">
+                                        <h6 class="mb-0"><i class="fas fa-user me-2"></i>Dados do Cliente</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            ${data.cliente.nome ? `
+                                            <div class="col-md-4">
+                                                <strong>Nome:</strong><br>
+                                                <span class="text-muted">${data.cliente.nome}</span>
+                                            </div>
+                                            ` : ''}
+                                            ${data.cliente.email ? `
+                                            <div class="col-md-4">
+                                                <strong>Email:</strong><br>
+                                                <span class="text-muted">${data.cliente.email}</span>
+                                            </div>
+                                            ` : ''}
+                                            ${data.cliente.telefone ? `
+                                            <div class="col-md-4">
+                                                <strong>Telefone:</strong><br>
+                                                <span class="text-muted">${data.cliente.telefone}</span>
+                                            </div>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <!-- Respostas da Avaliação -->
+                        ${Object.keys(data.respostas).length > 0 ? `
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card border-warning">
+                                    <div class="card-header bg-warning text-dark">
+                                        <h6 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Respostas da Avaliação</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Pergunta</th>
+                                                        <th>Resposta</th>
+                                                        <th>Impacto</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${Object.entries(data.respostas).map(([pergunta, resposta]) => `
+                                                    <tr>
+                                                        <td><strong>${pergunta}</strong></td>
+                                                        <td>
+                                                            <span class="badge ${resposta === 'Sim' ? 'bg-success' : resposta === 'Não' ? 'bg-danger' : 'bg-secondary'}">
+                                                                ${resposta}
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <small class="text-muted">Calculado automaticamente</small>
+                                                        </td>
+                                                    </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <!-- Histórico de Preços -->
+                        ${data.historico_precos.length > 0 ? `
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card border-secondary">
+                                    <div class="card-header bg-secondary text-white">
+                                        <h6 class="mb-0"><i class="fas fa-history me-2"></i>Histórico de Preços</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="timeline">
+                                            ${data.historico_precos.map((item, index) => `
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="flex-shrink-0">
+                                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                        <i class="fas fa-dollar-sign"></i>
+                                                    </div>
+                                                </div>
+                                                <div class="flex-grow-1 ms-3">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <strong>${item.tipo}</strong>
+                                                        <span class="text-success fw-bold">R$ ${item.valor.toFixed(2)}</span>
+                                                    </div>
+                                                    <small class="text-muted">${item.descricao}</small>
+                                                </div>
+                                            </div>
+                                            ${index < data.historico_precos.length - 1 ? '<hr>' : ''}
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+                    `;
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar detalhes:', error);
+                    conteudo.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Erro ao carregar detalhes da avaliação. Tente novamente.
+                        </div>
+                    `;
+                });
         }
 
         function exportarDados(formato) {
