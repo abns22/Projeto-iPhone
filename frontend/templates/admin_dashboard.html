@@ -1,73 +1,190 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Dashboard do Admin</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style_admin.css') }}">
-</head>
-<body>
-    <div class="admin-container">
-        <header style="display:flex; align-items:center; gap:12px;">
-            {% set info_empresa = info_empresa or session.get('info_empresa') %}
-            {% if info_empresa and info_empresa.logo_url %}
-                <img src="{{ url_for('static', filename=info_empresa.logo_url) }}" alt="Logo" style="height:64px; width:64px; object-fit:contain; border-radius:8px; background:#fff; box-shadow:0 1px 6px rgba(0,0,0,0.07);">
-            {% endif %}
-            <div>
-                <h1 style="margin:0; font-size:1.5rem; color:#007bff;">
-                    {{ info_empresa.nome_empresa if info_empresa else 'Dashboard de Administração' }}
-                    {% if info_empresa and (info_empresa.permite_ajuste_valores or info_empresa.permite_link_convidado or info_empresa.envia_email_orcamento or info_empresa.envia_email_orcamento_link) and info_empresa.plano_ativo %}
-                        <span style="font-size:0.9em; color:#e67e22; font-weight:700; margin-left:10px;">ADMIN</span>
-                    {% endif %}
-                </h1>
-                <nav>
-                    <a href="{{ url_for('calcular') }}" style="margin-right:18px; color:#007bff; font-weight:500; text-decoration:underline;">&larr; Voltar para Avaliador</a>
-                    <a href="{{ url_for('logout') }}">Sair</a>
-                </nav>
+{% extends "base_modern.html" %}
+
+{% block title %}Dashboard do Admin - {{ info_empresa.nome_empresa if info_empresa else 'Sistema' }}{% endblock %}
+
+{% block page_indicator %}Dashboard{% endblock %}
+
+{% block header_nav %}
+    <a href="{{ url_for('calcular') }}" class="header-nav-item">
+        <i class="fas fa-mobile-screen-button"></i>
+        <span>Avaliador</span>
+    </a>
+    {% if session.get('is_admin') and session.get('empresa_pode_gerir') %}
+        <a href="{{ url_for('gerenciar_modelos_admin') }}" class="header-nav-item">
+            <i class="fas fa-cubes"></i>
+            <span>Modelos</span>
+        </a>
+        <a href="{{ url_for('gerenciar_usuarios_admin') }}" class="header-nav-item">
+            <i class="fas fa-users"></i>
+            <span>Usuários</span>
+        </a>
+        <a href="{{ url_for('gerar_link_convite') }}" class="header-nav-item">
+            <i class="fas fa-link"></i>
+            <span>Convites</span>
+        </a>
+        <a href="{{ url_for('relatorios_dashboard') }}" class="header-nav-item">
+            <i class="fas fa-chart-bar"></i>
+            <span>Relatórios</span>
+        </a>
+    {% else %}
+        <a href="#" class="header-nav-item" style="opacity: 0.5; cursor: not-allowed;" title="Acesso restrito">
+            <i class="fas fa-lock"></i>
+            <span>Modelos</span>
+        </a>
+        <a href="#" class="header-nav-item" style="opacity: 0.5; cursor: not-allowed;" title="Acesso restrito">
+            <i class="fas fa-lock"></i>
+            <span>Usuários</span>
+        </a>
+        <a href="#" class="header-nav-item" style="opacity: 0.5; cursor: not-allowed;" title="Acesso restrito">
+            <i class="fas fa-lock"></i>
+            <span>Convites</span>
+        </a>
+        <a href="#" class="header-nav-item" style="opacity: 0.5; cursor: not-allowed;" title="Acesso restrito">
+            <i class="fas fa-lock"></i>
+            <span>Relatórios</span>
+        </a>
+    {% endif %}
+    <a href="{{ url_for('logout') }}" class="quick-action-btn">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Sair</span>
+    </a>
+{% endblock %}
+
+{% block mobile_nav %}
+    <a href="{{ url_for('calcular') }}" class="header-nav-item">
+        <i class="fas fa-mobile-screen-button"></i>
+        <span>Avaliador de iPhones</span>
+    </a>
+    {% if session.get('is_admin') and session.get('empresa_pode_gerir') %}
+        <a href="{{ url_for('gerenciar_modelos_admin') }}" class="header-nav-item">
+            <i class="fas fa-cubes"></i>
+            <span>Gerenciar Modelos</span>
+        </a>
+        <a href="{{ url_for('gerenciar_usuarios_admin') }}" class="header-nav-item">
+            <i class="fas fa-users"></i>
+            <span>Gerenciar Usuários</span>
+        </a>
+        <a href="{{ url_for('gerar_link_convite') }}" class="header-nav-item">
+            <i class="fas fa-link"></i>
+            <span>Gerar Link de Convite</span>
+        </a>
+        <a href="{{ url_for('relatorios_dashboard') }}" class="header-nav-item">
+            <i class="fas fa-chart-bar"></i>
+            <span>Relatórios</span>
+        </a>
+    {% else %}
+        <a href="#" class="header-nav-item" style="opacity: 0.5; cursor: not-allowed;" title="Acesso restrito">
+            <i class="fas fa-lock"></i>
+            <span>Gerenciar Modelos</span>
+        </a>
+        <a href="#" class="header-nav-item" style="opacity: 0.5; cursor: not-allowed;" title="Acesso restrito">
+            <i class="fas fa-lock"></i>
+            <span>Gerenciar Usuários</span>
+        </a>
+        <a href="#" class="header-nav-item" style="opacity: 0.5; cursor: not-allowed;" title="Acesso restrito">
+            <i class="fas fa-lock"></i>
+            <span>Gerar Link de Convite</span>
+        </a>
+        <a href="#" class="header-nav-item" style="opacity: 0.5; cursor: not-allowed;" title="Acesso restrito">
+            <i class="fas fa-lock"></i>
+            <span>Relatórios</span>
+        </a>
+    {% endif %}
+    <a href="{{ url_for('logout') }}" class="header-nav-item" style="background: rgba(220,53,69,0.8);">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Sair</span>
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="fade-in-up">
+                <h2 class="text-gradient mb-2">Bem-vindo, {{ session.get('nome_completo') }}!</h2>
+                <p class="text-muted">Selecione uma das opções abaixo para gerenciar os dados da sua empresa.</p>
             </div>
-        </header>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="flash-messages">
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">{{ message }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
-        <main>
-            <h2>Bem-vindo, {{ session.get('nome_completo') }}!</h2>
-            <p>Selecione uma das opções abaixo para gerenciar os dados da sua empresa.</p>
-            <div class="admin-menu-grid">
-                <a href="{{ url_for('gerenciar_modelos_admin') }}"
-                   class="admin-menu-card{% if not (is_admin|int and empresa_pode_gerir|int) %} menu-card-bloqueado{% endif %}"
-                   {% if not (is_admin|int and empresa_pode_gerir|int) %} tabindex="-1" onclick="return false;" {% endif %}>
-                    <span class="lock-icon" {% if is_admin|int and empresa_pode_gerir|int %}style="display:none"{% endif %}>🔒</span>
-                    <h3>Gerenciar Modelos</h3>
-                    <p>Adicione, edite ou remova modelos de iPhone e seus valores.</p>
-                </a>
-                <a href="{{ url_for('gerenciar_usuarios_admin') }}"
-                   class="admin-menu-card{% if not (is_admin|int and empresa_pode_gerir|int) %} menu-card-bloqueado{% endif %}"
-                   {% if not (is_admin|int and empresa_pode_gerir|int) %} tabindex="-1" onclick="return false;" {% endif %}>
-                    <span class="lock-icon" {% if is_admin|int and empresa_pode_gerir|int %}style="display:none"{% endif %}>🔒</span>
-                    <h3>Gerenciar Usuários</h3>
-                    <p>Adicione ou remova usuários (funcionários) da sua equipe.</p>
-                </a>
-                <a href="{{ url_for('gerar_link_convite') }}"
-                   class="admin-menu-card{% if not (is_admin|int and empresa_pode_gerir|int) %} menu-card-bloqueado{% endif %}"
-                   {% if not (is_admin|int and empresa_pode_gerir|int) %} tabindex="-1" onclick="return false;" {% endif %}>
-                    <span class="lock-icon" {% if is_admin|int and empresa_pode_gerir|int %}style="display:none"{% endif %}>🔒</span>
-                    <h3>Gerar Link de Convite</h3>
-                    <p>Crie links únicos para clientes fazerem orçamentos sem login.</p>
-                </a>
-                <a href="{{ url_for('relatorios_dashboard') }}"
-                   class="admin-menu-card{% if not (is_admin|int and empresa_pode_gerir|int) %} menu-card-bloqueado{% endif %}"
-                   {% if not (is_admin|int and empresa_pode_gerir|int) %} tabindex="-1" onclick="return false;" {% endif %}>
-                    <span class="lock-icon" {% if is_admin|int and empresa_pode_gerir|int %}style="display:none"{% endif %}>🔒</span>
-                    <h3>📊 Relatórios</h3>
-                    <p>Visualize estatísticas detalhadas de avaliações e performance.</p>
-                </a>
-            </div>
-        </main>
+        </div>
     </div>
-</body>
-</html>
+
+    <!-- Action Cards -->
+    <div class="action-cards">
+        <a href="{{ url_for('calcular') }}" class="action-card">
+            <i class="fas fa-mobile-screen-button"></i>
+            <h3>Avaliador de iPhones</h3>
+            <p>Avalie o valor do seu iPhone de forma rápida e precisa.</p>
+        </a>
+
+        <a href="{{ url_for('gerenciar_modelos_admin') }}" 
+           class="action-card{% if not (is_admin|int and empresa_pode_gerir|int) %} menu-card-bloqueado{% endif %}"
+           {% if not (is_admin|int and empresa_pode_gerir|int) %} tabindex="-1" onclick="return false;" {% endif %}>
+            <span class="lock-icon" {% if is_admin|int and empresa_pode_gerir|int %}style="display:none"{% endif %}>🔒</span>
+            <i class="fas fa-cubes"></i>
+            <h3>Gerenciar Modelos</h3>
+            <p>Adicione, edite ou remova modelos de iPhone e seus valores.</p>
+        </a>
+
+        <a href="{{ url_for('gerenciar_usuarios_admin') }}"
+           class="action-card{% if not (is_admin|int and empresa_pode_gerir|int) %} menu-card-bloqueado{% endif %}"
+           {% if not (is_admin|int and empresa_pode_gerir|int) %} tabindex="-1" onclick="return false;" {% endif %}>
+            <span class="lock-icon" {% if is_admin|int and empresa_pode_gerir|int %}style="display:none"{% endif %}>🔒</span>
+            <i class="fas fa-users"></i>
+            <h3>Gerenciar Usuários</h3>
+            <p>Adicione ou remova usuários (funcionários) da sua equipe.</p>
+        </a>
+
+        <a href="{{ url_for('gerar_link_convite') }}"
+           class="action-card{% if not (is_admin|int and empresa_pode_gerir|int) %} menu-card-bloqueado{% endif %}"
+           {% if not (is_admin|int and empresa_pode_gerir|int) %} tabindex="-1" onclick="return false;" {% endif %}>
+            <span class="lock-icon" {% if is_admin|int and empresa_pode_gerir|int %}style="display:none"{% endif %}>🔒</span>
+            <i class="fas fa-link"></i>
+            <h3>Gerar Link de Convite</h3>
+            <p>Crie links únicos para clientes fazerem orçamentos sem login.</p>
+        </a>
+
+        <a href="{{ url_for('relatorios_dashboard') }}"
+           class="action-card{% if not (is_admin|int and empresa_pode_gerir|int) %} menu-card-bloqueado{% endif %}"
+           {% if not (is_admin|int and empresa_pode_gerir|int) %} tabindex="-1" onclick="return false;" {% endif %}>
+            <span class="lock-icon" {% if is_admin|int and empresa_pode_gerir|int %}style="display:none"{% endif %}>🔒</span>
+            <i class="fas fa-chart-bar"></i>
+            <h3>📊 Relatórios</h3>
+            <p>Visualize estatísticas detalhadas de avaliações e performance.</p>
+        </a>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card shadow-soft rounded-modern">
+                <div class="card-body">
+                    <h5 class="card-title text-gradient mb-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Informações da Empresa
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Nome:</strong> {{ info_empresa.nome_empresa if info_empresa else 'N/A' }}</p>
+                            <p><strong>Status:</strong> 
+                                {% if info_empresa and info_empresa.plano_ativo %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Inativo</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Permissões:</strong></p>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success me-2"></i>Ajuste de Valores</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Links de Convite</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Envio de E-mails</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

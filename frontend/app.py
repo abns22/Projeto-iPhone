@@ -452,7 +452,7 @@ def calcular():
             cursor.close()
             conn.close()
 
-    return render_template('calcular.html', modelos=modelos, usuario=dados_usuario_logado, info_empresa=info_empresa, is_admin=session.get('is_admin'), empresa_pode_gerir=session.get('empresa_pode_gerir'), permite_link_convidado=session.get('permite_link_convidado'), permite_ajuste_valores=session.get('permite_ajuste_valores'))
+    return render_template('calcular_modern.html', modelos=modelos, usuario=dados_usuario_logado, info_empresa=info_empresa, is_admin=session.get('is_admin'), empresa_pode_gerir=session.get('empresa_pode_gerir'), permite_link_convidado=session.get('permite_link_convidado'), permite_ajuste_valores=session.get('permite_ajuste_valores'))
 
 
 @app.route('/api/modelo/<int:modelo_id>/opcoes')
@@ -1673,7 +1673,7 @@ def usar_link_convite(token):
         cursor.execute("SELECT nome_empresa, logo_url FROM empresas WHERE id = %s", (link['empresa_id'],))
         empresa = cursor.fetchone()
 
-        return render_template('formulario_convite.html', token=token, empresa=empresa)
+        return render_template('formulario_convite_modern.html', token=token, empresa=empresa)
 
     except mysql.connector.Error as e:
         flash(f'Erro ao acessar link: {e}', 'danger')
