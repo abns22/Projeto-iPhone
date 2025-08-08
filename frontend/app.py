@@ -2865,19 +2865,40 @@ def detalhes_avaliacao(avaliacao_id):
         try:
             if avaliacao['resumo_respostas']:
                 resumo_respostas = json.loads(avaliacao['resumo_respostas'])
-                # Garantir que as respostas sejam strings simples
-                resumo_respostas_limpo = {}
-                for pergunta, resposta in resumo_respostas.items():
-                    if isinstance(resposta, dict):
-                        # Se for um objeto, extrair a resposta principal
-                        if 'resposta' in resposta:
-                            resumo_respostas_limpo[pergunta] = resposta['resposta']
-                        elif 'valor' in resposta:
-                            resumo_respostas_limpo[pergunta] = str(resposta['valor'])
+                
+                # Verificar se é uma lista ou dicionário
+                if isinstance(resumo_respostas, list):
+                    # Se for uma lista, converter para dicionário
+                    resumo_respostas_limpo = {}
+                    for i, item in enumerate(resumo_respostas):
+                        if isinstance(item, dict):
+                            # Se cada item da lista for um dicionário, tentar extrair pergunta e resposta
+                            if 'pergunta' in item and 'resposta' in item:
+                                resumo_respostas_limpo[item['pergunta']] = str(item['resposta'])
+                            elif 'resposta' in item:
+                                resumo_respostas_limpo[f'Pergunta {i+1}'] = str(item['resposta'])
+                            else:
+                                resumo_respostas_limpo[f'Pergunta {i+1}'] = str(item)
+                        else:
+                            resumo_respostas_limpo[f'Pergunta {i+1}'] = str(item)
+                elif isinstance(resumo_respostas, dict):
+                    # Se for um dicionário, processar normalmente
+                    resumo_respostas_limpo = {}
+                    for pergunta, resposta in resumo_respostas.items():
+                        if isinstance(resposta, dict):
+                            # Se for um objeto, extrair a resposta principal
+                            if 'resposta' in resposta:
+                                resumo_respostas_limpo[pergunta] = resposta['resposta']
+                            elif 'valor' in resposta:
+                                resumo_respostas_limpo[pergunta] = str(resposta['valor'])
+                            else:
+                                resumo_respostas_limpo[pergunta] = str(resposta)
                         else:
                             resumo_respostas_limpo[pergunta] = str(resposta)
-                    else:
-                        resumo_respostas_limpo[pergunta] = str(resposta)
+                else:
+                    # Se for outro tipo, converter para string
+                    resumo_respostas_limpo = {'Resposta': str(resumo_respostas)}
+                
                 resumo_respostas = resumo_respostas_limpo
             else:
                 resumo_respostas = {}
