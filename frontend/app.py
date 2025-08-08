@@ -1694,7 +1694,7 @@ def calcular_convite(token):
 
         # Busca o link e verifica se é válido
         cursor.execute("""
-            SELECT lc.*, e.nome_empresa, e.email_contato_principal
+            SELECT lc.*, e.nome_empresa, e.email_contato_principal, e.logo_url
             FROM links_convidados lc
             JOIN empresas e ON lc.empresa_id = e.id
             WHERE lc.token_unico = %s
@@ -1924,7 +1924,7 @@ def enviar_orcamento_convite(token):
 
         # Verifica link
         cursor.execute("""
-            SELECT lc.*, e.nome_empresa, e.email_contato_principal, 
+            SELECT lc.*, e.nome_empresa, e.email_contato_principal, e.logo_url,
                    lc.nome_cliente, lc.email_cliente, lc.telefone_cliente
             FROM links_convidados lc
             JOIN empresas e ON lc.empresa_id = e.id
