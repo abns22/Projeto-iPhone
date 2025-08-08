@@ -2823,8 +2823,8 @@ def detalhes_avaliacao(avaliacao_id):
         query = """
             SELECT 
                 ac.*,
-                mi.nome as modelo_nome,
-                mi.valor_base as modelo_valor_base,
+                mi.nome_modelo as modelo_nome,
+                mi.valor_base_novo as modelo_valor_base,
                 u.nome_completo as usuario_nome,
                 e.nome_empresa
             FROM avaliacoes_concluidas ac
