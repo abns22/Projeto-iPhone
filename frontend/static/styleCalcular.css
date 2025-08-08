@@ -113,7 +113,8 @@ body, html {
   height: 20px;
 } */
 
-.hamburger-button {
+/* Removido - conflito com novo header */
+/* .hamburger-button {
   background: none;
   border: none;
   font-size: 1.8em; 
@@ -122,7 +123,7 @@ body, html {
   margin-right: 20px;
   position: fixed;
   z-index: 1001;
-}
+} */
 
 .page-content h2 {
     text-align: center;
@@ -254,6 +255,18 @@ body, html {
     border-radius: 18px; 
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); 
     margin-bottom: 20px;
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    filter: none !important;
+    mix-blend-mode: normal !important;
+}
+
+/* Garantir que o container da imagem não tenha fundo roxo */
+.aparelho-destaque {
+    background: white !important;
+    background-color: white !important;
+    background-image: none !important;
 }
 
 .aparelho-destaque h2 {

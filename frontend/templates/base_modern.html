@@ -52,7 +52,7 @@
         </div>
 
         <!-- Menu Mobile -->
-        <nav class="header-nav" id="mobileNav">
+        <nav class="header-nav mobile-only" id="mobileNav">
             {% block mobile_nav %}
             <!-- Navegação mobile será definida em cada template -->
             {% endblock %}
@@ -106,6 +106,27 @@
                 mobileNav.classList.remove('mobile-open');
             }
         });
+
+        // Garantir que apenas um menu seja visível por vez
+        function updateMenuVisibility() {
+            const desktopNav = document.querySelector('.header-nav.desktop-only');
+            const mobileNav = document.querySelector('.header-nav.mobile-only');
+            const mobileToggle = document.querySelector('.header-mobile-toggle');
+            
+            if (window.innerWidth <= 768) {
+                if (desktopNav) desktopNav.style.display = 'none';
+                if (mobileNav) mobileNav.style.display = 'flex';
+                if (mobileToggle) mobileToggle.style.display = 'block';
+            } else {
+                if (desktopNav) desktopNav.style.display = 'flex';
+                if (mobileNav) mobileNav.style.display = 'none';
+                if (mobileToggle) mobileToggle.style.display = 'none';
+            }
+        }
+
+        // Executar na carga e no redimensionamento
+        updateMenuVisibility();
+        window.addEventListener('resize', updateMenuVisibility);
     </script>
     {% block extra_js %}{% endblock %}
 </body>

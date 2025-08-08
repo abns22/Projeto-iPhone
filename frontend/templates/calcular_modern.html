@@ -255,12 +255,13 @@
     }
     
     .aparelho-destaque {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+        background: white;
+        color: #2c3e50;
         padding: 25px;
         border-radius: 12px;
         margin-bottom: 30px;
         text-align: center;
+        border: 2px solid #e1e8ed;
     }
     
     .aparelho-destaque img {
@@ -268,12 +269,25 @@
         height: auto;
         margin-bottom: 15px;
         border-radius: 8px;
-        background: transparent;
+        background: transparent !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        filter: none !important;
+        mix-blend-mode: normal !important;
+    }
+    
+    /* Garantir que não haja fundo roxo em nenhum elemento da imagem */
+    .aparelho-destaque img,
+    .aparelho-destaque img::before,
+    .aparelho-destaque img::after {
+        background: transparent !important;
+        background-color: transparent !important;
+        background-image: none !important;
     }
     
     .aparelho-destaque h2 {
         margin-bottom: 10px;
         font-size: 1.5rem;
+        color: #2c3e50;
     }
     
     .aparelho-destaque .info-pills {
@@ -285,11 +299,13 @@
     }
     
     .aparelho-destaque .info-pills p {
-        background: rgba(255,255,255,0.2);
+        background: #f8f9fa;
+        color: #495057;
         padding: 8px 16px;
         border-radius: 20px;
         margin: 0;
         font-size: 0.9rem;
+        border: 1px solid #e1e8ed;
     }
     
     .questionario {

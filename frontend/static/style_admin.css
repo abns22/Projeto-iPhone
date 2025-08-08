@@ -672,7 +672,11 @@ main p {
         font-size: 1.1rem;
     }
     
-    .header-nav {
+    .header-nav.desktop-only {
+        display: none !important;
+    }
+    
+    .header-nav.mobile-only {
         position: fixed;
         top: 90px;
         left: 0;
@@ -685,9 +689,10 @@ main p {
         transition: transform 0.3s ease;
         box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         z-index: 1000;
+        display: flex;
     }
     
-    .header-nav.mobile-open {
+    .header-nav.mobile-only.mobile-open {
         transform: translateY(0);
     }
     
@@ -712,13 +717,23 @@ main p {
         z-index: 1001;
     }
     
-    .header-nav.desktop-only {
-        display: none;
-    }
-    
     .main-content-with-header {
         margin-top: 90px;
         padding: 15px;
+    }
+}
+
+@media (min-width: 769px) {
+    .header-nav.desktop-only {
+        display: flex !important;
+    }
+    
+    .header-nav.mobile-only {
+        display: none !important;
+    }
+    
+    .header-mobile-toggle {
+        display: none !important;
     }
 }
 
@@ -1177,5 +1192,54 @@ body {
     
     .card-modelo p {
         font-size: 0.85rem;
+    }
+}
+
+/* Garantir que imagens do iPhone não tenham fundo roxo */
+.aparelho-destaque img {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    filter: none !important;
+    mix-blend-mode: normal !important;
+}
+
+/* Remover qualquer estilo conflitante do hamburger button antigo */
+.hamburger-button {
+    display: none !important;
+}
+
+/* Garantir que não haja duplicação de botões do menu */
+.header-nav.desktop-only,
+.header-nav.mobile-only {
+    display: none;
+}
+
+/* Garantir que apenas um menu seja visível por vez */
+@media (min-width: 769px) {
+    .header-nav.desktop-only {
+        display: flex !important;
+    }
+    
+    .header-nav.mobile-only {
+        display: none !important;
+    }
+    
+    .header-mobile-toggle {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-nav.desktop-only {
+        display: none !important;
+    }
+    
+    .header-nav.mobile-only {
+        display: flex !important;
+    }
+    
+    .header-mobile-toggle {
+        display: block !important;
     }
 }
