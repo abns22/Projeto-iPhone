@@ -1,11 +1,33 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Link de Convite Gerado</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style_admin.css') }}">
-    <style>
+{% extends "base_modern.html" %}
+
+{% block title %}Link de Convite Gerado{% endblock %}
+
+{% block page_indicator %}Convites{% endblock %}
+
+{% block header_nav %}
+    <a href="{{ url_for('admin_dashboard') }}" class="header-nav-item">
+        <i class="fas fa-gauge"></i>
+        <span>Admin</span>
+    </a>
+    <a href="{{ url_for('gerar_link_convite') }}" class="header-nav-item active">
+        <i class="fas fa-link"></i>
+        <span>Convites</span>
+    </a>
+{% endblock %}
+
+{% block mobile_nav %}
+    <a href="{{ url_for('admin_dashboard') }}" class="header-nav-item">
+        <i class="fas fa-gauge"></i>
+        <span>Painel de Administração</span>
+    </a>
+    <a href="{{ url_for('gerar_link_convite') }}" class="header-nav-item active">
+        <i class="fas fa-link"></i>
+        <span>Gerar Link de Convite</span>
+    </a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
         .form-section {
             background: #fff;
             border-radius: 10px;
@@ -81,15 +103,15 @@
             padding-left: 18px;
         }
     </style>
-</head>
-<body>
+{% endblock %}
+
+{% block content %}
     <div class="admin-container">
-        <header>
-            <h1 style="color:#007bff;">Link de Convite Gerado</h1>
-            <nav>
-                <a href="{{ url_for('admin_dashboard') }}" class="btn-primary" style="background:#6c757d;">Voltar para o Dashboard</a>
-            </nav>
-        </header>
+        <div class="d-flex justify-content-between align-items-center" style="margin-bottom: 20px;">
+            <h1 style="margin:0; color:#007bff;">Link de Convite Gerado</h1>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn-primary" style="background:#6c757d; text-decoration:none;">Voltar para o Dashboard</a>
+        </div>
+        
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <div class="flash-messages">
@@ -100,8 +122,7 @@
             {% endif %}
         {% endwith %}
 
-        <main>
-            <div class="form-section">
+        <div class="form-section">
                 <h2>Link de Convite Criado com Sucesso!</h2>
                 <p>Este link é válido por <strong>30 minutos</strong> e pode ser usado apenas uma vez.</p>
                 
@@ -129,10 +150,11 @@
                     <a href="{{ url_for('gerar_link_convite') }}" class="btn-primary">Gerar Novo Link</a>
                 </div>
             </div>
-        </main>
     </div>
+{% endblock %}
 
-    <script>
+{% block extra_js %}
+<script>
         function copiarLink() {
             const linkInput = document.getElementById('linkInput');
             linkInput.select();
@@ -149,6 +171,5 @@
                 button.style.backgroundColor = '';
             }, 2000);
         }
-    </script>
-</body>
-</html> 
+</script>
+{% endblock %}

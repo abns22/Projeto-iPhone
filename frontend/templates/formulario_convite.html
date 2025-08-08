@@ -1,11 +1,33 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Avaliação de iPhone - {{ empresa.nome_empresa }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style_admin.css') }}">
-    <style>
+{% extends "base_modern.html" %}
+
+{% block title %}Avaliação de iPhone - {{ empresa.nome_empresa }}{% endblock %}
+
+{% block page_indicator %}Convites{% endblock %}
+
+{% block header_nav %}
+    <a href="{{ url_for('admin_dashboard') }}" class="header-nav-item">
+        <i class="fas fa-gauge"></i>
+        <span>Admin</span>
+    </a>
+    <a href="{{ url_for('gerar_link_convite') }}" class="header-nav-item active">
+        <i class="fas fa-link"></i>
+        <span>Convites</span>
+    </a>
+{% endblock %}
+
+{% block mobile_nav %}
+    <a href="{{ url_for('admin_dashboard') }}" class="header-nav-item">
+        <i class="fas fa-gauge"></i>
+        <span>Painel de Administração</span>
+    </a>
+    <a href="{{ url_for('gerar_link_convite') }}" class="header-nav-item active">
+        <i class="fas fa-link"></i>
+        <span>Gerar Link de Convite</span>
+    </a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
         .convite-container {
             max-width: 500px;
             margin: 50px auto;
@@ -65,8 +87,9 @@
             margin-bottom: 30px;
         }
     </style>
-</head>
-<body>
+{% endblock %}
+
+{% block content %}
     <div class="convite-container">
         <div class="empresa-info">
             <h1>{{ empresa.nome_empresa }}</h1>
@@ -116,5 +139,4 @@
             </div>
         </form>
     </div>
-</body>
-</html> 
+{% endblock %}
