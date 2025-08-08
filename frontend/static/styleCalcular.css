@@ -11,7 +11,8 @@ body, html {
   height: 100vh;
 }
 
-.sidebar {
+/* Removido - não usado no novo layout */
+/* .sidebar {
   width: 160px;
   box-shadow: 2px 0 5px rgba(0,0,0,0.1); 
   background-color: rgba(156, 156, 156, 0.1);
@@ -31,7 +32,7 @@ body, html {
   left: 0;
   z-index: 1000;
   text-align: center;
-}
+} */
 
 .dashboard-layout.sidebar-ativa .sidebar {
   transform: translateX(0); 
@@ -93,19 +94,21 @@ body, html {
     display: none;
 }
 
-.main-content {
+/* Removido - conflito com novo layout */
+/* .main-content {
   min-height: 100vh; 
   margin-left: 0; 
   padding-top: 0; 
   transition: margin-left 0.3s ease-in-out;
-}
+} */
 
-.main-header {
+/* Removido - conflito com novo header */
+/* .main-header {
   padding: 15px 20px;
   display: flex;
   align-items: center;
   height: 20px;
-}
+} */
 
 .hamburger-button {
   background: none;
@@ -126,14 +129,16 @@ body, html {
     text-align: center;
 }
 
-.grid-modelos {
+/* Removido - usando novos estilos do style_admin.css */
+/* .grid-modelos {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 25px;
     padding: 20px;
-}
+} */
 
-.card-modelo {
+/* Removido - usando novos estilos do style_admin.css */
+/* .card-modelo {
     background-color: #ffffff;
     border: 1px solid #e0e0e0;
     border-radius: 10px;
@@ -142,19 +147,21 @@ body, html {
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     cursor: pointer;
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-}
+} */
 
-.card-modelo:hover {
+/* Removido - usando novos estilos do style_admin.css */
+/* .card-modelo:hover {
     transform: translateY(-5px);
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
+} */
 
-.card-modelo img {
+/* Removido - usando novos estilos do style_admin.css */
+/* .card-modelo img {
     max-width: 100%;
     height: 160px;
     object-fit: contain;
     margin-bottom: 10px;
-}
+} */
 
 .conteudo-expandido {
     display: none;
