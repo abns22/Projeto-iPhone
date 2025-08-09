@@ -264,8 +264,19 @@
         border: 2px solid #e1e8ed;
     }
     
+    /* Garantir que a imagem tenha tamanho adequado em ambas as seções */
+    #aparelho-em-destaque img,
+    #aparelho-em-destaque-dados img {
+        width: 100%;
+        max-width: 200px;
+        height: auto;
+        margin: 0 auto 15px auto;
+        display: block;
+    }
+    
     .aparelho-destaque img {
-        width: 120px;
+        width: 100%;
+        max-width: 200px;
         height: auto;
         margin-bottom: 15px;
         border-radius: 8px;
