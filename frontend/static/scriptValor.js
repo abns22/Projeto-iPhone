@@ -13,10 +13,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const dashboardLayout = document.querySelector('.dashboard-layout');
     const hamburgerBtn = document.getElementById('hamburgerBtn');
     const gridModelos = document.querySelector('.grid-modelos');
+    const secaoDadosCliente = document.getElementById('secao-dados-cliente');
     const secaoAvaliacao = document.getElementById('secao-avaliacao');
     const btnVoltar = document.getElementById('btn-voltar-selecao');
+    const btnVoltarModelos = document.getElementById('btn-voltar-modelos');
+    const btnAvancarDados = document.getElementById('btn-avancar-dados');
+    const btnContinuarSemDados = document.getElementById('btn-continuar-sem-dados');
     const btnCalcular = document.getElementById('btn-calcular-valor');
     const divResultado = document.getElementById('resultado-final');
+    
+    // Variáveis para armazenar dados do cliente
+    let dadosClientePreenchidos = {
+        nome: '',
+        telefone: '',
+        email: '',
+        modeloInteresse: '',
+        preenchido: false
+    };
 
     // ===================================================================
     // 2. DEFINIÇÃO DE TODAS AS FUNÇÕES AUXILIARES
@@ -99,8 +112,8 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => console.error("Erro ao buscar ou exibir perguntas:", error));
     }
 
-    function transicaoParaTelaDeAvaliacao(cardClicado) {
-        if (!gridModelos || !secaoAvaliacao) return;
+    function transicaoParaDadosCliente(cardClicado) {
+        if (!gridModelos || !secaoDadosCliente) return;
         const nomeModelo = cardClicado.dataset.nomeModelo;
         const valorBase = cardClicado.dataset.valorBase;
         const corBtn = cardClicado.querySelector('.btn-cor.selecionado');
@@ -110,9 +123,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         gridModelos.style.display = 'none';
 
-        const divDestaque = document.getElementById('aparelho-em-destaque');
-        if (divDestaque) {
-            divDestaque.innerHTML = `
+        // Atualizar destaque na seção de dados do cliente
+        const divDestaqueDados = document.getElementById('aparelho-em-destaque-dados');
+        if (divDestaqueDados) {
+            divDestaqueDados.innerHTML = `
                 <img src="${imagemUrl}" alt="${nomeModelo}">
                 <h2>${nomeModelo}</h2>
                 <div class="info-pills">
@@ -121,11 +135,62 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>`;
         }
         
+        // Armazenar dados do modelo selecionado
+        secaoDadosCliente.dataset.valorBase = valorBase;
+        secaoDadosCliente.dataset.corSelecionada = corBtn.textContent;
+        secaoDadosCliente.dataset.armazenamentoSelecionado = armBtn.textContent;
+        secaoDadosCliente.dataset.nomeModelo = nomeModelo;
+        secaoDadosCliente.dataset.modeloId = cardClicado.dataset.modeloId;
+        secaoDadosCliente.dataset.imagemUrl = imagemUrl;
+        
+        secaoDadosCliente.style.display = 'flex';
+        
+        // Limpar campos do formulário
+        document.getElementById('nome-cliente-input').value = '';
+        document.getElementById('telefone-cliente-input').value = '';
+        document.getElementById('email-cliente-input').value = '';
+        document.getElementById('modelo-interesse-input').value = '';
+    }
+
+    function transicaoParaTelaDeAvaliacao(usarDadosArmazenados = false) {
+        if (!secaoAvaliacao) return;
+        
+        let valorBase, corSelecionada, armazenamentoSelecionado, nomeModelo, modeloId, imagemUrl;
+        
+        if (usarDadosArmazenados && secaoDadosCliente) {
+            // Usar dados armazenados da seção de dados do cliente
+            valorBase = secaoDadosCliente.dataset.valorBase;
+            corSelecionada = secaoDadosCliente.dataset.corSelecionada;
+            armazenamentoSelecionado = secaoDadosCliente.dataset.armazenamentoSelecionado;
+            nomeModelo = secaoDadosCliente.dataset.nomeModelo;
+            modeloId = secaoDadosCliente.dataset.modeloId;
+            imagemUrl = secaoDadosCliente.dataset.imagemUrl;
+        }
+
+        // Esconder seção de dados do cliente se estiver visível
+        if (secaoDadosCliente) {
+            secaoDadosCliente.style.display = 'none';
+        }
+
+        const divDestaque = document.getElementById('aparelho-em-destaque');
+        if (divDestaque) {
+            divDestaque.innerHTML = `
+                <img src="${imagemUrl}" alt="${nomeModelo}">
+                <h2>${nomeModelo}</h2>
+                <div class="info-pills">
+                    <p>Cor: ${corSelecionada}</p>
+                    <p>Armazenamento: ${armazenamentoSelecionado}</p>
+                </div>`;
+        }
+        
         secaoAvaliacao.style.display = 'flex';
         secaoAvaliacao.dataset.valorBase = valorBase;
-        secaoAvaliacao.dataset.corSelecionada = corBtn.textContent;
-        secaoAvaliacao.dataset.armazenamentoSelecionado = armBtn.textContent;
-        fetchEExibePerguntas(cardClicado.dataset.modeloId);
+        secaoAvaliacao.dataset.corSelecionada = corSelecionada;
+        secaoAvaliacao.dataset.armazenamentoSelecionado = armazenamentoSelecionado;
+        
+        if (modeloId) {
+            fetchEExibePerguntas(modeloId);
+        }
     }
 
     function resetarEstadoAvaliacao() {
@@ -158,6 +223,70 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Event listeners para os botões da seção de dados do cliente
+    if (btnVoltarModelos) {
+        btnVoltarModelos.addEventListener('click', function() {
+            if (secaoDadosCliente) secaoDadosCliente.style.display = 'none';
+            if (gridModelos) gridModelos.style.display = 'grid';
+        });
+    }
+
+    if (btnAvancarDados) {
+        btnAvancarDados.addEventListener('click', function() {
+            // Validar campos obrigatórios
+            const nomeInput = document.getElementById('nome-cliente-input');
+            const telefoneInput = document.getElementById('telefone-cliente-input');
+            const emailInput = document.getElementById('email-cliente-input');
+            const modeloInteresseInput = document.getElementById('modelo-interesse-input');
+
+            if (!nomeInput.value.trim()) {
+                alert('Por favor, preencha o nome completo.');
+                nomeInput.focus();
+                return;
+            }
+
+            if (!telefoneInput.value.trim()) {
+                alert('Por favor, preencha o telefone.');
+                telefoneInput.focus();
+                return;
+            }
+
+            if (!modeloInteresseInput.value.trim()) {
+                alert('Por favor, preencha o modelo de interesse.');
+                modeloInteresseInput.focus();
+                return;
+            }
+
+            // Armazenar dados do cliente
+            dadosClientePreenchidos = {
+                nome: nomeInput.value.trim(),
+                telefone: telefoneInput.value.trim(),
+                email: emailInput.value.trim(),
+                modeloInteresse: modeloInteresseInput.value.trim(),
+                preenchido: true
+            };
+
+            // Avançar para tela de avaliação
+            transicaoParaTelaDeAvaliacao(true);
+        });
+    }
+
+    if (btnContinuarSemDados) {
+        btnContinuarSemDados.addEventListener('click', function() {
+            // Resetar dados do cliente
+            dadosClientePreenchidos = {
+                nome: '',
+                telefone: '',
+                email: '',
+                modeloInteresse: '',
+                preenchido: false
+            };
+
+            // Avançar para tela de avaliação
+            transicaoParaTelaDeAvaliacao(true);
+        });
+    }
+
     if (gridModelos) {
         gridModelos.addEventListener('click', function(event) {
             const clicado = event.target;
@@ -185,7 +314,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert("Por favor, selecione uma cor e uma capacidade de armazenamento.");
                     return;
                 }
-                transicaoParaTelaDeAvaliacao(cardClicado);
+                transicaoParaDadosCliente(cardClicado);
             } else {
                 const cardAtivoAnteriormente = document.querySelector('.card-modelo.ativo');
                 if (cardAtivoAnteriormente && cardAtivoAnteriormente !== cardClicado) {
@@ -277,13 +406,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 const nomeModelo = document.querySelector('#aparelho-em-destaque h2').textContent;
                 const nomeCor = secaoAvaliacao.dataset.corSelecionada;
                 const capacidadeArmazenamento = secaoAvaliacao.dataset.armazenamentoSelecionado;
+                
+                // Usar dados do cliente preenchidos ou dados do usuário logado como fallback
                 const bodyElement = document.querySelector('body');
-                const nomeCliente = bodyElement.dataset.nomeUsuario || 'Não informado';
-                const telefoneCliente = bodyElement.dataset.telefoneUsuario || 'Não informado';
+                let nomeCliente, telefoneCliente, emailCliente, modeloInteresse;
+                
+                if (dadosClientePreenchidos.preenchido) {
+                    nomeCliente = dadosClientePreenchidos.nome;
+                    telefoneCliente = dadosClientePreenchidos.telefone;
+                    emailCliente = dadosClientePreenchidos.email;
+                    modeloInteresse = dadosClientePreenchidos.modeloInteresse;
+                } else {
+                    nomeCliente = bodyElement.dataset.nomeUsuario || 'Não informado';
+                    telefoneCliente = bodyElement.dataset.telefoneUsuario || 'Não informado';
+                    emailCliente = '';
+                    modeloInteresse = '';
+                }
 
                 const dadosDoOrcamento = {
-                    nomeCliente, telefoneCliente, modelo: nomeModelo, cor: nomeCor,
-                    armazenamento: capacidadeArmazenamento, imei, valor: valorFinal.toFixed(2), resumo: resumoDiagnostico
+                    nomeCliente, 
+                    telefoneCliente, 
+                    emailCliente,
+                    modeloInteresse,
+                    dadosClientePreenchidos: dadosClientePreenchidos.preenchido,
+                    modelo: nomeModelo, 
+                    cor: nomeCor,
+                    armazenamento: capacidadeArmazenamento, 
+                    imei, 
+                    valor: valorFinal.toFixed(2), 
+                    resumo: resumoDiagnostico
                 };
 
                 if(divResultado) {
