@@ -798,15 +798,20 @@ def get_perguntas_modelo(modelo_id):
 
         cursor = conn.cursor(dictionary=True)
 
-        # Busca todas as perguntas de avaliação incluindo informações condicionais
+        # Busca todas as perguntas de avaliação incluindo informações condicionais (GLOBAIS)
+        # Ordena de forma que perguntas condicionais apareçam logo após suas perguntas pai
         cursor.execute("""
             SELECT
                 p.id AS pergunta_id,
                 p.texto_pergunta,
                 p.pergunta_pai_id,
-                p.resposta_pai_requerida
+                p.resposta_pai_requerida,
+                CASE 
+                    WHEN p.pergunta_pai_id IS NULL THEN p.id
+                    ELSE p.pergunta_pai_id + 0.5
+                END as ordem_exibicao
             FROM perguntas_avaliacao p
-            ORDER BY p.id
+            ORDER BY ordem_exibicao, p.id
         """)
 
         todas_perguntas = cursor.fetchall()
@@ -1807,19 +1812,24 @@ def get_perguntas_modelo_convite(token, modelo_id):
             print(f"DEBUG: Plano da empresa {empresa_id} está desativado")
             return jsonify({"erro": "O plano da empresa está desativado"}), 403
 
-        # Busca todas as perguntas de avaliação incluindo informações condicionais
+        # Busca todas as perguntas de avaliação incluindo informações condicionais (GLOBAIS)
+        # Ordena de forma que perguntas condicionais apareçam logo após suas perguntas pai
         cursor.execute("""
             SELECT
                 p.id AS pergunta_id,
                 p.texto_pergunta,
                 p.pergunta_pai_id,
-                p.resposta_pai_requerida
+                p.resposta_pai_requerida,
+                CASE 
+                    WHEN p.pergunta_pai_id IS NULL THEN p.id
+                    ELSE p.pergunta_pai_id + 0.5
+                END as ordem_exibicao
             FROM perguntas_avaliacao p
-            ORDER BY p.id
+            ORDER BY ordem_exibicao, p.id
         """)
 
         todas_perguntas = cursor.fetchall()
-        print(f"DEBUG: Encontradas {len(todas_perguntas)} perguntas")
+        print(f"DEBUG: Encontradas {len(todas_perguntas)} perguntas (globais) ordenadas")
         
         # Consumir resultados pendentes para evitar "Unread result found"
         cursor.fetchall()
