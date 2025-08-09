@@ -528,9 +528,45 @@
     .botoes-dados-cliente {
         display: flex;
         justify-content: center;
-        align-items: center;
+        align-items: stretch;
         flex-wrap: wrap;
         gap: 15px;
+        margin-top: 20px;
+    }
+    
+    .botoes-dados-cliente button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        vertical-align: middle;
+        padding: 12px 24px;
+        font-size: 1rem;
+        border-radius: 25px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 600;
+    }
+    
+    .botoes-dados-cliente .btn-secundario {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .botoes-dados-cliente .btn-secundario:hover {
+        background: #5a6268;
+        transform: translateY(-1px);
+    }
+    
+    .botoes-dados-cliente .btn-principal {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .botoes-dados-cliente .btn-principal:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
     }
     
     /* Responsividade */
@@ -639,10 +675,10 @@
             </div>
             
             <div class="botoes-dados-cliente">
-                <button id="btn-continuar-sem-dados" class="btn-secundario" style="margin-right: 15px;">
+                <button id="btn-continuar-sem-dados" class="btn-secundario">
                     <i class="fas fa-forward me-2"></i>Continuar sem preencher
                 </button>
-                <button id="btn-avancar-dados" class="btn-principal" style="width: auto; padding: 12px 30px;">
+                <button id="btn-avancar-dados" class="btn-principal">
                     <i class="fas fa-arrow-right me-2"></i>Avançar
                 </button>
             </div>
