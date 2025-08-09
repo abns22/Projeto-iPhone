@@ -103,6 +103,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     textoP.textContent = pergunta.texto_pergunta;
                     divPergunta.appendChild(textoP);
                     
+                    // Adicionar texto explicativo para pergunta de marcas leves
+                    if (pergunta.texto_pergunta.includes('marcas de uso leves')) {
+                        const textoExplicativo = document.createElement('div');
+                        textoExplicativo.className = 'texto-explicativo-leves';
+                        textoExplicativo.innerHTML = `
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle"></i>
+                                Se responder "Não", uma pergunta sobre marcas severas aparecerá logo abaixo
+                            </small>
+                        `;
+                        divPergunta.appendChild(textoExplicativo);
+                    }
+                    
                     // Adicionar texto explicativo para perguntas condicionais
                     if (pergunta.pergunta_pai_id) {
                         const textoExplicativo = document.createElement('div');
