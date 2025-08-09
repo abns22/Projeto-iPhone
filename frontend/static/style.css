@@ -22,24 +22,29 @@ body, html {
     background-color: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    padding: 40px;
+    padding: 30px;
     border-radius: 12px;
     box-shadow: 0 10px 35px rgba(0, 0, 0, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
     width: 100%;
-    max-width: 420px;
+    max-width: 350px;
     text-align: center;
+    position: relative;
 }
 
 
 .logo-container {
-    margin-bottom: -50px;
-    margin-top: -70px;
+    margin-bottom: 20px;
+    margin-top: -80px;
+    position: relative;
+    z-index: 10;
 }
 
 .logo-container img {
-    max-width: 300px;
+    max-width: 200px;
     height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 
