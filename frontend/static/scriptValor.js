@@ -90,10 +90,31 @@ document.addEventListener('DOMContentLoaded', function() {
                     const divPergunta = document.createElement('div');
                     divPergunta.className = 'item-pergunta';
                     divPergunta.dataset.perguntaId = pergunta.pergunta_id;
+                    
+                    // Verificar se é pergunta condicional
+                    if (pergunta.pergunta_pai_id) {
+                        divPergunta.dataset.perguntaPaiId = pergunta.pergunta_pai_id;
+                        divPergunta.dataset.respostaPaiRequerida = pergunta.resposta_pai_requerida;
+                        divPergunta.style.display = 'none'; // Inicialmente oculta
+                        divPergunta.classList.add('pergunta-condicional');
+                    }
 
                     const textoP = document.createElement('p');
                     textoP.textContent = pergunta.texto_pergunta;
                     divPergunta.appendChild(textoP);
+                    
+                    // Adicionar texto explicativo para perguntas condicionais
+                    if (pergunta.pergunta_pai_id) {
+                        const textoExplicativo = document.createElement('div');
+                        textoExplicativo.className = 'texto-explicativo';
+                        textoExplicativo.innerHTML = `
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle"></i>
+                                Esta pergunta aparece apenas se a pergunta anterior for respondida com "${pergunta.resposta_pai_requerida}"
+                            </small>
+                        `;
+                        divPergunta.appendChild(textoExplicativo);
+                    }
 
                     const divOpcoes = document.createElement('div');
                     divOpcoes.className = 'opcoes-resposta';
@@ -108,8 +129,47 @@ document.addEventListener('DOMContentLoaded', function() {
                     divPergunta.appendChild(divOpcoes);
                     listaPerguntasDiv.appendChild(divPergunta);
                 });
+                
+                // Configurar lógica de perguntas condicionais
+                configurarPerguntasCondicionais();
             })
             .catch(error => console.error("Erro ao buscar ou exibir perguntas:", error));
+    }
+    
+    function configurarPerguntasCondicionais() {
+        const todasPerguntas = document.querySelectorAll('.item-pergunta');
+        
+        todasPerguntas.forEach(pergunta => {
+            const botoes = pergunta.querySelectorAll('.btn-resposta');
+            
+            botoes.forEach(botao => {
+                botao.addEventListener('click', function() {
+                    const perguntaId = pergunta.dataset.perguntaId;
+                    const resposta = this.dataset.resposta;
+                    
+                    // Verificar se existem perguntas condicionais dependentes desta
+                    const perguntasDependentes = document.querySelectorAll(`[data-pergunta-pai-id="${perguntaId}"]`);
+                    
+                    perguntasDependentes.forEach(perguntaDependente => {
+                        const respostaNecessaria = perguntaDependente.dataset.respostaPaiRequerida;
+                        
+                        if (resposta === respostaNecessaria) {
+                            // Mostrar pergunta condicional
+                            perguntaDependente.style.display = 'block';
+                            perguntaDependente.classList.add('pergunta-ativa');
+                        } else {
+                            // Ocultar pergunta condicional e limpar resposta
+                            perguntaDependente.style.display = 'none';
+                            perguntaDependente.classList.remove('pergunta-ativa');
+                            
+                            // Limpar seleção da pergunta oculta
+                            const botoesDependentes = perguntaDependente.querySelectorAll('.btn-resposta');
+                            botoesDependentes.forEach(btn => btn.classList.remove('selecionado'));
+                        }
+                    });
+                });
+            });
+        });
     }
 
     function transicaoParaDadosCliente(cardClicado) {

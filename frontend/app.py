@@ -798,11 +798,13 @@ def get_perguntas_modelo(modelo_id):
 
         cursor = conn.cursor(dictionary=True)
 
-        # Busca todas as perguntas de avaliação
+        # Busca todas as perguntas de avaliação incluindo informações condicionais
         cursor.execute("""
             SELECT
                 p.id AS pergunta_id,
-                p.texto_pergunta
+                p.texto_pergunta,
+                p.pergunta_pai_id,
+                p.resposta_pai_requerida
             FROM perguntas_avaliacao p
             ORDER BY p.id
         """)
@@ -844,11 +846,18 @@ def get_perguntas_modelo(modelo_id):
                 'impacto': float(impacto_nao)
             })
 
-            perguntas.append({
+            pergunta_obj = {
                 'pergunta_id': pergunta_id,
                 'texto_pergunta': pergunta['texto_pergunta'],
                 'respostas': respostas
-            })
+            }
+            
+            # Adicionar informações condicionais se existirem
+            if pergunta['pergunta_pai_id']:
+                pergunta_obj['pergunta_pai_id'] = pergunta['pergunta_pai_id']
+                pergunta_obj['resposta_pai_requerida'] = pergunta['resposta_pai_requerida']
+            
+            perguntas.append(pergunta_obj)
 
         return jsonify(perguntas)
 
@@ -1798,11 +1807,13 @@ def get_perguntas_modelo_convite(token, modelo_id):
             print(f"DEBUG: Plano da empresa {empresa_id} está desativado")
             return jsonify({"erro": "O plano da empresa está desativado"}), 403
 
-        # Busca todas as perguntas de avaliação
+        # Busca todas as perguntas de avaliação incluindo informações condicionais
         cursor.execute("""
             SELECT
                 p.id AS pergunta_id,
-                p.texto_pergunta
+                p.texto_pergunta,
+                p.pergunta_pai_id,
+                p.resposta_pai_requerida
             FROM perguntas_avaliacao p
             ORDER BY p.id
         """)
@@ -1852,11 +1863,18 @@ def get_perguntas_modelo_convite(token, modelo_id):
                 'impacto': float(impacto_nao)
             })
 
-            perguntas.append({
+            pergunta_obj = {
                 'pergunta_id': pergunta_id,
                 'texto_pergunta': pergunta['texto_pergunta'],
                 'respostas': respostas
-            })
+            }
+            
+            # Adicionar informações condicionais se existirem
+            if pergunta['pergunta_pai_id']:
+                pergunta_obj['pergunta_pai_id'] = pergunta['pergunta_pai_id']
+                pergunta_obj['resposta_pai_requerida'] = pergunta['resposta_pai_requerida']
+            
+            perguntas.append(pergunta_obj)
 
         print(f"DEBUG: Retornando {len(perguntas)} perguntas")
         return jsonify(perguntas)
