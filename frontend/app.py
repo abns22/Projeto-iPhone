@@ -575,7 +575,7 @@ def enviar_orcamento():
         cursor = conn.cursor()
         
         # Buscar valor base do modelo
-        cursor.execute("SELECT valor_base FROM modelos_iphone WHERE id = %s", (modelo_id,))
+        cursor.execute("SELECT valor_base_novo FROM modelos_iphone WHERE id = %s", (modelo_id,))
         resultado = cursor.fetchone()
         valor_base_db = resultado[0] if resultado else 0
         
