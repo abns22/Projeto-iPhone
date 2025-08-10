@@ -526,7 +526,7 @@ def enviar_orcamento():
         print("=== INÍCIO DA FUNÇÃO enviar_orcamento ===")
         
         # Verificar se o usuário está logado
-        if 'usuario_id' not in session:
+        if 'user_id' not in session:
             return jsonify({"mensagem": "Usuário não está logado"}), 401
         
         # Obter dados do request
@@ -548,9 +548,9 @@ def enviar_orcamento():
             print(f"DEBUG - Email cliente: {email_cliente}, Modelo interesse: {modelo_interesse}")
         else:
             # Se não foram preenchidos, usar dados do usuário logado
-            nome_cliente = session.get('nome_usuario', '')
+            nome_cliente = session.get('nome_completo', '')
             telefone_cliente = session.get('telefone_usuario', '')
-            email_cliente = session.get('email_usuario', '')
+            email_cliente = session.get('usuario_email', '')
             modelo_interesse = dados.get('modeloSelecionado', '')
         
         print(f"DEBUG - Dados finais: nome={nome_cliente}, telefone={telefone_cliente}")
@@ -565,7 +565,7 @@ def enviar_orcamento():
         
         # Obter dados da sessão
         empresa_id = session.get('empresa_id')
-        usuario_id = session.get('usuario_id')
+        usuario_id = session.get('user_id')
         
         # Converter resumo para JSON
         resumo_json = json.dumps(resumo_respostas, ensure_ascii=False)

@@ -174,6 +174,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             // Ocultar pergunta condicional e limpar resposta
                             perguntaDependente.style.display = 'none';
                             perguntaDependente.classList.remove('pergunta-ativa');
+                            perguntaDependente.classList.add('pergunta-condicional-oculta');
                             
                             // Limpar seleção da pergunta oculta
                             const botoesDependentes = perguntaDependente.querySelectorAll('.btn-resposta');
@@ -450,16 +451,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 const resumoDiagnostico = [];
                 const todasAsPerguntasDivs = document.querySelectorAll('#lista-perguntas .item-pergunta');
                 todasAsPerguntasDivs.forEach(divPergunta => {
-                    const respostaSelecionadaEl = divPergunta.querySelector('.btn-resposta.selecionado');
-                    if (!respostaSelecionadaEl) {
-                        todasRespondidas = false;
-                    } else {
-                        const textoPergunta = divPergunta.querySelector('p').textContent;
-                        const respostaTexto = respostaSelecionadaEl.dataset.resposta;
-                        resumoDiagnostico.push({ pergunta: textoPergunta, resposta: respostaTexto });
-                        const impacto = parseFloat(respostaSelecionadaEl.dataset.impacto);
-                        if (!isNaN(impacto)) {
-                            valorFinal += impacto;
+                    // Verificar se a pergunta está visível (não oculta por lógica condicional)
+                    const isVisible = divPergunta.style.display !== 'none' && !divPergunta.classList.contains('pergunta-condicional-oculta');
+                    
+                    if (isVisible) {
+                        const respostaSelecionadaEl = divPergunta.querySelector('.btn-resposta.selecionado');
+                        if (!respostaSelecionadaEl) {
+                            todasRespondidas = false;
+                        } else {
+                            const textoPergunta = divPergunta.querySelector('p').textContent;
+                            const respostaTexto = respostaSelecionadaEl.dataset.resposta;
+                            resumoDiagnostico.push({ pergunta: textoPergunta, resposta: respostaTexto });
+                            const impacto = parseFloat(respostaSelecionadaEl.dataset.impacto);
+                            if (!isNaN(impacto)) {
+                                valorFinal += impacto;
+                            }
                         }
                     }
                 });
