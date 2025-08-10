@@ -522,261 +522,209 @@ def get_opcoes_modelo(modelo_id):
 # --- ENVIAR ORÇAMENTO PADRÃO ---
 @app.route('/api/enviar-orcamento', methods=['POST'])
 def enviar_orcamento():
-    resp = require_login()
-    if resp: return resp
-    
-    # Verificar se o plano da empresa está ativo
-    resp = require_plano_ativo()
-    if resp: return resp
-
-    dados = request.json
-
-    empresa_id_logada = session.get('empresa_id')
-    if not empresa_id_logada:
-        return jsonify({"mensagem": "Usuário não está associado a uma empresa válida"}), 400
-
-    usuario_id_logado = session.get('user_id')
-    if not usuario_id_logado:
-        return jsonify({"mensagem": "Usuário não autenticado"}), 400
-    email_usuario_logado = session.get('usuario_email')
-
-    conn = None
     try:
-
+        print("=== INÍCIO DA FUNÇÃO enviar_orcamento ===")
+        
+        # Verificar se o usuário está logado
+        if 'usuario_id' not in session:
+            return jsonify({"mensagem": "Usuário não está logado"}), 401
+        
+        # Obter dados do request
+        dados = request.get_json()
+        print(f"DEBUG - Dados recebidos: {dados}")
+        
+        # Extrair dados do cliente
+        nome_cliente = dados.get('nomeCliente', '').strip()
+        telefone_cliente = dados.get('telefoneCliente', '').strip()
+        email_cliente = dados.get('emailCliente', '').strip()
+        modelo_interesse = dados.get('modeloInteresse', '').strip()
+        
+        # Verificar se os dados do cliente foram preenchidos
+        dados_preenchidos = bool(nome_cliente and telefone_cliente and email_cliente and modelo_interesse)
+        print(f"DEBUG - Dados preenchidos: {dados_preenchidos}")
+        
+        if dados_preenchidos:
+            print(f"DEBUG - Dados do frontend: nomeCliente={nome_cliente}, telefoneCliente={telefone_cliente}")
+            print(f"DEBUG - Email cliente: {email_cliente}, Modelo interesse: {modelo_interesse}")
+        else:
+            # Se não foram preenchidos, usar dados do usuário logado
+            nome_cliente = session.get('nome_usuario', '')
+            telefone_cliente = session.get('telefone_usuario', '')
+            email_cliente = session.get('email_usuario', '')
+            modelo_interesse = dados.get('modeloSelecionado', '')
+        
+        print(f"DEBUG - Dados finais: nome={nome_cliente}, telefone={telefone_cliente}")
+        
+        # Obter outros dados necessários
+        modelo_id = dados.get('modeloId')
+        cor_selecionada = dados.get('corSelecionada', '')
+        armazenamento_selecionado = dados.get('armazenamentoSelecionado', '')
+        imei = dados.get('imei', '000000000')
+        valor_final_calculado = dados.get('valorFinalCalculado', 0)
+        resumo_respostas = dados.get('resumoRespostas', {})
+        
+        # Obter dados da sessão
+        empresa_id = session.get('empresa_id')
+        usuario_id = session.get('usuario_id')
+        
+        # Converter resumo para JSON
+        resumo_json = json.dumps(resumo_respostas, ensure_ascii=False)
+        
+        # Obter valor base do banco de dados
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-
-
-        modelo_nome = dados.get('modelo')
-
-        cursor.execute(
-            "SELECT id, valor_base_novo FROM modelos_iphone WHERE nome_modelo = %s AND empresa_id = %s",
-            (modelo_nome, empresa_id_logada)
-        )
-        modelo_row = cursor.fetchone()
-
-        if not modelo_row:
-            return jsonify({"mensagem": "Erro: Modelo não encontrado para esta empresa."}), 400
-
-        modelo_id = modelo_row['id']
-        valor_base_db = modelo_row['valor_base_novo']
-
+        cursor = conn.cursor()
+        
+        # Buscar valor base do modelo
+        cursor.execute("SELECT valor_base FROM modelos_iphone WHERE id = %s", (modelo_id,))
+        resultado = cursor.fetchone()
+        valor_base_db = resultado[0] if resultado else 0
+        
+        print("DEBUG - Valores para INSERT:")
+        print(f"empresa_id_logada: {empresa_id}")
+        print(f"usuario_id_logado: {usuario_id}")
+        print(f"nome_cliente_final: {nome_cliente}")
+        print(f"email_cliente_final: {email_cliente}")
+        print(f"telefone_cliente_final: {telefone_cliente}")
+        print(f"modelo_interesse: {modelo_interesse}")
+        print(f"modelo_id: {modelo_id}")
+        print(f"cor_selecionada: {cor_selecionada}")
+        print(f"armazenamento_selecionado: {armazenamento_selecionado}")
+        print(f"imei: {imei}")
+        print(f"valor_base_db: {valor_base_db}")
+        print(f"valor_final_calculado: {valor_final_calculado}")
+        
+        # Inserir no banco de dados
+        sql_insert = """
+            INSERT INTO avaliacoes_concluidas (
+                empresa_id, usuario_id, nome_cliente_final, email_cliente_final, telefone_cliente_final,
+                modelo_interesse, modelo_iphone_id, cor_selecionada, armazenamento_selecionado, imei,
+                valor_base_calculado, valor_final_calculado, resumo_respostas
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        
+        cursor.execute(sql_insert, (
+            empresa_id, usuario_id, nome_cliente, email_cliente, telefone_cliente,
+            modelo_interesse, modelo_id, cor_selecionada, armazenamento_selecionado, imei,
+            valor_base_db, valor_final_calculado, resumo_json
+        ))
+        
+        conn.commit()
+        print("✅ Avaliação salva com sucesso no banco de dados.")
+        
+        # Fechar conexão do banco
+        cursor.close()
+        conn.close()
+        
+        # === ENVIO DE EMAIL ===
+        print("\n=== PREPARANDO ENVIO DE EMAIL ===")
+        
         try:
-            # Buscar dados do usuário logado no banco de dados
-            cursor.execute("SELECT nome_completo, telefone FROM usuarios WHERE id = %s", (usuario_id_logado,))
-            dados_usuario = cursor.fetchone()
+            # Buscar configurações de email da empresa
+            conn = get_db_connection()
+            cursor = conn.cursor()
             
-            if dados_usuario is None:
-                dados_usuario = {'nome_completo': 'Não informado', 'telefone': 'Não informado'}
+            cursor.execute("""
+                SELECT email_empresa, senha_email_empresa, servidor_smtp, porta_smtp, 
+                       usar_tls, usar_ssl, nome_empresa
+                FROM empresas WHERE id = %s
+            """, (empresa_id,))
             
-            # Verificar se dados do cliente foram preenchidos na nova tela
-            dados_cliente_preenchidos = dados.get('dadosClientePreenchidos', False)
-            
-            if dados_cliente_preenchidos:
-                # Usar dados preenchidos pelo cliente
-                nome_cliente_final = dados.get('nomeCliente', 'Não informado')
-                telefone_cliente_final = dados.get('telefoneCliente', 'Não informado')
-                email_cliente_final = dados.get('emailCliente', '')
-                modelo_interesse = dados.get('modeloInteresse', '')
-            else:
-                # Usar dados do usuário logado como fallback
-                nome_cliente_final = dados.get('nomeCliente')
-                if not nome_cliente_final or nome_cliente_final == 'None':
-                    nome_cliente_final = dados_usuario.get('nome_completo', 'Não informado')
-                
-                telefone_cliente_final = dados.get('telefoneCliente')
-                if not telefone_cliente_final or telefone_cliente_final == 'None':
-                    telefone_cliente_final = dados_usuario.get('telefone', 'Não informado')
-                
-                email_cliente_final = ''
-                modelo_interesse = ''
-            
-            # Debug: verificar dados coletados
-            print(f"DEBUG - Dados preenchidos: {dados_cliente_preenchidos}")
-            print(f"DEBUG - Dados do frontend: nomeCliente={dados.get('nomeCliente')}, telefoneCliente={dados.get('telefoneCliente')}")
-            print(f"DEBUG - Email cliente: {email_cliente_final}, Modelo interesse: {modelo_interesse}")
-            print(f"DEBUG - Dados finais: nome={nome_cliente_final}, telefone={telefone_cliente_final}")
-            
-            # Garantir que cursor.fetchone() foi chamado antes de qualquer outra operação
-            cursor.fetchall()  # Limpa qualquer resultado pendente
-            
-            cor_selecionada = dados.get('cor', 'N/A')
-        except Exception as e:
-            print(f"Erro ao processar dados do cliente: {e}")
-            nome_cliente_final = "Não informado"
-            telefone_cliente_final = "Não informado"
-            email_cliente_final = ""
-            modelo_interesse = ""
-            cor_selecionada = dados.get('cor', 'N/A')
-        armazenamento_selecionado = dados.get('armazenamento', 'N/A')
-        imei = dados.get('imei', 'N/A')
-        valor_final_calculado = float(dados.get('valor', 0.0))
-        resumo_json = json.dumps(dados.get('resumo', []))
-
-        try:
-            # Limpar qualquer resultado pendente antes de executar o INSERT
-            cursor.fetchall()
-            
-            sql_insert = """
-                INSERT INTO avaliacoes_concluidas (
-                    empresa_id, usuario_id, nome_cliente_final, email_cliente_final, telefone_cliente_final,
-                    modelo_interesse, modelo_iphone_id, cor_selecionada, armazenamento_selecionado, imei,
-                    valor_base_calculado, valor_final_calculado, resumo_respostas
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """
-            
-            # Debug dos valores antes do INSERT
-            print("\nDEBUG - Valores para INSERT:")
-            print(f"empresa_id_logada: {empresa_id_logada}")
-            print(f"usuario_id_logado: {usuario_id_logado}")
-            print(f"nome_cliente_final: {nome_cliente_final}")
-            print(f"email_cliente_final: {email_cliente_final}")
-            print(f"telefone_cliente_final: {telefone_cliente_final}")
-            print(f"modelo_interesse: {modelo_interesse}")
-            print(f"modelo_id: {modelo_id}")
-            print(f"cor_selecionada: {cor_selecionada}")
-            print(f"armazenamento_selecionado: {armazenamento_selecionado}")
-            print(f"imei: {imei}")
-            print(f"valor_base_db: {valor_base_db}")
-            print(f"valor_final_calculado: {valor_final_calculado}")
-            
-            cursor.execute(sql_insert, (
-                empresa_id_logada, usuario_id_logado, nome_cliente_final, email_cliente_final, telefone_cliente_final,
-                modelo_interesse, modelo_id, cor_selecionada, armazenamento_selecionado, imei,
-                valor_base_db, valor_final_calculado, resumo_json
-            ))
-            
-            conn.commit()
-            print("✅ Avaliação salva com sucesso no banco de dados.")
-            
-        except mysql.connector.Error as e:
-            print(f"❌ Erro MySQL ao salvar avaliação: {e}")
-            if conn:
-                conn.rollback()
-            raise
-        except Exception as e:
-            print(f"❌ Erro inesperado ao salvar avaliação: {e}")
-            if conn:
-                conn.rollback()
-            raise
-
-    except mysql.connector.Error as e:
-        if conn: conn.rollback()
-        print(f"Erro de PostgreSQL ao salvar avaliação: {e}")
-    finally:
-        if conn:
+            config_email = cursor.fetchone()
             cursor.close()
             conn.close()
-
-    try:
-
-        # Montar seção de dados do cliente baseado se foram preenchidos ou não
-        secao_cliente = ""
-        if dados.get('dadosClientePreenchidos', False):
-            secao_cliente = f"""
-        Dados do Cliente:
-        - Nome: {nome_cliente_final}
-        - Telefone: {telefone_cliente_final}
-        - E-mail: {email_cliente_final if email_cliente_final else 'Não informado'}
-        - Modelo de Interesse: {modelo_interesse if modelo_interesse else 'Não informado'}
-        """
-        else:
-            secao_cliente = f"""
-        Dados do Cliente:
-        - Dados do cliente não foram informados
-        - Usuário do sistema: {nome_cliente_final}
-        - Telefone do usuário: {telefone_cliente_final}
-        """
-
-        corpo_email = f"""
-        Novo Orçamento Recebido!
-        -------------------------
-        {secao_cliente}
-        Detalhes do Aparelho:
-        - Modelo: {dados.get('modelo')}
-        - Cor: {dados.get('cor')}
-        - Armazenamento: {dados.get('armazenamento')}
-        - IMEI: {dados.get('imei')}
-
-        Diagnóstico:
-        """
-        for item in dados.get('resumo', []):
-            if 'pergunta' in item and 'resposta' in item:
-                corpo_email += f"- {item['pergunta']}: {item['resposta']}\n"
-
-        corpo_email += f"""
-        -------------------------
-        VALOR FINAL ESTIMADO: R$ {dados.get('valor')}
-        """
-
-        # Verificar se a empresa tem permissão para enviar email
-        envia_email = session.get('envia_email_orcamento', True)  # Padrão: True para manter compatibilidade
-
-        if envia_email:
-            # Buscar email de contato da empresa
-            conn_email = get_db_connection()
-            if conn_email:
-                try:
-                    cursor_email = conn_email.cursor(dictionary=True)
-                    cursor_email.execute("SELECT email_contato_principal FROM empresas WHERE id = %s", (empresa_id_logada,))
-                    empresa = cursor_email.fetchone()
-                    email_destino = empresa['email_contato_principal'] if empresa and empresa['email_contato_principal'] else None
-                    cursor_email.close()
-                except Exception as e:
-                    print(f"Erro ao buscar email da empresa: {e}")
-                    email_destino = None
-                finally:
-                    conn_email.close()
-            else:
-                email_destino = None
-
-            if email_destino and email_destino.strip():
-                try:
-                    print("\n=== PREPARANDO ENVIO DE EMAIL ===")
-                    print(f"Configurações:")
-                    print(f"- Servidor: {app.config['MAIL_SERVER']}")
-                    print(f"- Porta: {app.config['MAIL_PORT']}")
-                    print(f"- TLS: {app.config['MAIL_USE_TLS']}")
-                    print(f"- SSL: {app.config['MAIL_USE_SSL']}")
-                    print(f"- Destinatário: {email_destino}")
-                    
-                    # Limpa caracteres especiais do assunto
-                    assunto_limpo = f"Novo Orçamento de Avaliação para {dados.get('modelo')}".encode('ascii', 'ignore').decode('ascii')
-                    print(f"Assunto preparado: {assunto_limpo}")
-
-                    msg = Message(
-                        subject=assunto_limpo,
-                        sender=("Sua Calculadora de iPhones", app.config['MAIL_USERNAME']),
-                        recipients=[email_destino.strip()]
-                    )
-                    
-                    # Limpa caracteres especiais do corpo
-                    corpo_limpo = corpo_email.encode('utf-8', 'ignore').decode('utf-8')
-                    msg.body = corpo_limpo
-                    
-                    print("Mensagem preparada, tentando enviar...")
-                    
-                    with app.app_context():
-                        mail.send(msg)
-                    print("✅ Email enviado com sucesso!")
-                    
-                except Exception as e:
-                    print("\n❌ ERRO NO ENVIO DE EMAIL")
-                    print(f"Tipo do erro: {type(e).__name__}")
-                    print(f"Mensagem: {str(e)}")
-                    print(f"Detalhes:")
-                    print(f"- Email destino: {email_destino}")
-                    print(f"- Empresa ID: {empresa_id_logada}")
-                    raise
-            else:
-                print(f"❌ Email da empresa não encontrado ou vazio para empresa ID: {empresa_id_logada}")
-
-        return jsonify({"mensagem": "Orçamento enviado com sucesso para a nossa equipe e registrado!"})
-
+            
+            if not config_email:
+                print("❌ Configurações de email não encontradas para a empresa")
+                return jsonify({"mensagem": "Orçamento salvo com sucesso! (Email não enviado - configurações não encontradas)"})
+            
+            email_empresa, senha_email, servidor_smtp, porta_smtp, usar_tls, usar_ssl, nome_empresa = config_email
+            
+            print("Configurações:")
+            print(f"- Servidor: {servidor_smtp}")
+            print(f"- Porta: {porta_smtp}")
+            print(f"- TLS: {usar_tls}")
+            print(f"- SSL: {usar_ssl}")
+            print(f"- Destinatário: {email_empresa}")
+            
+            # Configurar Flask-Mail
+            app.config['MAIL_SERVER'] = servidor_smtp
+            app.config['MAIL_PORT'] = porta_smtp
+            app.config['MAIL_USE_TLS'] = usar_tls
+            app.config['MAIL_USE_SSL'] = usar_ssl
+            app.config['MAIL_USERNAME'] = email_empresa
+            app.config['MAIL_PASSWORD'] = senha_email
+            
+            mail = Mail(app)
+            
+            # Preparar email
+            modelo_nome = dados.get('modeloSelecionado', 'iPhone')
+            assunto = f"Novo Orçamento de Avaliação para {modelo_nome}"
+            
+            # Criar mensagem HTML
+            mensagem_html = f"""
+            <html>
+            <body>
+                <h2>Novo Orçamento de Avaliação</h2>
+                <p><strong>Empresa:</strong> {nome_empresa}</p>
+                <p><strong>Cliente:</strong> {nome_cliente}</p>
+                <p><strong>Telefone:</strong> {telefone_cliente}</p>
+                <p><strong>Email:</strong> {email_cliente}</p>
+                <p><strong>Modelo de Interesse:</strong> {modelo_interesse}</p>
+                <p><strong>Modelo Avaliado:</strong> {dados.get('modeloSelecionado', '')}</p>
+                <p><strong>Cor:</strong> {cor_selecionada}</p>
+                <p><strong>Armazenamento:</strong> {armazenamento_selecionado}</p>
+                <p><strong>IMEI:</strong> {imei}</p>
+                <p><strong>Valor Final:</strong> R$ {valor_final_calculado:.2f}</p>
+                
+                <h3>Resumo das Respostas:</h3>
+                <ul>
+            """
+            
+            for pergunta, resposta in resumo_respostas.items():
+                mensagem_html += f"<li><strong>{pergunta}:</strong> {resposta}</li>"
+            
+            mensagem_html += """
+                </ul>
+            </body>
+            </html>
+            """
+            
+            print(f"Assunto preparado: {assunto}")
+            print("Mensagem preparada, tentando enviar...")
+            
+            # Enviar email
+            msg = Message(
+                subject=assunto,
+                sender=email_empresa,
+                recipients=[email_empresa],
+                html=mensagem_html
+            )
+            
+            mail.send(msg)
+            print("✅ Email enviado com sucesso!")
+            
+            return jsonify({"mensagem": "Orçamento enviado com sucesso para a nossa equipe e registrado!"})
+            
+        except Exception as email_error:
+            print(f"\n❌ ERRO NO ENVIO DE EMAIL")
+            print(f"")
+            print(f"Tipo do erro: {type(email_error).__name__}")
+            print(f"Mensagem: {email_error}")
+            print(f"Detalhes:")
+            print(f"- Email destino: {email_empresa}")
+            print(f"- Empresa ID: {empresa_id}")
+            print(f"Erro ao enviar e-mail: {email_error}")
+            
+            # Retornar sucesso para o banco, mas indicar falha no email
+            return jsonify({
+                "mensagem": f"Orçamento salvo com sucesso! (Email não enviado - {str(email_error)})"
+            })
+            
     except Exception as e:
-        print(f"Erro ao enviar e-mail: {e}")
-        return jsonify({"mensagem": "Avaliação registrada, mas falha ao enviar o e-mail."}), 500
-
+        print(f"❌ ERRO GERAL na função enviar_orcamento: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"mensagem": "Erro interno do servidor"}), 500
 
 @app.route('/api/modelo/<int:modelo_id>/perguntas')
 def get_perguntas_modelo(modelo_id):
