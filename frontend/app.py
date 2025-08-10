@@ -557,11 +557,11 @@ def enviar_orcamento():
         
         # Obter outros dados necessários
         modelo_id = dados.get('modeloId')
-        cor_selecionada = dados.get('corSelecionada', '')
-        armazenamento_selecionado = dados.get('armazenamentoSelecionado', '')
+        cor_selecionada = dados.get('cor', '')
+        armazenamento_selecionado = dados.get('armazenamento', '')
         imei = dados.get('imei', '000000000')
-        valor_final_calculado = dados.get('valorFinalCalculado', 0)
-        resumo_respostas = dados.get('resumoRespostas', {})
+        valor_final_calculado = dados.get('valor', 0)
+        resumo_respostas = dados.get('resumo', {})
         
         # Obter dados da sessão
         empresa_id = session.get('empresa_id')
@@ -3004,11 +3004,22 @@ def enviar_orcamento_convite(token):
             return jsonify({"erro": "O plano da empresa está desativado"}), 403
 
         # Busca modelo
+        modelo_id = dados.get('modeloId')
         modelo_nome = dados.get('modelo')
-        cursor.execute("""
-            SELECT id, valor_base_novo FROM modelos_iphone
-            WHERE nome_modelo = %s AND empresa_id = %s
-        """, (modelo_nome, empresa_id))
+        
+        if modelo_id:
+            # Se modeloId foi fornecido, usar diretamente
+            cursor.execute("""
+                SELECT id, valor_base_novo FROM modelos_iphone
+                WHERE id = %s AND empresa_id = %s
+            """, (modelo_id, empresa_id))
+        else:
+            # Fallback: buscar pelo nome do modelo
+            cursor.execute("""
+                SELECT id, valor_base_novo FROM modelos_iphone
+                WHERE nome_modelo = %s AND empresa_id = %s
+            """, (modelo_nome, empresa_id))
+            
         modelo_row = cursor.fetchone()
         
         # Consumir resultados pendentes para evitar "Unread result found"

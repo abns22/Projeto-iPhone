@@ -509,6 +509,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     modeloInteresse,
                     dadosClientePreenchidos: dadosClientePreenchidos.preenchido,
                     modelo: nomeModelo, 
+                    modeloId: modeloId,
                     cor: nomeCor,
                     armazenamento: capacidadeArmazenamento, 
                     imei, 

@@ -237,6 +237,7 @@ function transicaoParaTelaDeAvaliacao(cardClicado) {
     secaoAvaliacao.dataset.corSelecionada = corBtn.textContent;
     secaoAvaliacao.dataset.armazenamentoSelecionado = armBtn.textContent;
     secaoAvaliacao.dataset.modificadorArmazenamento = armBtn.dataset.modificadorValor || '0';
+    secaoAvaliacao.dataset.modeloId = cardClicado.dataset.modeloId;
     
     // Debug: verificar dados passados para a seção de avaliação
     console.log("Dados passados para seção de avaliação:");
@@ -406,6 +407,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const nomeModelo = document.querySelector('#aparelho-em-destaque h2').textContent;
                 const nomeCor = secaoAvaliacao.dataset.corSelecionada;
                 const capacidadeArmazenamento = secaoAvaliacao.dataset.armazenamentoSelecionado;
+                const modeloId = secaoAvaliacao.dataset.modeloId;
 
                 // Debug: verificar dados do cliente
                 console.log("Dados do cliente:", window.DADOS_CLIENTE);
@@ -415,6 +417,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     emailCliente: window.DADOS_CLIENTE.email,
                     telefoneCliente: window.DADOS_CLIENTE.telefone,
                     modelo: nomeModelo,
+                    modeloId: modeloId,
                     cor: nomeCor,
                     armazenamento: capacidadeArmazenamento,
                     imei: imei,
