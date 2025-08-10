@@ -650,23 +650,90 @@ def enviar_orcamento():
                     return jsonify({"mensagem": "Orçamento salvo com sucesso! (Email não enviado - configurações não encontradas)"})
                 
                 email_empresa, nome_empresa = config_email
-                # Usar configurações padrão para SMTP
-                servidor_smtp = "smtp.gmail.com"
-                porta_smtp = 587
-                usar_tls = True
-                usar_ssl = False
-                senha_email = ""  # Será necessário configurar
                 
-                print("⚠️ Usando configurações padrão de email (Gmail)")
+                # Usar configurações do arquivo .env
+                servidor_smtp = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+                porta_smtp = int(os.getenv('MAIL_PORT', '587'))
+                usar_tls = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
+                usar_ssl = os.getenv('MAIL_USE_SSL', 'False').lower() == 'true'
+                senha_email = os.getenv('MAIL_PASSWORD', '')
+                email_env = os.getenv('MAIL_USERNAME', '')
+                
+                # Se não há email configurado no .env, usar o email da empresa
+                if not email_env:
+                    email_env = email_empresa
+                
+                print("⚠️ Usando configurações de email do arquivo .env")
                 print("Configurações:")
                 print(f"- Servidor: {servidor_smtp}")
                 print(f"- Porta: {porta_smtp}")
                 print(f"- TLS: {usar_tls}")
                 print(f"- SSL: {usar_ssl}")
+                print(f"- Email remetente: {email_env}")
                 print(f"- Destinatário: {email_empresa}")
-                print("⚠️ Senha de email não configurada - email não será enviado")
                 
-                return jsonify({"mensagem": "Orçamento salvo com sucesso! (Email não enviado - configurações de email incompletas)"})
+                if not senha_email:
+                    print("⚠️ Senha de email não configurada no .env - email não será enviado")
+                    return jsonify({"mensagem": "Orçamento salvo com sucesso! (Email não enviado - senha não configurada)"})
+                
+                # Configurar Flask-Mail
+                app.config['MAIL_SERVER'] = servidor_smtp
+                app.config['MAIL_PORT'] = porta_smtp
+                app.config['MAIL_USE_TLS'] = usar_tls
+                app.config['MAIL_USE_SSL'] = usar_ssl
+                app.config['MAIL_USERNAME'] = email_env
+                app.config['MAIL_PASSWORD'] = senha_email
+                
+                mail = Mail(app)
+                
+                # Preparar email
+                modelo_nome = dados.get('modeloSelecionado', 'iPhone')
+                assunto = f"Novo Orçamento de Avaliação para {modelo_nome}"
+                
+                # Criar mensagem HTML
+                mensagem_html = f"""
+                <html>
+                <body>
+                    <h2>Novo Orçamento de Avaliação</h2>
+                    <p><strong>Empresa:</strong> {nome_empresa}</p>
+                    <p><strong>Cliente:</strong> {nome_cliente}</p>
+                    <p><strong>Telefone:</strong> {telefone_cliente}</p>
+                    <p><strong>Email:</strong> {email_cliente}</p>
+                    <p><strong>Modelo de Interesse:</strong> {modelo_interesse}</p>
+                    <p><strong>Modelo Avaliado:</strong> {dados.get('modeloSelecionado', '')}</p>
+                    <p><strong>Cor:</strong> {cor_selecionada}</p>
+                    <p><strong>Armazenamento:</strong> {armazenamento_selecionado}</p>
+                    <p><strong>IMEI:</strong> {imei}</p>
+                    <p><strong>Valor Final:</strong> R$ {valor_final_calculado:.2f}</p>
+                    
+                    <h3>Resumo das Respostas:</h3>
+                    <ul>
+                """
+                
+                for pergunta, resposta in resumo_respostas.items():
+                    mensagem_html += f"<li><strong>{pergunta}:</strong> {resposta}</li>"
+                
+                mensagem_html += """
+                    </ul>
+                </body>
+                </html>
+                """
+                
+                print(f"Assunto preparado: {assunto}")
+                print("Mensagem preparada, tentando enviar...")
+                
+                # Enviar email
+                msg = Message(
+                    subject=assunto,
+                    sender=email_env,
+                    recipients=[email_empresa],
+                    html=mensagem_html
+                )
+                
+                mail.send(msg)
+                print("✅ Email enviado com sucesso!")
+                
+                return jsonify({"mensagem": "Orçamento enviado com sucesso para a nossa equipe e registrado!"})
             
             # Se as colunas existem, usar a query original
             cursor.execute("""
