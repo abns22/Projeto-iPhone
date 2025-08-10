@@ -623,6 +623,52 @@ def enviar_orcamento():
             conn = get_db_connection()
             cursor = conn.cursor()
             
+            # Primeiro, verificar se as colunas de email existem
+            cursor.execute("""
+                SELECT COLUMN_NAME 
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_SCHEMA = DATABASE() 
+                AND TABLE_NAME = 'empresas' 
+                AND COLUMN_NAME IN ('email_empresa', 'senha_email_empresa', 'servidor_smtp', 'porta_smtp', 'usar_tls', 'usar_ssl')
+            """)
+            
+            colunas_existentes = [row[0] for row in cursor.fetchall()]
+            
+            # Se as colunas não existem, usar apenas email_contato_principal
+            if not colunas_existentes:
+                cursor.execute("""
+                    SELECT email_contato_principal, nome_empresa
+                    FROM empresas WHERE id = %s
+                """, (empresa_id,))
+                
+                config_email = cursor.fetchone()
+                cursor.close()
+                conn.close()
+                
+                if not config_email:
+                    print("❌ Configurações de email não encontradas para a empresa")
+                    return jsonify({"mensagem": "Orçamento salvo com sucesso! (Email não enviado - configurações não encontradas)"})
+                
+                email_empresa, nome_empresa = config_email
+                # Usar configurações padrão para SMTP
+                servidor_smtp = "smtp.gmail.com"
+                porta_smtp = 587
+                usar_tls = True
+                usar_ssl = False
+                senha_email = ""  # Será necessário configurar
+                
+                print("⚠️ Usando configurações padrão de email (Gmail)")
+                print("Configurações:")
+                print(f"- Servidor: {servidor_smtp}")
+                print(f"- Porta: {porta_smtp}")
+                print(f"- TLS: {usar_tls}")
+                print(f"- SSL: {usar_ssl}")
+                print(f"- Destinatário: {email_empresa}")
+                print("⚠️ Senha de email não configurada - email não será enviado")
+                
+                return jsonify({"mensagem": "Orçamento salvo com sucesso! (Email não enviado - configurações de email incompletas)"})
+            
+            # Se as colunas existem, usar a query original
             cursor.execute("""
                 SELECT email_empresa, senha_email_empresa, servidor_smtp, porta_smtp, 
                        usar_tls, usar_ssl, nome_empresa
@@ -711,7 +757,7 @@ def enviar_orcamento():
             print(f"Tipo do erro: {type(email_error).__name__}")
             print(f"Mensagem: {email_error}")
             print(f"Detalhes:")
-            print(f"- Email destino: {email_empresa}")
+            print(f"- Email destino: {email_empresa if 'email_empresa' in locals() else 'N/A'}")
             print(f"- Empresa ID: {empresa_id}")
             print(f"Erro ao enviar e-mail: {email_error}")
             
@@ -738,6 +784,7 @@ def get_perguntas_modelo(modelo_id):
     empresa_id_logada = session.get('empresa_id')
     if not empresa_id_logada:
         return jsonify({"erro": "Usuário não está associado a uma empresa válida"}), 400
+
     conn = None
     try:
         conn = get_db_connection()
