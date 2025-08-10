@@ -53,8 +53,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 opcoesCorDiv.innerHTML = '';
                 opcoesArmazenamentoDiv.innerHTML = '';
                 if (data.modelo_info) {
-                    cardClicado.dataset.valorBase = data.modelo_info.valor_base_novo;
-                    cardClicado.dataset.nomeModelo = data.modelo_info.nome_modelo;
+                    cardClicado.dataset.valorBase = data.modelo_info.valor_base_novo || '';
+                    cardClicado.dataset.nomeModelo = data.modelo_info.nome_modelo || '';
                 }
                 data.cores.forEach(cor => {
                     const btn = document.createElement('button');
@@ -188,8 +188,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function transicaoParaDadosCliente(cardClicado) {
         if (!gridModelos || !secaoDadosCliente) return;
-        const nomeModelo = cardClicado.dataset.nomeModelo;
-        const valorBase = cardClicado.dataset.valorBase;
+        const nomeModelo = cardClicado.dataset.nomeModelo || '';
+        const valorBase = cardClicado.dataset.valorBase || '';
         const corBtn = cardClicado.querySelector('.btn-cor.selecionado');
         const armBtn = cardClicado.querySelector('.btn-armazenamento.selecionado');
         const imagemParaAtualizar = cardClicado.querySelector('img');
@@ -204,17 +204,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 <img src="${imagemUrl}" alt="${nomeModelo}">
                 <h2>${nomeModelo}</h2>
                 <div class="info-pills">
-                    <p>Cor: ${corBtn.textContent}</p>
-                    <p>Armazenamento: ${armBtn.textContent}</p>
+                    <p>Cor: ${corBtn ? corBtn.textContent : ''}</p>
+                    <p>Armazenamento: ${armBtn ? armBtn.textContent : ''}</p>
                 </div>`;
         }
         
         // Armazenar dados do modelo selecionado
         secaoDadosCliente.dataset.valorBase = valorBase;
-        secaoDadosCliente.dataset.corSelecionada = corBtn.textContent;
-        secaoDadosCliente.dataset.armazenamentoSelecionado = armBtn.textContent;
+        secaoDadosCliente.dataset.corSelecionada = corBtn ? corBtn.textContent : '';
+        secaoDadosCliente.dataset.armazenamentoSelecionado = armBtn ? armBtn.textContent : '';
         secaoDadosCliente.dataset.nomeModelo = nomeModelo;
-        secaoDadosCliente.dataset.modeloId = cardClicado.dataset.modeloId;
+        secaoDadosCliente.dataset.modeloId = cardClicado.dataset.modeloId || '';
         secaoDadosCliente.dataset.imagemUrl = imagemUrl;
         
         secaoDadosCliente.style.display = 'flex';
@@ -229,16 +229,16 @@ document.addEventListener('DOMContentLoaded', function() {
     function transicaoParaTelaDeAvaliacao(usarDadosArmazenados = false) {
         if (!secaoAvaliacao) return;
         
-        let valorBase, corSelecionada, armazenamentoSelecionado, nomeModelo, modeloId, imagemUrl;
+        let valorBase = '', corSelecionada = '', armazenamentoSelecionado = '', nomeModelo = '', modeloId = '', imagemUrl = '';
         
         if (usarDadosArmazenados && secaoDadosCliente) {
             // Usar dados armazenados da seção de dados do cliente
-            valorBase = secaoDadosCliente.dataset.valorBase;
-            corSelecionada = secaoDadosCliente.dataset.corSelecionada;
-            armazenamentoSelecionado = secaoDadosCliente.dataset.armazenamentoSelecionado;
-            nomeModelo = secaoDadosCliente.dataset.nomeModelo;
-            modeloId = secaoDadosCliente.dataset.modeloId;
-            imagemUrl = secaoDadosCliente.dataset.imagemUrl;
+            valorBase = secaoDadosCliente.dataset.valorBase || '';
+            corSelecionada = secaoDadosCliente.dataset.corSelecionada || '';
+            armazenamentoSelecionado = secaoDadosCliente.dataset.armazenamentoSelecionado || '';
+            nomeModelo = secaoDadosCliente.dataset.nomeModelo || '';
+            modeloId = secaoDadosCliente.dataset.modeloId || '';
+            imagemUrl = secaoDadosCliente.dataset.imagemUrl || '';
         }
 
         // Esconder seção de dados do cliente se estiver visível
@@ -261,6 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
         secaoAvaliacao.dataset.valorBase = valorBase;
         secaoAvaliacao.dataset.corSelecionada = corSelecionada;
         secaoAvaliacao.dataset.armazenamentoSelecionado = armazenamentoSelecionado;
+        secaoAvaliacao.dataset.modeloId = modeloId || '';
         
         if (modeloId) {
             fetchEExibePerguntas(modeloId);
@@ -485,6 +486,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const nomeModelo = document.querySelector('#aparelho-em-destaque h2').textContent;
                 const nomeCor = secaoAvaliacao.dataset.corSelecionada;
                 const capacidadeArmazenamento = secaoAvaliacao.dataset.armazenamentoSelecionado;
+                const modeloId = secaoAvaliacao.dataset.modeloId || '';
                 
                 // Usar dados do cliente preenchidos ou dados do usuário logado como fallback
                 const bodyElement = document.querySelector('body');

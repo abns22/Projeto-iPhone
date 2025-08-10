@@ -56,8 +56,8 @@ function fetchOpcoes(modeloId, cardClicado) {
             opcoesCorDiv.innerHTML = '';
             opcoesArmazenamentoDiv.innerHTML = '';
             if (data.modelo_info) {
-                cardClicado.dataset.valorBase = data.modelo_info.valor_base_novo;
-                cardClicado.dataset.nomeModelo = data.modelo_info.nome_modelo;
+                cardClicado.dataset.valorBase = data.modelo_info.valor_base_novo || '';
+                cardClicado.dataset.nomeModelo = data.modelo_info.nome_modelo || '';
             }
             data.cores.forEach(cor => {
                 const btn = document.createElement('button');
@@ -212,8 +212,8 @@ function transicaoParaTelaDeAvaliacao(cardClicado) {
     const secaoAvaliacao = document.getElementById('secao-avaliacao');
     if (!gridModelos || !secaoAvaliacao) return;
     
-    const nomeModelo = cardClicado.dataset.nomeModelo;
-    const valorBase = cardClicado.dataset.valorBase;
+    const nomeModelo = cardClicado.dataset.nomeModelo || '';
+    const valorBase = cardClicado.dataset.valorBase || '';
     const corBtn = cardClicado.querySelector('.btn-cor.selecionado');
     const armBtn = cardClicado.querySelector('.btn-armazenamento.selecionado');
     const imagemParaAtualizar = cardClicado.querySelector('img');
@@ -227,26 +227,26 @@ function transicaoParaTelaDeAvaliacao(cardClicado) {
             <img src="${imagemUrl}" alt="${nomeModelo}">
             <h2>${nomeModelo}</h2>
             <div class="info-pills">
-                <p>Cor: ${corBtn.textContent}</p>
-                <p>Armazenamento: ${armBtn.textContent}</p>
+                <p>Cor: ${corBtn ? corBtn.textContent : ''}</p>
+                <p>Armazenamento: ${armBtn ? armBtn.textContent : ''}</p>
             </div>`;
     }
     
     secaoAvaliacao.style.display = 'flex';
     secaoAvaliacao.dataset.valorBase = valorBase;
-    secaoAvaliacao.dataset.corSelecionada = corBtn.textContent;
-    secaoAvaliacao.dataset.armazenamentoSelecionado = armBtn.textContent;
-    secaoAvaliacao.dataset.modificadorArmazenamento = armBtn.dataset.modificadorValor || '0';
-    secaoAvaliacao.dataset.modeloId = cardClicado.dataset.modeloId;
+    secaoAvaliacao.dataset.corSelecionada = corBtn ? corBtn.textContent : '';
+    secaoAvaliacao.dataset.armazenamentoSelecionado = armBtn ? armBtn.textContent : '';
+    secaoAvaliacao.dataset.modificadorArmazenamento = armBtn ? (armBtn.dataset.modificadorValor || '0') : '0';
+    secaoAvaliacao.dataset.modeloId = cardClicado.dataset.modeloId || '';
     
     // Debug: verificar dados passados para a seção de avaliação
     console.log("Dados passados para seção de avaliação:");
     console.log("- Valor base:", valorBase);
-    console.log("- Cor:", corBtn.textContent);
-    console.log("- Armazenamento:", armBtn.textContent);
-    console.log("- Modificador:", armBtn.dataset.modificadorValor);
+    console.log("- Cor:", corBtn ? corBtn.textContent : '');
+    console.log("- Armazenamento:", armBtn ? armBtn.textContent : '');
+    console.log("- Modificador:", armBtn ? armBtn.dataset.modificadorValor : '');
     
-    fetchEExibePerguntas(cardClicado.dataset.modeloId);
+    fetchEExibePerguntas(cardClicado.dataset.modeloId || '');
 }
 
 // Função para resetar estado da avaliação
@@ -407,7 +407,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const nomeModelo = document.querySelector('#aparelho-em-destaque h2').textContent;
                 const nomeCor = secaoAvaliacao.dataset.corSelecionada;
                 const capacidadeArmazenamento = secaoAvaliacao.dataset.armazenamentoSelecionado;
-                const modeloId = secaoAvaliacao.dataset.modeloId;
+                const modeloId = secaoAvaliacao.dataset.modeloId || '';
 
                 // Debug: verificar dados do cliente
                 console.log("Dados do cliente:", window.DADOS_CLIENTE);
