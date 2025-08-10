@@ -691,6 +691,11 @@ def enviar_orcamento():
                 assunto = f"Novo Orçamento de Avaliação para {modelo_nome}"
                 
                 # Criar mensagem HTML
+                try:
+                    valor_formatado = f"{float(valor_final_calculado):.2f}"
+                except (ValueError, TypeError):
+                    valor_formatado = str(valor_final_calculado)
+                
                 mensagem_html = f"""
                 <html>
                 <body>
@@ -704,7 +709,7 @@ def enviar_orcamento():
                     <p><strong>Cor:</strong> {cor_selecionada}</p>
                     <p><strong>Armazenamento:</strong> {armazenamento_selecionado}</p>
                     <p><strong>IMEI:</strong> {imei}</p>
-                    <p><strong>Valor Final:</strong> R$ {valor_final_calculado:.2f}</p>
+                    <p><strong>Valor Final:</strong> R$ {valor_formatado}</p>
                     
                     <h3>Resumo das Respostas:</h3>
                     <ul>
@@ -774,6 +779,11 @@ def enviar_orcamento():
             assunto = f"Novo Orçamento de Avaliação para {modelo_nome}"
             
             # Criar mensagem HTML
+            try:
+                valor_formatado = f"{float(valor_final_calculado):.2f}"
+            except (ValueError, TypeError):
+                valor_formatado = str(valor_final_calculado)
+            
             mensagem_html = f"""
             <html>
             <body>
@@ -787,7 +797,7 @@ def enviar_orcamento():
                 <p><strong>Cor:</strong> {cor_selecionada}</p>
                 <p><strong>Armazenamento:</strong> {armazenamento_selecionado}</p>
                 <p><strong>IMEI:</strong> {imei}</p>
-                <p><strong>Valor Final:</strong> R$ {valor_final_calculado:.2f}</p>
+                <p><strong>Valor Final:</strong> R$ {valor_formatado}</p>
                 
                 <h3>Resumo das Respostas:</h3>
                 <ul>
