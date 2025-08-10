@@ -441,3 +441,82 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+// Função para gerar página de impressão para convites
+function gerarPaginaDeImpressao(dados) {
+    const dataAtual = new Date().toLocaleDateString('pt-BR', {
+        day: '2-digit', month: '2-digit', year: 'numeric'
+    });
+    
+    // Usar dados do cliente do objeto dados
+    const nomeCliente = dados.nomeCliente || 'Não informado';
+    const telefoneCliente = dados.telefoneCliente || 'Não informado';
+    const emailCliente = dados.emailCliente || '';
+    
+    let diagnosticoItensHtml = '';
+    dados.resumo.forEach(item => {
+        if (item.pergunta.toLowerCase() !== 'imei') {
+            diagnosticoItensHtml += `<p class="item"><strong>${item.pergunta}</strong> Resposta: ${item.resposta}</p>`;
+        }
+    });
+
+    let conteudoHtmlCompleto = `
+        <!DOCTYPE html>
+        <html lang="pt-br">
+        <head>
+            <title>Orçamento de Avaliação - ${dados.modelo}</title>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.4; color: #333; }
+                .container { width: 90%; max-width: 800px; margin: auto; padding-top: 20px; }
+                h1 { text-align: center; color: #2c3e50; border-bottom: 2px solid #ccc; padding-bottom: 10px; }
+                h2 { color: #34495e; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 20px; margin-bottom: 10px; }
+                .item { margin: 4px 0; }
+                .footer { margin-top: 30px; text-align: center; font-style: italic; color: #777; font-size: 0.8em; }
+                .info-cliente, .info-aparelho, .diagnostico { border: 1px solid #ddd; padding: 10px 15px; border-radius: 5px; margin-bottom: 15px; }
+                strong { color: #000; }
+                @media print {
+                    body { font-size: 10pt; background-color: #fff; }
+                    .container { width: 100%; margin: 0; padding: 0; border: none; }
+                    h1 { font-size: 18pt; } h2 { font-size: 14pt; }
+                    .info-cliente, .info-aparelho, .diagnostico { border: none; box-shadow: none; padding: 5px 0; margin-bottom: 10px; }
+                    h2, .footer { page-break-after: avoid; }
+                    p, .item { page-break-inside: avoid; }
+                    a { text-decoration: none; color: #000; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Orçamento de Avaliação de Aparelho</h1>
+                <div class="info-cliente">
+                    <h2>Dados do Cliente</h2>
+                    <p class="item"><strong>Cliente:</strong> ${nomeCliente}</p>
+                    <p class="item"><strong>Telefone:</strong> ${telefoneCliente}</p>
+                    <p class="item"><strong>E-mail:</strong> ${emailCliente || 'Não informado'}</p>
+                    <p class="item"><strong>Data de Emissão:</strong> ${dataAtual}</p>
+                </div>
+                <div class="info-aparelho">
+                    <h2>Detalhes do Aparelho</h2>
+                    <p class="item"><strong>Modelo:</strong> ${dados.modelo}</p>
+                    <p class="item"><strong>Cor:</strong> ${dados.cor}</p>
+                    <p class="item"><strong>Armazenamento:</strong> ${dados.armazenamento}</p>
+                    <p class="item"><strong>IMEI:</strong> ${dados.imei}</p>
+                </div>
+                <div class="diagnostico">
+                    <h2>Diagnóstico Realizado</h2>
+                    ${diagnosticoItensHtml}
+                </div>
+                <h2>Valor Estimado para Troca: R$ ${dados.valor}</h2>
+                <div class="footer">
+                    <p>Validade do orçamento por 7 dias.</p>
+                </div>
+            </div>
+        </body>
+        </html>`;
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(conteudoHtmlCompleto);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+}

@@ -155,6 +155,7 @@ def criar_tabelas(cursor):
             nome_cliente_final VARCHAR(255),
             email_cliente_final VARCHAR(255),
             telefone_cliente_final VARCHAR(255),
+            modelo_interesse VARCHAR(255),
             modelo_iphone_id INT NOT NULL,
             cor_selecionada VARCHAR(100) NOT NULL,
             armazenamento_selecionado VARCHAR(100) NOT NULL,

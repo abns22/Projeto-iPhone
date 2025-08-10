@@ -558,9 +558,11 @@ function gerarPaginaDeImpressao(dados) {
         day: '2-digit', month: '2-digit', year: 'numeric'
     });
     
-    const bodyElement = document.querySelector('body');
-    const nomeCliente = bodyElement.dataset.nomeUsuario || 'Não informado';
-    const telefoneCliente = bodyElement.dataset.telefoneUsuario || 'Não informado';
+    // Usar dados do cliente do objeto dados, com fallback para dados do usuário
+    const nomeCliente = dados.nomeCliente || 'Não informado';
+    const telefoneCliente = dados.telefoneCliente || 'Não informado';
+    const emailCliente = dados.emailCliente || '';
+    const modeloInteresse = dados.modeloInteresse || '';
     
     let diagnosticoItensHtml = '';
     dados.resumo.forEach(item => {
@@ -568,6 +570,23 @@ function gerarPaginaDeImpressao(dados) {
             diagnosticoItensHtml += `<p class="item"><strong>${item.pergunta}</strong> Resposta: ${item.resposta}</p>`;
         }
     });
+
+    // Montar seção de dados do cliente baseado se foram preenchidos ou não
+    let secaoClienteHtml = '';
+    if (dados.dadosClientePreenchidos) {
+        secaoClienteHtml = `
+            <p class="item"><strong>Cliente:</strong> ${nomeCliente}</p>
+            <p class="item"><strong>Telefone:</strong> ${telefoneCliente}</p>
+            <p class="item"><strong>E-mail:</strong> ${emailCliente || 'Não informado'}</p>
+            <p class="item"><strong>Modelo de Interesse:</strong> ${modeloInteresse || 'Não informado'}</p>
+        `;
+    } else {
+        secaoClienteHtml = `
+            <p class="item"><strong>Dados do cliente não foram informados</strong></p>
+            <p class="item"><strong>Usuário do sistema:</strong> ${nomeCliente}</p>
+            <p class="item"><strong>Telefone do usuário:</strong> ${telefoneCliente}</p>
+        `;
+    }
 
     let conteudoHtmlCompleto = `
         <!DOCTYPE html>
@@ -599,14 +618,14 @@ function gerarPaginaDeImpressao(dados) {
                 <h1>Orçamento de Avaliação de Aparelho</h1>
                 <div class="info-cliente">
                     <h2>Dados do Cliente</h2>
-                    <p class="item"><strong>Cliente:</strong> ${nomeCliente}</p>
-                    <p class="item"><strong>Telefone:</strong> ${telefoneCliente}</p>
+                    ${secaoClienteHtml}
                     <p class="item"><strong>Data de Emissão:</strong> ${dataAtual}</p>
                 </div>
                 <div class="info-aparelho">
                     <h2>Detalhes do Aparelho</h2>
                     <p class="item"><strong>Modelo:</strong> ${dados.modelo}</p>
-                    <p class="item"><strong>Detalhes:</strong> ${dados.detalhes}</p>
+                    <p class="item"><strong>Cor:</strong> ${dados.cor}</p>
+                    <p class="item"><strong>Armazenamento:</strong> ${dados.armazenamento}</p>
                     <p class="item"><strong>IMEI:</strong> ${dados.imei}</p>
                 </div>
                 <div class="diagnostico">

@@ -3094,13 +3094,13 @@ def enviar_orcamento_convite(token):
         sql_insert = """
             INSERT INTO avaliacoes_concluidas (
                 empresa_id, nome_cliente_final, email_cliente_final, telefone_cliente_final,
-                modelo_iphone_id, cor_selecionada, armazenamento_selecionado, imei,
+                modelo_interesse, modelo_iphone_id, cor_selecionada, armazenamento_selecionado, imei,
                 valor_base_calculado, valor_final_calculado, resumo_respostas
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         cursor.execute(sql_insert, (
             empresa_id, nome_cliente, email_cliente, telefone_cliente,
-            modelo_id, cor_selecionada, armazenamento_selecionado, imei,
+            modelo_interesse, modelo_id, cor_selecionada, armazenamento_selecionado, imei,
             valor_base_db, valor_final_calculado, resumo_json
         ))
 
