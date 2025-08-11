@@ -736,7 +736,7 @@ def enviar_orcamento():
                 msg = Message(
                     subject=assunto,
                     sender=email_env,
-                    recipients=[email_empresa],
+                    recipients=[email_cliente],
                     html=mensagem_html
                 )
                 
@@ -834,7 +834,7 @@ def enviar_orcamento():
             msg = Message(
                 subject=assunto,
                 sender=email_empresa,
-                recipients=[email_empresa],
+                recipients=[email_cliente],
                 html=mensagem_html
             )
             
