@@ -715,8 +715,20 @@ def enviar_orcamento():
                     <ul>
                 """
                 
+                            # Verificar se resumo_respostas é uma lista ou dicionário
+            if isinstance(resumo_respostas, list):
+                for item in resumo_respostas:
+                    if isinstance(item, dict) and 'pergunta' in item and 'resposta' in item:
+                        mensagem_html += f"<li><strong>{item['pergunta']}:</strong> {item['resposta']}</li>"
+                    elif isinstance(item, str):
+                        mensagem_html += f"<li>{item}</li>"
+                    else:
+                        mensagem_html += f"<li>{str(item)}</li>"
+            elif isinstance(resumo_respostas, dict):
                 for pergunta, resposta in resumo_respostas.items():
                     mensagem_html += f"<li><strong>{pergunta}:</strong> {resposta}</li>"
+            else:
+                mensagem_html += f"<li>Resumo não disponível</li>"
                 
                 mensagem_html += """
                     </ul>
@@ -803,8 +815,20 @@ def enviar_orcamento():
                 <ul>
             """
             
-            for pergunta, resposta in resumo_respostas.items():
-                mensagem_html += f"<li><strong>{pergunta}:</strong> {resposta}</li>"
+            # Verificar se resumo_respostas é uma lista ou dicionário
+            if isinstance(resumo_respostas, list):
+                for item in resumo_respostas:
+                    if isinstance(item, dict) and 'pergunta' in item and 'resposta' in item:
+                        mensagem_html += f"<li><strong>{item['pergunta']}:</strong> {item['resposta']}</li>"
+                    elif isinstance(item, str):
+                        mensagem_html += f"<li>{item}</li>"
+                    else:
+                        mensagem_html += f"<li>{str(item)}</li>"
+            elif isinstance(resumo_respostas, dict):
+                for pergunta, resposta in resumo_respostas.items():
+                    mensagem_html += f"<li><strong>{pergunta}:</strong> {resposta}</li>"
+            else:
+                mensagem_html += f"<li>Resumo não disponível</li>"
             
             mensagem_html += """
                 </ul>
