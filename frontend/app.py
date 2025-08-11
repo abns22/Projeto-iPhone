@@ -611,17 +611,12 @@ def enviar_orcamento():
         conn.commit()
         print("✅ Avaliação salva com sucesso no banco de dados.")
         
-        # Fechar conexão do banco
-        cursor.close()
-        conn.close()
-        
         # === ENVIO DE EMAIL ===
         print("\n=== PREPARANDO ENVIO DE EMAIL ===")
         
         try:
-            # Buscar configurações de email da empresa
-            conn = get_db_connection()
-            cursor = conn.cursor()
+            # Buscar configurações de email da empresa (reutilizar conexão existente)
+            # Não fechar a conexão aqui, pois ainda precisamos dela para buscar configurações
             
             # Primeiro, verificar se as colunas de email existem
             cursor.execute("""
@@ -642,8 +637,6 @@ def enviar_orcamento():
                 """, (empresa_id,))
                 
                 config_email = cursor.fetchone()
-                cursor.close()
-                conn.close()
                 
                 if not config_email:
                     print("❌ Configurações de email não encontradas para a empresa")
@@ -715,20 +708,20 @@ def enviar_orcamento():
                     <ul>
                 """
                 
-                            # Verificar se resumo_respostas é uma lista ou dicionário
-            if isinstance(resumo_respostas, list):
-                for item in resumo_respostas:
-                    if isinstance(item, dict) and 'pergunta' in item and 'resposta' in item:
-                        mensagem_html += f"<li><strong>{item['pergunta']}:</strong> {item['resposta']}</li>"
-                    elif isinstance(item, str):
-                        mensagem_html += f"<li>{item}</li>"
-                    else:
-                        mensagem_html += f"<li>{str(item)}</li>"
-            elif isinstance(resumo_respostas, dict):
-                for pergunta, resposta in resumo_respostas.items():
-                    mensagem_html += f"<li><strong>{pergunta}:</strong> {resposta}</li>"
-            else:
-                mensagem_html += f"<li>Resumo não disponível</li>"
+                # Verificar se resumo_respostas é uma lista ou dicionário
+                if isinstance(resumo_respostas, list):
+                    for item in resumo_respostas:
+                        if isinstance(item, dict) and 'pergunta' in item and 'resposta' in item:
+                            mensagem_html += f"<li><strong>{item['pergunta']}:</strong> {item['resposta']}</li>"
+                        elif isinstance(item, str):
+                            mensagem_html += f"<li>{item}</li>"
+                        else:
+                            mensagem_html += f"<li>{str(item)}</li>"
+                elif isinstance(resumo_respostas, dict):
+                    for pergunta, resposta in resumo_respostas.items():
+                        mensagem_html += f"<li><strong>{pergunta}:</strong> {resposta}</li>"
+                else:
+                    mensagem_html += f"<li>Resumo não disponível</li>"
                 
                 mensagem_html += """
                     </ul>
@@ -760,8 +753,6 @@ def enviar_orcamento():
             """, (empresa_id,))
             
             config_email = cursor.fetchone()
-            cursor.close()
-            conn.close()
             
             if not config_email:
                 print("❌ Configurações de email não encontradas para a empresa")
@@ -872,6 +863,12 @@ def enviar_orcamento():
         import traceback
         traceback.print_exc()
         return jsonify({"mensagem": "Erro interno do servidor"}), 500
+    finally:
+        # Fechar conexão e cursor no final da função
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
 
 @app.route('/api/modelo/<int:modelo_id>/perguntas')
 def get_perguntas_modelo(modelo_id):
