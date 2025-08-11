@@ -680,8 +680,7 @@ def enviar_orcamento():
                 mail = Mail(app)
                 
                 # Preparar email
-                modelo_nome = dados.get('modeloSelecionado', 'iPhone')
-                assunto = f"Novo Orçamento de Avaliação para {modelo_nome}"
+                assunto = "iPhone Breakdown"
                 
                 # Criar mensagem HTML
                 try:
@@ -736,7 +735,7 @@ def enviar_orcamento():
                 msg = Message(
                     subject=assunto,
                     sender=email_env,
-                    recipients=[email_cliente],
+                    recipients=[email_empresa],
                     html=mensagem_html
                 )
                 
