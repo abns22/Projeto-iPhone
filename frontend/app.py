@@ -551,7 +551,7 @@ def enviar_orcamento():
             nome_cliente = session.get('nome_completo', '')
             telefone_cliente = session.get('telefone_usuario', '')
             email_cliente = session.get('usuario_email', '')
-            modelo_interesse = dados.get('modeloSelecionado', '')
+            modelo_interesse = dados.get('modeloInteresse', '')
         
         print(f"DEBUG - Dados finais: nome={nome_cliente}, telefone={telefone_cliente}")
         
@@ -697,7 +697,7 @@ def enviar_orcamento():
                     <p><strong>Telefone:</strong> {telefone_cliente}</p>
                     <p><strong>Email:</strong> {email_cliente}</p>
                     <p><strong>Modelo de Interesse:</strong> {modelo_interesse}</p>
-                    <p><strong>Modelo Avaliado:</strong> {dados.get('modeloSelecionado', '')}</p>
+                    <p><strong>Modelo Avaliado:</strong> {dados.get('modelo', '')}</p>
                     <p><strong>Cor:</strong> {cor_selecionada}</p>
                     <p><strong>Armazenamento:</strong> {armazenamento_selecionado}</p>
                     <p><strong>IMEI:</strong> {imei}</p>
@@ -796,7 +796,7 @@ def enviar_orcamento():
                 <p><strong>Telefone:</strong> {telefone_cliente}</p>
                 <p><strong>Email:</strong> {email_cliente}</p>
                 <p><strong>Modelo de Interesse:</strong> {modelo_interesse}</p>
-                <p><strong>Modelo Avaliado:</strong> {dados.get('modeloSelecionado', '')}</p>
+                <p><strong>Modelo Avaliado:</strong> {dados.get('modelo', '')}</p>
                 <p><strong>Cor:</strong> {cor_selecionada}</p>
                 <p><strong>Armazenamento:</strong> {armazenamento_selecionado}</p>
                 <p><strong>IMEI:</strong> {imei}</p>
@@ -3155,13 +3155,13 @@ def enviar_orcamento_convite(token):
         if modelo_id:
             # Se modeloId foi fornecido, usar diretamente
             cursor.execute("""
-                SELECT id, valor_base_novo FROM modelos_iphone
+                SELECT id, valor_base_novo, nome_modelo FROM modelos_iphone
                 WHERE id = %s AND empresa_id = %s
             """, (modelo_id, empresa_id))
         else:
             # Fallback: buscar pelo nome do modelo
             cursor.execute("""
-                SELECT id, valor_base_novo FROM modelos_iphone
+                SELECT id, valor_base_novo, nome_modelo FROM modelos_iphone
                 WHERE nome_modelo = %s AND empresa_id = %s
             """, (modelo_nome, empresa_id))
             
@@ -3175,6 +3175,7 @@ def enviar_orcamento_convite(token):
 
         modelo_id = modelo_row['id']
         valor_base_db = modelo_row['valor_base_novo']
+        nome_modelo_completo = modelo_row['nome_modelo']
 
         # Dados do orçamento
         nome_cliente = link['nome_cliente']
@@ -3247,7 +3248,7 @@ def enviar_orcamento_convite(token):
             - Modelo de Interesse: {modelo_interesse}
             
             Detalhes do Aparelho Avaliado:
-            - Modelo: {dados.get('modelo')}
+            - Modelo: {nome_modelo_completo}
             - Cor: {cor_selecionada}
             - Armazenamento: {armazenamento_selecionado}
             - IMEI: {imei}
@@ -3296,7 +3297,7 @@ def enviar_orcamento_convite(token):
             else:
                 telefone_whatsapp = f"55{telefone_limpo}"
 
-            mensagem_whatsapp = f"Olá! Gostaria de mais informações sobre o orçamento do {dados.get('modelo')} que acabei de fazer. Valor: R$ {dados.get('valor')}"
+            mensagem_whatsapp = f"Olá! Gostaria de mais informações sobre o orçamento do {nome_modelo_completo} que acabei de fazer. Valor: R$ {dados.get('valor')}"
             link_whatsapp = f"https://wa.me/{telefone_whatsapp}?text={mensagem_whatsapp}"
         else:
             link_whatsapp = ""
