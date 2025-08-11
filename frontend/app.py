@@ -688,42 +688,268 @@ def enviar_orcamento():
                 except (ValueError, TypeError):
                     valor_formatado = str(valor_final_calculado)
                 
-                mensagem_html = f"""
-                <html>
-                <body>
-                    <h2>Novo Orçamento de Avaliação</h2>
-                    <p><strong>Empresa:</strong> {nome_empresa}</p>
-                    <p><strong>Cliente:</strong> {nome_cliente}</p>
-                    <p><strong>Telefone:</strong> {telefone_cliente}</p>
-                    <p><strong>Email:</strong> {email_cliente}</p>
-                    <p><strong>Modelo de Interesse:</strong> {modelo_interesse}</p>
-                    <p><strong>Modelo Avaliado:</strong> {dados.get('modelo', '')}</p>
-                    <p><strong>Cor:</strong> {cor_selecionada}</p>
-                    <p><strong>Armazenamento:</strong> {armazenamento_selecionado}</p>
-                    <p><strong>IMEI:</strong> {imei}</p>
-                    <p><strong>Valor Final:</strong> R$ {valor_formatado}</p>
-                    
-                    <h3>Resumo das Respostas:</h3>
-                    <ul>
-                """
-                
-                # Verificar se resumo_respostas é uma lista ou dicionário
+                # Preparar seção de diagnóstico
+                diagnostico_html = ""
                 if isinstance(resumo_respostas, list):
                     for item in resumo_respostas:
                         if isinstance(item, dict) and 'pergunta' in item and 'resposta' in item:
-                            mensagem_html += f"<li><strong>{item['pergunta']}:</strong> {item['resposta']}</li>"
-                        elif isinstance(item, str):
-                            mensagem_html += f"<li>{item}</li>"
-                        else:
-                            mensagem_html += f"<li>{str(item)}</li>"
+                            diagnostico_html += f"""
+                            <tr>
+                                <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; font-size: 14px;">
+                                    <strong>{item['pergunta']}</strong>
+                                </td>
+                                <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; font-size: 14px; text-align: center;">
+                                    {item['resposta']}
+                                </td>
+                            </tr>
+                            """
                 elif isinstance(resumo_respostas, dict):
                     for pergunta, resposta in resumo_respostas.items():
-                        mensagem_html += f"<li><strong>{pergunta}:</strong> {resposta}</li>"
+                        diagnostico_html += f"""
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; font-size: 14px;">
+                                <strong>{pergunta}</strong>
+                            </td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; font-size: 14px; text-align: center;">
+                                {resposta}
+                            </td>
+                        </tr>
+                        """
                 else:
-                    mensagem_html += f"<li>Resumo não disponível</li>"
+                    diagnostico_html = """
+                    <tr>
+                        <td colspan="2" style="padding: 8px; border-bottom: 1px solid #e0e0e0; font-size: 14px; text-align: center;">
+                            Resumo não disponível
+                        </td>
+                    </tr>
+                    """
                 
-                mensagem_html += """
-                    </ul>
+                mensagem_html = f"""
+                <!DOCTYPE html>
+                <html lang="pt-BR">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Novo Orçamento - iPhone Breakdown</title>
+                    <style>
+                        body {{
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                            line-height: 1.6;
+                            color: #333;
+                            margin: 0;
+                            padding: 0;
+                            background-color: #f5f5f5;
+                        }}
+                        .container {{
+                            max-width: 600px;
+                            margin: 0 auto;
+                            background-color: #ffffff;
+                            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                        }}
+                        .header {{
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            color: white;
+                            padding: 30px 20px;
+                            text-align: center;
+                        }}
+                        .header h1 {{
+                            margin: 0;
+                            font-size: 24px;
+                            font-weight: 300;
+                        }}
+                        .header .subtitle {{
+                            margin-top: 5px;
+                            opacity: 0.9;
+                            font-size: 14px;
+                        }}
+                        .content {{
+                            padding: 30px 20px;
+                        }}
+                        .section {{
+                            margin-bottom: 30px;
+                            background-color: #fafafa;
+                            border-radius: 8px;
+                            padding: 20px;
+                            border-left: 4px solid #667eea;
+                        }}
+                        .section h2 {{
+                            margin: 0 0 15px 0;
+                            color: #2c3e50;
+                            font-size: 18px;
+                            font-weight: 600;
+                        }}
+                        .info-grid {{
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 15px;
+                        }}
+                        .info-item {{
+                            display: flex;
+                            flex-direction: column;
+                        }}
+                        .info-label {{
+                            font-size: 12px;
+                            color: #666;
+                            text-transform: uppercase;
+                            letter-spacing: 0.5px;
+                            margin-bottom: 4px;
+                        }}
+                        .info-value {{
+                            font-size: 14px;
+                            color: #333;
+                            font-weight: 500;
+                        }}
+                        .diagnostico-table {{
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-top: 15px;
+                            background-color: white;
+                            border-radius: 6px;
+                            overflow: hidden;
+                            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                        }}
+                        .diagnostico-table th {{
+                            background-color: #667eea;
+                            color: white;
+                            padding: 12px 8px;
+                            text-align: left;
+                            font-size: 14px;
+                            font-weight: 600;
+                        }}
+                        .diagnostico-table td {{
+                            padding: 8px;
+                            border-bottom: 1px solid #e0e0e0;
+                            font-size: 14px;
+                        }}
+                        .valor-final {{
+                            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+                            color: white;
+                            padding: 25px;
+                            border-radius: 8px;
+                            text-align: center;
+                            margin-top: 20px;
+                        }}
+                        .valor-final h3 {{
+                            margin: 0 0 10px 0;
+                            font-size: 16px;
+                            font-weight: 300;
+                        }}
+                        .valor-final .valor {{
+                            font-size: 32px;
+                            font-weight: 700;
+                            margin: 0;
+                        }}
+                        .footer {{
+                            background-color: #2c3e50;
+                            color: white;
+                            padding: 20px;
+                            text-align: center;
+                            font-size: 12px;
+                        }}
+                        .footer p {{
+                            margin: 5px 0;
+                            opacity: 0.8;
+                        }}
+                        @media (max-width: 600px) {{
+                            .info-grid {{
+                                grid-template-columns: 1fr;
+                            }}
+                            .container {{
+                                margin: 0;
+                                box-shadow: none;
+                            }}
+                        }}
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <h1>📱 Novo Orçamento</h1>
+                            <div class="subtitle">iPhone Breakdown - Avaliação de Aparelho</div>
+                        </div>
+                        
+                        <div class="content">
+                            <div class="section">
+                                <h2>🏢 Informações da Empresa</h2>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <div class="info-label">Empresa</div>
+                                        <div class="info-value">{nome_empresa}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="section">
+                                <h2>👤 Dados do Cliente</h2>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <div class="info-label">Nome</div>
+                                        <div class="info-value">{nome_cliente}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">E-mail</div>
+                                        <div class="info-value">{email_cliente}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Telefone</div>
+                                        <div class="info-value">{telefone_cliente}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Modelo de Interesse</div>
+                                        <div class="info-value">{modelo_interesse}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="section">
+                                <h2>📱 Detalhes do Aparelho</h2>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <div class="info-label">Modelo Avaliado</div>
+                                        <div class="info-value">{dados.get('modelo', '')}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Cor</div>
+                                        <div class="info-value">{cor_selecionada}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Armazenamento</div>
+                                        <div class="info-value">{armazenamento_selecionado}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">IMEI</div>
+                                        <div class="info-value">{imei}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="section">
+                                <h2>🔍 Diagnóstico Realizado</h2>
+                                <table class="diagnostico-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Pergunta</th>
+                                            <th style="text-align: center;">Resposta</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {diagnostico_html}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="valor-final">
+                                <h3>Valor Final Estimado</h3>
+                                <div class="valor">R$ {valor_formatado}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="footer">
+                            <p><strong>iPhone Breakdown</strong></p>
+                            <p>Este orçamento foi gerado automaticamente pelo sistema</p>
+                            <p>Validade: 7 dias a partir da data de emissão</p>
+                        </div>
+                    </div>
                 </body>
                 </html>
                 """
@@ -787,45 +1013,273 @@ def enviar_orcamento():
             except (ValueError, TypeError):
                 valor_formatado = str(valor_final_calculado)
             
-            mensagem_html = f"""
-            <html>
-            <body>
-                <h2>Novo Orçamento de Avaliação</h2>
-                <p><strong>Empresa:</strong> {nome_empresa}</p>
-                <p><strong>Cliente:</strong> {nome_cliente}</p>
-                <p><strong>Telefone:</strong> {telefone_cliente}</p>
-                <p><strong>Email:</strong> {email_cliente}</p>
-                <p><strong>Modelo de Interesse:</strong> {modelo_interesse}</p>
-                <p><strong>Modelo Avaliado:</strong> {dados.get('modelo', '')}</p>
-                <p><strong>Cor:</strong> {cor_selecionada}</p>
-                <p><strong>Armazenamento:</strong> {armazenamento_selecionado}</p>
-                <p><strong>IMEI:</strong> {imei}</p>
-                <p><strong>Valor Final:</strong> R$ {valor_formatado}</p>
-                
-                <h3>Resumo das Respostas:</h3>
-                <ul>
-            """
-            
-            # Verificar se resumo_respostas é uma lista ou dicionário
+            # Preparar seção de diagnóstico
+            diagnostico_html = ""
             if isinstance(resumo_respostas, list):
                 for item in resumo_respostas:
                     if isinstance(item, dict) and 'pergunta' in item and 'resposta' in item:
-                        mensagem_html += f"<li><strong>{item['pergunta']}:</strong> {item['resposta']}</li>"
-                    elif isinstance(item, str):
-                        mensagem_html += f"<li>{item}</li>"
-                    else:
-                        mensagem_html += f"<li>{str(item)}</li>"
+                        diagnostico_html += f"""
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; font-size: 14px;">
+                                <strong>{item['pergunta']}</strong>
+                            </td>
+                            <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; font-size: 14px; text-align: center;">
+                                {item['resposta']}
+                            </td>
+                        </tr>
+                        """
             elif isinstance(resumo_respostas, dict):
                 for pergunta, resposta in resumo_respostas.items():
-                    mensagem_html += f"<li><strong>{pergunta}:</strong> {resposta}</li>"
+                    diagnostico_html += f"""
+                    <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; font-size: 14px;">
+                            <strong>{pergunta}</strong>
+                        </td>
+                        <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; font-size: 14px; text-align: center;">
+                            {resposta}
+                        </td>
+                    </tr>
+                    """
             else:
-                mensagem_html += f"<li>Resumo não disponível</li>"
+                diagnostico_html = """
+                <tr>
+                    <td colspan="2" style="padding: 8px; border-bottom: 1px solid #e0e0e0; font-size: 14px; text-align: center;">
+                        Resumo não disponível
+                    </td>
+                </tr>
+                """
             
-            mensagem_html += """
-                </ul>
+            mensagem_html = f"""
+            <!DOCTYPE html>
+            <html lang="pt-BR">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Novo Orçamento - iPhone Breakdown</title>
+                <style>
+                    body {{
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        line-height: 1.6;
+                        color: #333;
+                        margin: 0;
+                        padding: 0;
+                        background-color: #f5f5f5;
+                    }}
+                    .container {{
+                        max-width: 600px;
+                        margin: 0 auto;
+                        background-color: #ffffff;
+                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    }}
+                    .header {{
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        padding: 30px 20px;
+                        text-align: center;
+                    }}
+                    .header h1 {{
+                        margin: 0;
+                        font-size: 24px;
+                        font-weight: 300;
+                    }}
+                    .header .subtitle {{
+                        margin-top: 5px;
+                        opacity: 0.9;
+                        font-size: 14px;
+                    }}
+                    .content {{
+                        padding: 30px 20px;
+                    }}
+                    .section {{
+                        margin-bottom: 30px;
+                        background-color: #fafafa;
+                        border-radius: 8px;
+                        padding: 20px;
+                        border-left: 4px solid #667eea;
+                    }}
+                    .section h2 {{
+                        margin: 0 0 15px 0;
+                        color: #2c3e50;
+                        font-size: 18px;
+                        font-weight: 600;
+                    }}
+                    .info-grid {{
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 15px;
+                    }}
+                    .info-item {{
+                        display: flex;
+                        flex-direction: column;
+                    }}
+                    .info-label {{
+                        font-size: 12px;
+                        color: #666;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        margin-bottom: 4px;
+                    }}
+                    .info-value {{
+                        font-size: 14px;
+                        color: #333;
+                        font-weight: 500;
+                    }}
+                    .diagnostico-table {{
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-top: 15px;
+                        background-color: white;
+                        border-radius: 6px;
+                        overflow: hidden;
+                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                    }}
+                    .diagnostico-table th {{
+                        background-color: #667eea;
+                        color: white;
+                        padding: 12px 8px;
+                        text-align: left;
+                        font-size: 14px;
+                        font-weight: 600;
+                    }}
+                    .diagnostico-table td {{
+                        padding: 8px;
+                        border-bottom: 1px solid #e0e0e0;
+                        font-size: 14px;
+                    }}
+                    .valor-final {{
+                        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+                        color: white;
+                        padding: 25px;
+                        border-radius: 8px;
+                        text-align: center;
+                        margin-top: 20px;
+                    }}
+                    .valor-final h3 {{
+                        margin: 0 0 10px 0;
+                        font-size: 16px;
+                        font-weight: 300;
+                    }}
+                    .valor-final .valor {{
+                        font-size: 32px;
+                        font-weight: 700;
+                        margin: 0;
+                    }}
+                    .footer {{
+                        background-color: #2c3e50;
+                        color: white;
+                        padding: 20px;
+                        text-align: center;
+                        font-size: 12px;
+                    }}
+                    .footer p {{
+                        margin: 5px 0;
+                        opacity: 0.8;
+                    }}
+                    @media (max-width: 600px) {{
+                        .info-grid {{
+                            grid-template-columns: 1fr;
+                        }}
+                        .container {{
+                            margin: 0;
+                            box-shadow: none;
+                        }}
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>📱 Novo Orçamento</h1>
+                        <div class="subtitle">iPhone Breakdown - Avaliação de Aparelho</div>
+                    </div>
+                    
+                    <div class="content">
+                        <div class="section">
+                            <h2>🏢 Informações da Empresa</h2>
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="info-label">Empresa</div>
+                                    <div class="info-value">{nome_empresa}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="section">
+                            <h2>👤 Dados do Cliente</h2>
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="info-label">Nome</div>
+                                    <div class="info-value">{nome_cliente}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">E-mail</div>
+                                    <div class="info-value">{email_cliente}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Telefone</div>
+                                    <div class="info-value">{telefone_cliente}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Modelo de Interesse</div>
+                                    <div class="info-value">{modelo_interesse}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="section">
+                            <h2>📱 Detalhes do Aparelho</h2>
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="info-label">Modelo Avaliado</div>
+                                    <div class="info-value">{dados.get('modelo', '')}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Cor</div>
+                                    <div class="info-value">{cor_selecionada}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Armazenamento</div>
+                                    <div class="info-value">{armazenamento_selecionado}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">IMEI</div>
+                                    <div class="info-value">{imei}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="section">
+                            <h2>🔍 Diagnóstico Realizado</h2>
+                            <table class="diagnostico-table">
+                                <thead>
+                                    <tr>
+                                        <th>Pergunta</th>
+                                        <th style="text-align: center;">Resposta</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {diagnostico_html}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="valor-final">
+                            <h3>Valor Final Estimado</h3>
+                            <div class="valor">R$ {valor_formatado}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="footer">
+                        <p><strong>iPhone Breakdown</strong></p>
+                        <p>Este orçamento foi gerado automaticamente pelo sistema</p>
+                        <p>Validade: 7 dias a partir da data de emissão</p>
+                    </div>
+                </div>
             </body>
             </html>
             """
+            
+
             
             print(f"Assunto preparado: {assunto}")
             print("Mensagem preparada, tentando enviar...")
@@ -3236,32 +3690,242 @@ def enviar_orcamento_convite(token):
             print(f"- Modelo de Interesse: {modelo_interesse}")
             print(f"- Modelo Avaliado: {dados.get('modelo')}")
             
-            corpo_email = f"""
-            Novo Orçamento via Link de Convite!
-            ------------------------------------
-            Dados do Cliente:
-            - Nome: {nome_cliente}
-            - E-mail: {email_cliente}
-            - Telefone: {telefone_cliente}
+            # Criar email HTML profissional
+            valor_formatado = f"{float(dados.get('valor', 0)):.2f}"
             
-            Preferência do Cliente:
-            - Modelo de Interesse: {modelo_interesse}
-            
-            Detalhes do Aparelho Avaliado:
-            - Modelo: {nome_modelo_completo}
-            - Cor: {cor_selecionada}
-            - Armazenamento: {armazenamento_selecionado}
-            - IMEI: {imei}
-
-            Diagnóstico:
-            """
+            # Preparar seção de diagnóstico
+            diagnostico_html = ""
             for item in dados.get('resumo', []):
                 if 'pergunta' in item and 'resposta' in item:
-                    corpo_email += f"- {item['pergunta']}: {item['resposta']}\n"
-
-            corpo_email += f"""
-            ------------------------------------
-            VALOR FINAL ESTIMADO: R$ {dados.get('valor')}
+                    diagnostico_html += f"""
+                    <tr>
+                        <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; font-size: 14px;">
+                            <strong>{item['pergunta']}</strong>
+                        </td>
+                        <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; font-size: 14px; text-align: center;">
+                            {item['resposta']}
+                        </td>
+                    </tr>
+                    """
+            
+            corpo_email_html = f"""
+            <!DOCTYPE html>
+            <html lang="pt-BR">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Novo Orçamento - iPhone Breakdown</title>
+                <style>
+                    body {{
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        line-height: 1.6;
+                        color: #333;
+                        margin: 0;
+                        padding: 0;
+                        background-color: #f5f5f5;
+                    }}
+                    .container {{
+                        max-width: 600px;
+                        margin: 0 auto;
+                        background-color: #ffffff;
+                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    }}
+                    .header {{
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        padding: 30px 20px;
+                        text-align: center;
+                    }}
+                    .header h1 {{
+                        margin: 0;
+                        font-size: 24px;
+                        font-weight: 300;
+                    }}
+                    .header .subtitle {{
+                        margin-top: 5px;
+                        opacity: 0.9;
+                        font-size: 14px;
+                    }}
+                    .content {{
+                        padding: 30px 20px;
+                    }}
+                    .section {{
+                        margin-bottom: 30px;
+                        background-color: #fafafa;
+                        border-radius: 8px;
+                        padding: 20px;
+                        border-left: 4px solid #667eea;
+                    }}
+                    .section h2 {{
+                        margin: 0 0 15px 0;
+                        color: #2c3e50;
+                        font-size: 18px;
+                        font-weight: 600;
+                    }}
+                    .info-grid {{
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 15px;
+                    }}
+                    .info-item {{
+                        display: flex;
+                        flex-direction: column;
+                    }}
+                    .info-label {{
+                        font-size: 12px;
+                        color: #666;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        margin-bottom: 4px;
+                    }}
+                    .info-value {{
+                        font-size: 14px;
+                        color: #333;
+                        font-weight: 500;
+                    }}
+                    .diagnostico-table {{
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-top: 15px;
+                        background-color: white;
+                        border-radius: 6px;
+                        overflow: hidden;
+                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                    }}
+                    .diagnostico-table th {{
+                        background-color: #667eea;
+                        color: white;
+                        padding: 12px 8px;
+                        text-align: left;
+                        font-size: 14px;
+                        font-weight: 600;
+                    }}
+                    .diagnostico-table td {{
+                        padding: 8px;
+                        border-bottom: 1px solid #e0e0e0;
+                        font-size: 14px;
+                    }}
+                    .valor-final {{
+                        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+                        color: white;
+                        padding: 25px;
+                        border-radius: 8px;
+                        text-align: center;
+                        margin-top: 20px;
+                    }}
+                    .valor-final h3 {{
+                        margin: 0 0 10px 0;
+                        font-size: 16px;
+                        font-weight: 300;
+                    }}
+                    .valor-final .valor {{
+                        font-size: 32px;
+                        font-weight: 700;
+                        margin: 0;
+                    }}
+                    .footer {{
+                        background-color: #2c3e50;
+                        color: white;
+                        padding: 20px;
+                        text-align: center;
+                        font-size: 12px;
+                    }}
+                    .footer p {{
+                        margin: 5px 0;
+                        opacity: 0.8;
+                    }}
+                    @media (max-width: 600px) {{
+                        .info-grid {{
+                            grid-template-columns: 1fr;
+                        }}
+                        .container {{
+                            margin: 0;
+                            box-shadow: none;
+                        }}
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>📱 Novo Orçamento</h1>
+                        <div class="subtitle">iPhone Breakdown - Avaliação de Aparelho</div>
+                    </div>
+                    
+                    <div class="content">
+                        <div class="section">
+                            <h2>👤 Dados do Cliente</h2>
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="info-label">Nome</div>
+                                    <div class="info-value">{nome_cliente}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">E-mail</div>
+                                    <div class="info-value">{email_cliente}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Telefone</div>
+                                    <div class="info-value">{telefone_cliente}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Modelo de Interesse</div>
+                                    <div class="info-value">{modelo_interesse}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="section">
+                            <h2>📱 Detalhes do Aparelho</h2>
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="info-label">Modelo Avaliado</div>
+                                    <div class="info-value">{nome_modelo_completo}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Cor</div>
+                                    <div class="info-value">{cor_selecionada}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Armazenamento</div>
+                                    <div class="info-value">{armazenamento_selecionado}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">IMEI</div>
+                                    <div class="info-value">{imei}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="section">
+                            <h2>🔍 Diagnóstico Realizado</h2>
+                            <table class="diagnostico-table">
+                                <thead>
+                                    <tr>
+                                        <th>Pergunta</th>
+                                        <th style="text-align: center;">Resposta</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {diagnostico_html}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="valor-final">
+                            <h3>Valor Final Estimado</h3>
+                            <div class="valor">R$ {valor_formatado}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="footer">
+                        <p><strong>iPhone Breakdown</strong></p>
+                        <p>Este orçamento foi gerado automaticamente pelo sistema</p>
+                        <p>Validade: 7 dias a partir da data de emissão</p>
+                    </div>
+                </div>
+            </body>
+            </html>
             """
 
             try:
@@ -3273,9 +3937,8 @@ def enviar_orcamento_convite(token):
                     sender=("iPhone Breakdown", app.config['MAIL_USERNAME']),
                     recipients=[email_destino.strip()]
                 )
-                # Limpa caracteres especiais do corpo
-                corpo_limpo = corpo_email.encode('utf-8', 'ignore').decode('utf-8')
-                msg.body = corpo_limpo
+                # Enviar email HTML
+                msg.html = corpo_email_html
                 mail.send(msg)
                 print(f"Email enviado com sucesso para: {email_destino}")
             except Exception as e:
