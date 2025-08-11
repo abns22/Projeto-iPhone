@@ -760,26 +760,27 @@ def enviar_orcamento():
             
             email_empresa, senha_email, servidor_smtp, porta_smtp, usar_tls, usar_ssl, nome_empresa = config_email
             
-            print("Configurações:")
-            print(f"- Servidor: {servidor_smtp}")
-            print(f"- Porta: {porta_smtp}")
-            print(f"- TLS: {usar_tls}")
-            print(f"- SSL: {usar_ssl}")
-            print(f"- Destinatário: {email_empresa}")
+            # Configurar Flask-Mail - Sempre usar configurações do .env para enviar para a empresa
+            app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+            app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+            app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
+            app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'False').lower() == 'true'
+            app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', 'ogordogamer2@gmail.com')
+            app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', 'ylmu lcyn khlp ckpd')
+            print("📧 Usando configurações do .env para enviar email para a empresa")
             
-            # Configurar Flask-Mail
-            app.config['MAIL_SERVER'] = servidor_smtp
-            app.config['MAIL_PORT'] = porta_smtp
-            app.config['MAIL_USE_TLS'] = usar_tls
-            app.config['MAIL_USE_SSL'] = usar_ssl
-            app.config['MAIL_USERNAME'] = email_empresa
-            app.config['MAIL_PASSWORD'] = senha_email
+            print("Configurações:")
+            print(f"- Servidor: {app.config['MAIL_SERVER']}")
+            print(f"- Porta: {app.config['MAIL_PORT']}")
+            print(f"- TLS: {app.config['MAIL_USE_TLS']}")
+            print(f"- SSL: {app.config['MAIL_USE_SSL']}")
+            print(f"- Email remetente: {app.config['MAIL_USERNAME']}")
+            print(f"- Destinatário: {email_empresa}")
             
             mail = Mail(app)
             
             # Preparar email
-            modelo_nome = dados.get('modeloSelecionado', 'iPhone')
-            assunto = f"Novo Orçamento de Avaliação para {modelo_nome}"
+            assunto = "iPhone Breakdown"
             
             # Criar mensagem HTML
             try:
@@ -833,15 +834,15 @@ def enviar_orcamento():
             # Enviar email
             msg = Message(
                 subject=assunto,
-                sender=email_empresa,
-                recipients=[email_cliente],
+                sender=app.config['MAIL_USERNAME'],
+                recipients=[email_empresa],
                 html=mensagem_html
             )
             
             mail.send(msg)
             print("✅ Email enviado com sucesso!")
             
-            return jsonify({"mensagem": "Orçamento enviado com sucesso para a nossa equipe e registrado!"})
+            return jsonify({"mensagem": "Orçamento enviado com sucesso para a empresa e registrado!"})
             
         except Exception as email_error:
             print(f"\n❌ ERRO NO ENVIO DE EMAIL")
@@ -3265,7 +3266,7 @@ def enviar_orcamento_convite(token):
 
             try:
                 # Limpa caracteres especiais do assunto
-                assunto_limpo = f"Novo Orçamento via Convite - {dados.get('modelo')}".encode('ascii', 'ignore').decode('ascii')
+                assunto_limpo = "iPhone Breakdown"
 
                 msg = Message(
                     subject=assunto_limpo,
