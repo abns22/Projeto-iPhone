@@ -680,7 +680,7 @@ def enviar_orcamento():
                 mail = Mail(app)
                 
                 # Preparar email
-                assunto = "iPhone Breakdown"
+                assunto = "Novo orçamento de Avaliação de iPhone"
                 
                 # Criar mensagem HTML
                 try:
@@ -734,7 +734,7 @@ def enviar_orcamento():
                 # Enviar email
                 msg = Message(
                     subject=assunto,
-                    sender=email_env,
+                    sender=("iPhone Breakdown", email_env),
                     recipients=[email_empresa],
                     html=mensagem_html
                 )
@@ -779,7 +779,7 @@ def enviar_orcamento():
             mail = Mail(app)
             
             # Preparar email
-            assunto = "iPhone Breakdown"
+            assunto = "Novo orçamento de Avaliação de iPhone"
             
             # Criar mensagem HTML
             try:
@@ -833,7 +833,7 @@ def enviar_orcamento():
             # Enviar email
             msg = Message(
                 subject=assunto,
-                sender=app.config['MAIL_USERNAME'],
+                sender=("iPhone Breakdown", app.config['MAIL_USERNAME']),
                 recipients=[email_empresa],
                 html=mensagem_html
             )
@@ -3265,11 +3265,11 @@ def enviar_orcamento_convite(token):
 
             try:
                 # Limpa caracteres especiais do assunto
-                assunto_limpo = "iPhone Breakdown"
+                assunto_limpo = "Novo orçamento de Avaliação de iPhone"
 
                 msg = Message(
                     subject=assunto_limpo,
-                    sender=("Sistema de Convites", app.config['MAIL_USERNAME']),
+                    sender=("iPhone Breakdown", app.config['MAIL_USERNAME']),
                     recipients=[email_destino.strip()]
                 )
                 # Limpa caracteres especiais do corpo
