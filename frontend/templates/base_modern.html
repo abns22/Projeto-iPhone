@@ -34,7 +34,50 @@
             <!-- Navegação Principal -->
             <nav class="header-nav desktop-only">
                 {% block header_nav %}
-                <!-- Navegação será definida em cada template -->
+                <!-- Menu padrão com todos os botões -->
+                <a href="{{ url_for('calcular') }}" class="header-nav-item">
+                    <i class="fas fa-mobile-screen-button"></i>
+                    <span>Avaliador</span>
+                </a>
+                {% if session.get('is_admin') and session.get('empresa_pode_gerir') %}
+                    <a href="{{ url_for('gerenciar_modelos_admin') }}" class="header-nav-item">
+                        <i class="fas fa-cubes"></i>
+                        <span>Modelos</span>
+                    </a>
+                    <a href="{{ url_for('gerenciar_usuarios_admin') }}" class="header-nav-item">
+                        <i class="fas fa-users"></i>
+                        <span>Usuários</span>
+                    </a>
+                    <a href="{{ url_for('gerar_link_convite') }}" class="header-nav-item">
+                        <i class="fas fa-link"></i>
+                        <span>Convites</span>
+                    </a>
+                    <a href="{{ url_for('relatorios_dashboard') }}" class="header-nav-item">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Relatórios</span>
+                    </a>
+                {% else %}
+                    <a href="#" class="header-nav-item" style="opacity: 0.5; cursor: not-allowed;" title="Acesso restrito">
+                        <i class="fas fa-lock"></i>
+                        <span>Modelos</span>
+                    </a>
+                    <a href="#" class="header-nav-item" style="opacity: 0.5; cursor: not-allowed;" title="Acesso restrito">
+                        <i class="fas fa-lock"></i>
+                        <span>Usuários</span>
+                    </a>
+                    <a href="#" class="header-nav-item" style="opacity: 0.5; cursor: not-allowed;" title="Acesso restrito">
+                        <i class="fas fa-lock"></i>
+                        <span>Convites</span>
+                    </a>
+                    <a href="#" class="header-nav-item" style="opacity: 0.5; cursor: not-allowed;" title="Acesso restrito">
+                        <i class="fas fa-lock"></i>
+                        <span>Relatórios</span>
+                    </a>
+                {% endif %}
+                <a href="{{ url_for('logout') }}" class="quick-action-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Sair</span>
+                </a>
                 {% endblock %}
             </nav>
 
@@ -54,7 +97,50 @@
         <!-- Menu Mobile -->
         <nav class="header-nav mobile-only" id="mobileNav">
             {% block mobile_nav %}
-            <!-- Navegação mobile será definida em cada template -->
+            <!-- Menu mobile padrão com todos os botões -->
+            <a href="{{ url_for('calcular') }}" class="header-nav-item">
+                <i class="fas fa-mobile-screen-button"></i>
+                <span>Avaliador de iPhones</span>
+            </a>
+            {% if session.get('is_admin') and session.get('empresa_pode_gerir') %}
+                <a href="{{ url_for('gerenciar_modelos_admin') }}" class="header-nav-item">
+                    <i class="fas fa-cubes"></i>
+                    <span>Gerenciar Modelos</span>
+                </a>
+                <a href="{{ url_for('gerenciar_usuarios_admin') }}" class="header-nav-item">
+                    <i class="fas fa-users"></i>
+                    <span>Gerenciar Usuários</span>
+                </a>
+                <a href="{{ url_for('gerar_link_convite') }}" class="header-nav-item">
+                    <i class="fas fa-link"></i>
+                    <span>Gerar Link de Convite</span>
+                </a>
+                <a href="{{ url_for('relatorios_dashboard') }}" class="header-nav-item">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Relatórios</span>
+                </a>
+            {% else %}
+                <a href="#" class="header-nav-item" style="opacity: 0.5; cursor: not-allowed;" title="Acesso restrito">
+                    <i class="fas fa-lock"></i>
+                    <span>Gerenciar Modelos</span>
+                </a>
+                <a href="#" class="header-nav-item" style="opacity: 0.5; cursor: not-allowed;" title="Acesso restrito">
+                    <i class="fas fa-lock"></i>
+                    <span>Gerenciar Usuários</span>
+                </a>
+                <a href="#" class="header-nav-item" style="opacity: 0.5; cursor: not-allowed;" title="Acesso restrito">
+                    <i class="fas fa-lock"></i>
+                    <span>Gerar Link de Convite</span>
+                </a>
+                <a href="#" class="header-nav-item" style="opacity: 0.5; cursor: not-allowed;" title="Acesso restrito">
+                    <i class="fas fa-lock"></i>
+                    <span>Relatórios</span>
+                </a>
+            {% endif %}
+            <a href="{{ url_for('logout') }}" class="header-nav-item" style="background: rgba(220,53,69,0.8);">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Sair</span>
+            </a>
             {% endblock %}
         </nav>
     </header>

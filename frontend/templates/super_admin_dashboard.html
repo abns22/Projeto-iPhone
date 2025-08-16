@@ -1,68 +1,79 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super Admin Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style_admin.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-</head>
-<body>
-    <div class="admin-container">
-        <header>
-            <h1>Painel Super Admin</h1>
-            <nav>
-                <a href="{{ url_for('logout') }}">Sair</a>
-            </nav>
-        </header>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="flash-messages">
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">{{ message }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
-        <main>
-            <h2>Gerenciamento de Empresas Clientes</h2>
-            <p>Use esta área para adicionar e gerenciar as empresas que utilizam o seu sistema.</p>
-            <div class="actions-header">
-            <a href="{{ url_for('adicionar_empresa_super_admin') }}" class="btn-adicionar">
-                <i class="fa-solid fa-plus"></i> Adicionar Nova Empresa
-            </a>
-            </div>
-            <div class="admin-table-wrapper">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nome da Empresa</th>
-                            <th>Contato Principal</th>
-                            <th>Plano Ativo?</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for empresa in empresas %}
-                        <tr>
-                            <td>{{ empresa.id }}</td>
-                            <td>{{ empresa.nome_empresa }}</td>
-                            <td>{{ empresa.email_contato_principal }}</td>
-                            <td>{{ 'Sim' if empresa.plano_ativo else 'Não' }}</td>
-                            <td class="actions-cell">
-                                <a href="{{ url_for('editar_empresa_admin', empresa_id=empresa.id) }}">Editar</a>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="5">Nenhuma empresa cliente cadastrada.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </main>
+{% extends "base_modern.html" %}
+
+{% block title %}Super Admin Dashboard{% endblock %}
+
+{% block page_indicator %}Super Admin{% endblock %}
+
+{% block header_nav %}
+    <a href="{{ url_for('super_admin_dashboard') }}" class="header-nav-item active">
+        <i class="fas fa-gauge"></i>
+        <span>Dashboard</span>
+    </a>
+    <a href="{{ url_for('admin_dashboard') }}" class="header-nav-item">
+        <i class="fas fa-user-shield"></i>
+        <span>Admin</span>
+    </a>
+    <a href="{{ url_for('logout') }}" class="quick-action-btn">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Sair</span>
+    </a>
+{% endblock %}
+
+{% block mobile_nav %}
+    <a href="{{ url_for('super_admin_dashboard') }}" class="header-nav-item active">
+        <i class="fas fa-gauge"></i>
+        <span>Dashboard Super Admin</span>
+    </a>
+    <a href="{{ url_for('admin_dashboard') }}" class="header-nav-item">
+        <i class="fas fa-user-shield"></i>
+        <span>Painel Admin</span>
+    </a>
+    <a href="{{ url_for('logout') }}" class="header-nav-item" style="background: rgba(220,53,69,0.8);">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Sair</span>
+    </a>
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h2>Gerenciamento de Empresas Clientes</h2>
+    <p>Use esta área para adicionar e gerenciar as empresas que utilizam o seu sistema.</p>
+    <div class="actions-header">
+        <a href="{{ url_for('adicionar_empresa_super_admin') }}" class="btn-adicionar">
+            <i class="fa-solid fa-plus"></i> Adicionar Nova Empresa
+        </a>
     </div>
-</body>
-</html>
+    <div class="admin-table-wrapper">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nome da Empresa</th>
+                    <th>Contato Principal</th>
+                    <th>Plano Ativo?</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for empresa in empresas %}
+                <tr>
+                    <td>{{ empresa.id }}</td>
+                    <td>{{ empresa.nome_empresa }}</td>
+                    <td>{{ empresa.email_contato_principal }}</td>
+                    <td>{{ 'Sim' if empresa.plano_ativo else 'Não' }}</td>
+                    <td class="actions-cell">
+                        <a href="{{ url_for('editar_empresa_admin', empresa_id=empresa.id) }}" class="btn-editar">
+                            <i class="fa-solid fa-pen-to-square"></i> Editar
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5">Nenhuma empresa cliente cadastrada.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

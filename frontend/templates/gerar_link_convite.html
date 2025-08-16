@@ -1,67 +1,192 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerar Link de Convite</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style_admin.css') }}">
-    <style>
-        .form-section {
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-            padding: 32px 24px;
-            max-width: 500px;
-            margin: 40px auto;
-        }
-        .form-section h2 {
-            color: #1a1a1a;
-            margin-bottom: 18px;
-            font-size: 2rem;
-        }
-        .form-section p {
-            color: #555;
-            margin-bottom: 18px;
-        }
-        .btn-primary {
-            background: #007bff;
+{% extends "base_modern.html" %}
+
+{% block title %}Gerar Link de Convite{% endblock %}
+
+{% block page_indicator %}Convites{% endblock %}
+
+{% block header_nav %}
+    <a href="{{ url_for('admin_dashboard') }}" class="header-nav-item">
+        <i class="fas fa-gauge"></i>
+        <span>Admin</span>
+    </a>
+    <a href="{{ url_for('gerar_link_convite') }}" class="header-nav-item active">
+        <i class="fas fa-link"></i>
+        <span>Convites</span>
+    </a>
+{% endblock %}
+
+{% block mobile_nav %}
+    <a href="{{ url_for('admin_dashboard') }}" class="header-nav-item">
+        <i class="fas fa-gauge"></i>
+        <span>Painel de Administração</span>
+    </a>
+    <a href="{{ url_for('gerar_link_convite') }}" class="header-nav-item active">
+        <i class="fas fa-link"></i>
+        <span>Gerar Link de Convite</span>
+    </a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .convite-section {
+        background: #fff;
+        border-radius: 15px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        padding: 40px 30px;
+        max-width: 600px;
+        margin: 40px auto;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .convite-section h2 {
+        color: #2c3e50;
+        margin-bottom: 20px;
+        font-size: 2.2rem;
+        font-weight: 700;
+        text-align: center;
+    }
+    
+    .convite-section p {
+        color: #6c757d;
+        margin-bottom: 25px;
+        font-size: 1.1rem;
+        text-align: center;
+        line-height: 1.6;
+    }
+    
+            .btn-generate {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
             color: #fff;
             border: none;
-            border-radius: 5px;
-            padding: 12px 28px;
-            font-size: 1.1rem;
+            border-radius: 12px;
+            padding: 16px 32px;
+            font-size: 1.2rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin: 20px 0;
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
         }
-        .btn-primary:hover {
-            background: #0056b3;
+        
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
         }
-        .info-box {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 18px 16px;
-            margin-top: 28px;
-            color: #333;
-        }
-        .info-box h3 {
+    
+    .btn-generate:active {
+        transform: translateY(0);
+    }
+    
+    .info-card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 12px;
+        padding: 25px 20px;
+        margin-top: 30px;
+        border: 1px solid #e9ecef;
+    }
+    
+            .info-card h3 {
             margin-top: 0;
-            font-size: 1.1rem;
+            font-size: 1.3rem;
             color: #007bff;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 20px;
         }
-        .info-box ul {
+    
+    .info-card ul {
+        margin: 0;
+        padding-left: 20px;
+        color: #495057;
+        line-height: 1.8;
+    }
+    
+    .info-card li {
+        margin-bottom: 8px;
+        font-size: 1rem;
+    }
+    
+    .info-card li:last-child {
+        margin-bottom: 0;
+    }
+    
+    .header-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    
+    .btn-back {
+        background: #6c757d;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 24px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-back:hover {
+        background: #5a6268;
+        color: #fff;
+        text-decoration: none;
+        transform: translateY(-1px);
+    }
+    
+            .page-title {
+            color: #007bff;
+            font-size: 2rem;
+            font-weight: 700;
             margin: 0;
-            padding-left: 18px;
         }
-    </style>
-</head>
-<body>
+    
+    @media (max-width: 768px) {
+        .convite-section {
+            margin: 20px;
+            padding: 30px 20px;
+        }
+        
+        .convite-section h2 {
+            font-size: 1.8rem;
+        }
+        
+        .page-title {
+            font-size: 1.6rem;
+        }
+        
+        .header-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .btn-back {
+            text-align: center;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
     <div class="admin-container">
-        <header>
-            <h1 style="color:#007bff;">Gerar Link de Convite</h1>
-            <nav>
-                <a href="{{ url_for('admin_dashboard') }}" class="btn-primary" style="background:#6c757d;">Voltar para o Dashboard</a>
-            </nav>
-        </header>
+        <div class="header-actions">
+            <h1 class="page-title">Gerar Link de Convite</h1>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn-back">
+                <i class="fas fa-arrow-left"></i>
+                Voltar para o Dashboard
+            </a>
+        </div>
+        
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <div class="flash-messages">
@@ -72,31 +197,31 @@
             {% endif %}
         {% endwith %}
 
-        <main>
-            <div class="form-section">
-                <h2>Gerar Novo Link de Convite</h2>
-                <p>Este link será válido por <strong>30 minutos</strong> e pode ser usado apenas uma vez.</p>
-                
-                <form method="POST" class="admin-form">
-                    <div class="form-group" style="text-align:center;">
-                        <button type="submit" class="btn-primary">Gerar Link de Convite</button>
-                    </div>
-                </form>
-                
-                <div class="info-box">
-                    <h3>Como funciona:</h3>
-                    <ul>
-                        <li>O link será único e seguro</li>
-                        <li>Válido por 30 minutos</li>
-                        <li>Pode ser usado apenas uma vez</li>
-                        <li>O convidado preencherá seus dados</li>
-                        <li>Fará o orçamento do iPhone</li>
-                        <li>Você receberá o orçamento por email</li>
-                        <li>O convidado receberá link do WhatsApp</li>
-                    </ul>
+        <div class="convite-section">
+            <h2>Gerar Novo Link de Convite</h2>
+            <p>Este link será válido por <strong>30 minutos</strong> e pode ser usado apenas uma vez.</p>
+            
+            <form method="POST" class="admin-form">
+                <div class="form-group" style="text-align:center;">
+                    <button type="submit" class="btn-generate">
+                        <i class="fas fa-link"></i>
+                        Gerar Link de Convite
+                    </button>
                 </div>
+            </form>
+            
+            <div class="info-card">
+                <h3>Como funciona:</h3>
+                <ul>
+                    <li>O link será único e seguro</li>
+                    <li>Válido por 30 minutos</li>
+                    <li>Pode ser usado apenas uma vez</li>
+                    <li>O convidado preencherá seus dados</li>
+                    <li>Fará o orçamento do iPhone</li>
+                    <li>Você receberá o orçamento por email</li>
+                    <li>O convidado receberá link do WhatsApp</li>
+                </ul>
             </div>
-        </main>
+        </div>
     </div>
-</body>
-</html> 
+{% endblock %} 

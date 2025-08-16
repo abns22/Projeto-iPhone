@@ -6,16 +6,422 @@
     <title>Calcular Orçamento - Link de Convite</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styleCalcular.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .dashboard-layout {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .header-section {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .header-section .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .header-section .logo-container img {
+            height: 45px;
+            width: 45px;
+            object-fit: contain;
+            border-radius: 10px;
+            background: #fff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 5px;
+        }
+        
+        .header-section .company-name {
+            color: #007bff;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        .header-section .welcome-text {
+            color: #6c757d;
+            font-size: 1.1rem;
+            margin: 0;
+            line-height: 1.6;
+        }
+        
+        .main-content {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .page-content h2 {
+            color: #2c3e50;
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .page-content p {
+            color: #6c757d;
+            font-size: 1.1rem;
+            text-align: center;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .grid-modelos {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        
+        .card-modelo {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card-modelo::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .card-modelo:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .card-modelo:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            border-color: #007bff;
+        }
+        
+        .card-modelo img {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+            margin-bottom: 15px;
+            transition: transform 0.3s ease;
+        }
+        
+        .card-modelo:hover img {
+            transform: scale(1.05);
+        }
+        
+        .card-modelo h3 {
+            color: #2c3e50;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .conteudo-expandido {
+            display: none;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+        }
+        
+        .conteudo-expandido p {
+            color: #495057;
+            font-size: 0.95rem;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        
+        .opcoes-cor, .opcoes-armazenamento {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+            justify-content: center;
+        }
+        
+        .opcao-cor, .opcao-armazenamento {
+            padding: 8px 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            background: #fff;
+        }
+        
+        .opcao-cor:hover, .opcao-armazenamento:hover {
+            border-color: #007bff;
+            background: #f8f9fa;
+        }
+        
+        .opcao-cor.selecionada, .opcao-armazenamento.selecionada {
+            border-color: #007bff;
+            background: #007bff;
+            color: #fff;
+        }
+        
+        .btn-selecionar-modelo {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 15px;
+        }
+        
+        .btn-selecionar-modelo:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 123, 255, 0.4);
+        }
+        
+        .avaliacao-container {
+            display: none;
+            margin-top: 30px;
+        }
+        
+        .aparelho-destaque {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 30px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .aparelho-destaque img {
+            max-width: 200px;
+            height: auto;
+            margin-bottom: 15px;
+        }
+        
+        .aparelho-destaque h3 {
+            color: #2c3e50;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .aparelho-destaque p {
+            color: #6c757d;
+            font-size: 1rem;
+            margin: 0;
+        }
+        
+        .questionario {
+            background: #fff;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        }
+        
+        .btn-secundario {
+            background: #6c757d;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+        
+        .btn-secundario:hover {
+            background: #5a6268;
+            transform: translateY(-1px);
+        }
+        
+        .item-pergunta {
+            margin-bottom: 25px;
+        }
+        
+        .item-pergunta p {
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        
+        .item-pergunta input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .item-pergunta input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+        
+        .aviso-envio-email {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 25px 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        
+        .aviso-envio-email i {
+            color: #856404;
+            font-size: 1.2rem;
+            margin-top: 2px;
+        }
+        
+        .aviso-envio-email p {
+            color: #856404;
+            margin: 0;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        
+        .btn-principal {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 16px 32px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .btn-principal:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+        }
+        
+        .flash-messages {
+            margin-bottom: 30px;
+        }
+        
+        .alert {
+            border-radius: 10px;
+            border: none;
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+        
+        .alert-success {
+            background: linear-gradient(135deg, #d1e7dd 0%, #c3e6cb 100%);
+            color: #0f5132;
+        }
+        
+        .alert-danger {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+        }
+        
+        .alert-warning {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            color: #856404;
+        }
+        
+        .valor-calculado {
+            background: rgba(0, 123, 255, 0.1);
+            color: #007bff;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 20px 0;
+            border: 2px solid rgba(0, 123, 255, 0.2);
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-layout {
+                padding: 15px;
+            }
+            
+            .header-section {
+                padding: 25px 15px;
+            }
+            
+            .main-content {
+                padding: 30px 20px;
+            }
+            
+            .page-content h2 {
+                font-size: 1.6rem;
+            }
+            
+            .grid-modelos {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .card-modelo {
+                padding: 20px;
+            }
+            
+            .questionario {
+                padding: 25px 20px;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="dashboard-layout">
-        <div style="width:100%; display:flex; align-items:center; gap:12px; justify-content:center; margin-top:32px; margin-bottom:24px;">
-            {% if link.logo_url %}
-                <img src="{{ url_for('static', filename=link.logo_url) }}" alt="Logo" style="height:38px; width:38px; object-fit:contain; border-radius:8px; background:#fff; box-shadow:0 1px 6px rgba(0,0,0,0.07);">
-            {% endif %}
-            <span style="color:#007bff; font-size:1.3rem; font-weight:bold;">{{ link.nome_empresa }}</span>
+        <div class="header-section">
+            <div class="logo-container">
+                {% if link.logo_url %}
+                    <img src="{{ url_for('static', filename=link.logo_url) }}" alt="Logo">
+                {% endif %}
+                <span class="company-name">{{ link.nome_empresa }}</span>
+            </div>
+            <p class="welcome-text">Bem-vindo! Selecione o modelo do seu iPhone para começar a avaliação.</p>
         </div>
-        <header>
+        
+        <div class="main-content">
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     <div class="flash-messages">
@@ -25,11 +431,11 @@
                     </div>
                 {% endif %}
             {% endwith %}
-        </header>
-        <main class="main-content" id="meuConteudoPrincipal">
-            <div class="page-content">
+            
+            <div class="page-content" id="meuConteudoPrincipal">
                 <h2>Selecione o Modelo do seu iPhone</h2>
                 <p>Escolha o modelo do aparelho que você quer avaliar.</p>
+                
                 <div class="grid-modelos">
                     {% for modelo in modelos %}
                     <div class="card-modelo" data-modelo-id="{{ modelo['id'] }}">
@@ -48,24 +454,33 @@
                     {% endfor %}
                 </div>
             </div>
-            <div id="secao-avaliacao" class="avaliacao-container" style="display: none;">
+            
+            <div id="secao-avaliacao" class="avaliacao-container">
                 <div id="aparelho-em-destaque" class="aparelho-destaque"></div>
                 <div id="secao-questionario" class="questionario">
-                    <button id="btn-voltar-selecao" class="btn-secundario">&larr; Voltar para Modelos</button>
+                    <button id="btn-voltar-selecao" class="btn-secundario">
+                        <i class="fas fa-arrow-left"></i>
+                        Voltar para Modelos
+                    </button>
                     <div id="lista-perguntas"></div>
                     <div class="item-pergunta">
                         <p>Digite aqui o IMEI do aparelho:</p>
                         <input type="text" id="imei-input" placeholder="IMEI do aparelho">
                     </div>
                     <div class="aviso-envio-email">
-                        <i class="fa-solid fa-circle-info"></i> <p><strong>Atenção:</strong> Ao clicar em "Calcular Valor Final", os detalhes da sua avaliação serão enviados para a empresa. Você receberá um link do WhatsApp para contato direto!</p>
+                        <i class="fa-solid fa-circle-info"></i>
+                        <p><strong>Atenção:</strong> Ao clicar em "Calcular Valor Final", os detalhes da sua avaliação serão enviados para a empresa. Você receberá um link do WhatsApp para contato direto!</p>
                     </div>
-                    <button id="btn-calcular-valor" class="btn-principal">Calcular Valor Final</button>
+                    <button id="btn-calcular-valor" class="btn-principal">
+                        <i class="fas fa-calculator"></i>
+                        Calcular Valor Final
+                    </button>
                     <div id="resultado-final" style="margin-top: 20px;"></div>
                 </div>
             </div>
-        </main>
+        </div>
     </div>
+    
     <script>
         // Variáveis globais para uso do JS de cálculo
         window.CONVITE_TOKEN = "{{ token }}";

@@ -391,8 +391,13 @@ body, html {
 
 .valor-calculado {
     font-size: 2.5em;
-    color: #27ae60; 
+    color: #007bff; 
     margin: 10px 0 20px 0;
+    background: rgba(0, 123, 255, 0.1);
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    border: 2px solid rgba(0, 123, 255, 0.2);
 }
 
 .avaliacao-container {
@@ -412,9 +417,13 @@ body, html {
 
 .valor-calculado {
     font-size: 2.5em;
-    color: #27ae60; 
+    color: #007bff; 
     margin: 10px 0 20px 0;
     text-align: center;
+    background: rgba(0, 123, 255, 0.1);
+    padding: 20px;
+    border-radius: 12px;
+    border: 2px solid rgba(0, 123, 255, 0.2);
 }
 
 .aviso-envio-email {

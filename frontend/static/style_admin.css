@@ -646,6 +646,8 @@ main p {
     padding: 8px;
     border-radius: 6px;
     transition: background 0.3s ease;
+    position: relative;
+    z-index: 1001;
 }
 
 .header-mobile-toggle:hover {
@@ -683,19 +685,23 @@ main p {
         top: 90px;
         left: 0;
         right: 0;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
         flex-direction: column;
         padding: 20px;
         gap: 15px;
-        transform: translateY(-100%);
+        transform: translateY(-150%);
         transition: transform 0.3s ease;
         box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         z-index: 1000;
         display: flex;
+        opacity: 0;
+        visibility: hidden;
     }
     
     .header-nav.mobile-only.mobile-open {
         transform: translateY(0);
+        opacity: 1;
+        visibility: visible;
     }
     
     .header-nav-item {
@@ -778,7 +784,7 @@ main p {
 .action-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 8px 25px rgba(0,0,0,0.12);
-    border-color: #667eea;
+    border-color: #007bff;
     text-decoration: none;
     color: inherit;
 }
@@ -797,7 +803,7 @@ main p {
 
 .action-card i {
     font-size: 2rem;
-    color: #667eea;
+    color: #007bff;
     margin-bottom: 15px;
     display: block;
 }
@@ -887,13 +893,13 @@ main p {
 .modern-form select:focus,
 .modern-form textarea:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #007bff;
     background: white;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
 .modern-form .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
     color: white;
     border: none;
     padding: 12px 30px;
@@ -907,7 +913,7 @@ main p {
 
 .modern-form .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
 }
 
 /* ===== MELHORIAS PARA TABELAS ===== */
@@ -920,7 +926,7 @@ main p {
 }
 
 .modern-table th {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
     color: white;
     font-weight: 600;
     padding: 15px 20px;
@@ -938,7 +944,7 @@ main p {
 /* ===== UTILITÁRIOS ===== */
 
 .text-gradient {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -1098,7 +1104,7 @@ body {
 .card-modelo:hover {
     transform: translateY(-3px);
     box-shadow: 0 8px 25px rgba(0,0,0,0.12);
-    border-color: #667eea;
+    border-color: #007bff;
 }
 
 .card-modelo img {
