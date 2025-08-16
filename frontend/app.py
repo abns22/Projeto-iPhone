@@ -2247,9 +2247,9 @@ def usar_link_convite(token):
             # Atualiza o link com os dados do cliente
             cursor.execute("""
                 UPDATE links_convidados
-                SET nome_cliente = %s, email_cliente = %s, telefone_cliente = %s
+                SET nome_cliente = %s, email_cliente = %s, telefone_cliente = %s, modelo_interesse = %s
                 WHERE token_unico = %s
-            """, (nome_cliente, email_cliente, telefone_cliente, token))
+            """, (nome_cliente, email_cliente, telefone_cliente, modelo_interesse, token))
             conn.commit()
             
             # Armazena o modelo de interesse na sessão para usar no email

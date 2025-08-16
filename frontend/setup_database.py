@@ -184,6 +184,7 @@ def criar_tabelas(cursor):
             nome_cliente VARCHAR(255),
             email_cliente VARCHAR(255),
             telefone_cliente VARCHAR(255),
+            modelo_interesse VARCHAR(255),
             data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
             data_expiracao DATETIME NOT NULL,
             usado BOOLEAN DEFAULT FALSE,
