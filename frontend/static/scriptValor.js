@@ -213,6 +213,7 @@ document.addEventListener('DOMContentLoaded', function() {
         secaoDadosCliente.dataset.valorBase = valorBase;
         secaoDadosCliente.dataset.corSelecionada = corBtn ? corBtn.textContent : '';
         secaoDadosCliente.dataset.armazenamentoSelecionado = armBtn ? armBtn.textContent : '';
+        secaoDadosCliente.dataset.modificadorArmazenamento = armBtn ? armBtn.dataset.modificadorValor || '0' : '0';
         secaoDadosCliente.dataset.nomeModelo = nomeModelo;
         secaoDadosCliente.dataset.modeloId = cardClicado.dataset.modeloId || '';
         secaoDadosCliente.dataset.imagemUrl = imagemUrl;
@@ -240,6 +241,9 @@ document.addEventListener('DOMContentLoaded', function() {
             modeloId = secaoDadosCliente.dataset.modeloId || '';
             imagemUrl = secaoDadosCliente.dataset.imagemUrl || '';
         }
+        
+        // Obter modificador de armazenamento
+        const modificadorArmazenamento = secaoDadosCliente ? secaoDadosCliente.dataset.modificadorArmazenamento || '0' : '0';
 
         // Esconder seção de dados do cliente se estiver visível
         if (secaoDadosCliente) {
@@ -261,6 +265,7 @@ document.addEventListener('DOMContentLoaded', function() {
         secaoAvaliacao.dataset.valorBase = valorBase;
         secaoAvaliacao.dataset.corSelecionada = corSelecionada;
         secaoAvaliacao.dataset.armazenamentoSelecionado = armazenamentoSelecionado;
+        secaoAvaliacao.dataset.modificadorArmazenamento = modificadorArmazenamento;
         secaoAvaliacao.dataset.modeloId = modeloId || '';
         
         if (modeloId) {
@@ -432,18 +437,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Aplicar modificador de armazenamento se disponível
                 let valorComArmazenamento = valorBase;
-                const armazenamentoSelecionado = secaoAvaliacao.dataset.armazenamentoSelecionado;
-                const cardModelo = document.querySelector('.card-modelo[data-modelo-id]');
+                const modificadorArmazenamento = secaoAvaliacao.dataset.modificadorArmazenamento;
                 
-                if (cardModelo && armazenamentoSelecionado) {
-                    // Buscar o modificador do armazenamento selecionado
-                    const armazenamentoBtn = cardModelo.querySelector('.btn-armazenamento.selecionado');
-                    if (armazenamentoBtn && armazenamentoBtn.dataset.modificadorValor) {
-                        const modificador = parseFloat(armazenamentoBtn.dataset.modificadorValor);
-                        if (!isNaN(modificador)) {
-                            valorComArmazenamento += modificador;
-                            console.log(`Aplicando modificador de armazenamento: ${modificador}, valor final: ${valorComArmazenamento}`);
-                        }
+                if (modificadorArmazenamento) {
+                    const modificador = parseFloat(modificadorArmazenamento);
+                    if (!isNaN(modificador)) {
+                        valorComArmazenamento += modificador;
+                        console.log(`Aplicando modificador de armazenamento: ${modificador}, valor final: ${valorComArmazenamento}`);
                     }
                 }
                 
