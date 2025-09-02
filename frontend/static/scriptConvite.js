@@ -502,37 +502,24 @@ function gerarPaginaDeImpressao(dados) {
         <head>
             <title>Orçamento de Avaliação - ${dados.modelo}</title>
             <style>
-                * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { font-family: Arial, sans-serif; font-size: 10px; line-height: 1.2; color: #333; }
-                .container { max-width: 100%; padding: 10px; }
-                h1 { font-size: 16px; text-align: center; margin-bottom: 15px; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
-                h2 { font-size: 12px; margin: 8px 0 5px 0; color: #34495e; }
-                .info-empresa, .info-cliente, .info-aparelho, .diagnostico { border: 1px solid #ddd; padding: 8px 10px; border-radius: 3px; margin-bottom: 10px; }
-                .logo-empresa { text-align: center; margin: 10px 0; }
-                .logo-empresa img { max-width: 150px; max-height: 80px; object-fit: contain; }
-                .item { margin: 3px 0; font-size: 9px; }
-                .item strong { color: #2c3e50; }
-                .valor-total { font-size: 14px; font-weight: bold; text-align: center; margin: 10px 0; padding: 8px; background-color: #ecf0f1; border-radius: 3px; color: #2c3e50; }
-                .observacoes { margin-top: 10px; padding: 8px; background-color: #f8f9fa; border-radius: 3px; border-left: 3px solid #3498db; }
-                .observacoes h3 { font-size: 11px; margin-bottom: 5px; color: #2c3e50; }
-                .observacoes p { font-size: 9px; margin: 2px 0; }
-                .data-geracao { text-align: center; margin-top: 10px; font-size: 8px; color: #7f8c8d; font-style: italic; }
-                
+                body { font-family: Arial, sans-serif; line-height: 1.4; color: #333; }
+                .container { width: 90%; max-width: 800px; margin: auto; padding-top: 20px; }
+                h1 { text-align: center; color: #2c3e50; border-bottom: 2px solid #ccc; padding-bottom: 10px; }
+                h2 { color: #34495e; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 20px; margin-bottom: 10px; }
+                .item { margin: 4px 0; }
+                .footer { margin-top: 30px; text-align: center; font-style: italic; color: #777; font-size: 0.8em; }
+                .info-empresa, .info-cliente, .info-aparelho, .diagnostico { border: 1px solid #ddd; padding: 10px 15px; border-radius: 5px; margin-bottom: 15px; }
+                strong { color: #000; }
+                .logo-empresa { text-align: center; margin: 20px 0; }
+                .logo-empresa img { max-width: 200px; max-height: 100px; object-fit: contain; }
                 @media print {
-                    body { font-size: 9px; }
-                    .container { padding: 5px; }
-                    h1 { font-size: 14px; margin-bottom: 10px; }
-                    h2 { font-size: 11px; margin: 5px 0 3px 0; }
-                    .info-empresa, .info-cliente, .info-aparelho, .diagnostico { border: none; box-shadow: none; padding: 3px 0; margin-bottom: 8px; }
-                    .logo-empresa { margin: 5px 0; }
-                    .logo-empresa img { max-width: 120px; max-height: 60px; }
-                    .item { margin: 2px 0; font-size: 8px; }
-                    .valor-total { font-size: 12px; margin: 8px 0; padding: 5px; }
-                    .observacoes { margin-top: 8px; padding: 5px; }
-                    .observacoes h3 { font-size: 10px; margin-bottom: 3px; }
-                    .observacoes p { font-size: 8px; margin: 1px 0; }
-                    .data-geracao { margin-top: 8px; font-size: 7px; }
-                    @page { margin: 1cm; size: A4; }
+                    body { font-size: 10pt; background-color: #fff; }
+                    .container { width: 100%; margin: 0; padding: 0; border: none; }
+                    h1 { font-size: 18pt; } h2 { font-size: 14pt; }
+                    .info-empresa, .info-cliente, .info-aparelho, .diagnostico { border: none; box-shadow: none; padding: 5px 0; margin-bottom: 10px; }
+                    h2, .footer { page-break-after: avoid; }
+                    p, .item { page-break-inside: avoid; }
+                    a { text-decoration: none; color: #000; }
                 }
             </style>
         </head>
@@ -543,33 +530,25 @@ function gerarPaginaDeImpressao(dados) {
                 ${secaoEmpresaHtml}
                 <div class="info-cliente">
                     <h2>Dados do Cliente</h2>
-                    <p class="item"><strong>Nome:</strong> ${nomeCliente}</p>
-                    <p class="item"><strong>Email:</strong> ${emailCliente}</p>
+                    <p class="item"><strong>Cliente:</strong> ${nomeCliente}</p>
                     <p class="item"><strong>Telefone:</strong> ${telefoneCliente}</p>
+                    <p class="item"><strong>E-mail:</strong> ${emailCliente || 'Não informado'}</p>
+                    <p class="item"><strong>Data de Emissão:</strong> ${dataAtual}</p>
                 </div>
                 <div class="info-aparelho">
-                    <h2>Informações do Aparelho</h2>
+                    <h2>Detalhes do Aparelho</h2>
                     <p class="item"><strong>Modelo:</strong> ${dados.modelo}</p>
-                    <p class="item"><strong>IMEI:</strong> ${dados.imei}</p>
                     <p class="item"><strong>Cor:</strong> ${dados.cor}</p>
-                    <p class="item"><strong>Capacidade:</strong> ${dados.armazenamento}</p>
+                    <p class="item"><strong>Armazenamento:</strong> ${dados.armazenamento}</p>
+                    <p class="item"><strong>IMEI:</strong> ${dados.imei}</p>
                 </div>
                 <div class="diagnostico">
-                    <h2>Diagnóstico e Avaliação</h2>
+                    <h2>Diagnóstico Realizado</h2>
                     ${diagnosticoItensHtml}
                 </div>
-                <div class="valor-total">
-                    <strong>Valor da Avaliação: R$ ${dados.valor}</strong>
-                </div>
-                <div class="observacoes">
-                    <h3>Observações Importantes:</h3>
-                    <p>• Este orçamento é válido por 30 dias a partir da data de emissão.</p>
-                    <p>• O valor pode variar conforme a disponibilidade de peças e complexidade do reparo.</p>
-                    <p>• Após a aprovação, o prazo para conclusão será informado.</p>
-                    <p>• Garantia de 90 dias para peças e serviços.</p>
-                </div>
-                <div class="data-geracao">
-                    Orçamento gerado em: ${dataAtual}
+                <h2>Valor Estimado para Troca: R$ ${dados.valor}</h2>
+                <div class="footer">
+                    <p>Validade do orçamento por 7 dias.</p>
                 </div>
             </div>
         </body>
