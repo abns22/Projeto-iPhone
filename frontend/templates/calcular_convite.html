@@ -489,6 +489,20 @@
             email: "{{ link.email_cliente }}",
             telefone: "{{ link.telefone_cliente }}"
         };
+        
+        // Dados da empresa para uso no orçamento impresso
+        window.dadosEmpresa = {
+            nome: '{{ link.nome_empresa if link else "Sistema" }}',
+            cnpj: '{{ link.cnpj if link and link.cnpj else "Não informado" }}',
+            endereco: {
+                rua: '{{ link.endereco_rua if link and link.endereco_rua else "" }}',
+                numero: '{{ link.endereco_numero if link and link.endereco_numero else "" }}',
+                bairro: '{{ link.endereco_bairro if link and link.endereco_bairro else "" }}',
+                cidade: '{{ link.endereco_cidade if link and link.endereco_cidade else "" }}',
+                estado: '{{ link.endereco_estado if link and link.endereco_estado else "" }}'
+            },
+            logo: '{{ link.logo_url if link and link.logo_url else "" }}'
+        };
     </script>
     <script src="{{ url_for('static', filename='scriptConvite.js') }}"></script>
 </body>

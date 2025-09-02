@@ -597,6 +597,33 @@ function gerarPaginaDeImpressao(dados) {
         `;
     }
 
+    // Obter dados da empresa do template
+    const dadosEmpresa = window.dadosEmpresa || {};
+    
+    // Formatar endereço da empresa
+    let enderecoEmpresa = '';
+    if (dadosEmpresa.endereco && dadosEmpresa.endereco.rua && dadosEmpresa.endereco.numero) {
+        enderecoEmpresa = `${dadosEmpresa.endereco.rua}, ${dadosEmpresa.endereco.numero}`;
+        if (dadosEmpresa.endereco.bairro) {
+            enderecoEmpresa += `, ${dadosEmpresa.endereco.bairro}`;
+        }
+        if (dadosEmpresa.endereco.cidade && dadosEmpresa.endereco.estado) {
+            enderecoEmpresa += ` - ${dadosEmpresa.endereco.cidade} - ${dadosEmpresa.endereco.estado}`;
+        }
+    } else {
+        enderecoEmpresa = 'Endereço não informado';
+    }
+    
+    // Seção de informações da empresa
+    const secaoEmpresaHtml = `
+        <div class="info-empresa">
+            <h2>Informações da Empresa</h2>
+            <p class="item"><strong>Empresa:</strong> ${dadosEmpresa.nome || 'Sistema'}</p>
+            <p class="item"><strong>CNPJ:</strong> ${dadosEmpresa.cnpj || 'Não informado'}</p>
+            <p class="item"><strong>Endereço:</strong> ${enderecoEmpresa}</p>
+        </div>
+    `;
+    
     let conteudoHtmlCompleto = `
         <!DOCTYPE html>
         <html lang="pt-br">
@@ -609,13 +636,15 @@ function gerarPaginaDeImpressao(dados) {
                 h2 { color: #34495e; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 20px; margin-bottom: 10px; }
                 .item { margin: 4px 0; }
                 .footer { margin-top: 30px; text-align: center; font-style: italic; color: #777; font-size: 0.8em; }
-                .info-cliente, .info-aparelho, .diagnostico { border: 1px solid #ddd; padding: 10px 15px; border-radius: 5px; margin-bottom: 15px; }
+                .info-empresa, .info-cliente, .info-aparelho, .diagnostico { border: 1px solid #ddd; padding: 10px 15px; border-radius: 5px; margin-bottom: 15px; }
                 strong { color: #000; }
+                .logo-empresa { text-align: center; margin: 20px 0; }
+                .logo-empresa img { max-width: 200px; max-height: 100px; object-fit: contain; }
                 @media print {
                     body { font-size: 10pt; background-color: #fff; }
                     .container { width: 100%; margin: 0; padding: 0; border: none; }
                     h1 { font-size: 18pt; } h2 { font-size: 14pt; }
-                    .info-cliente, .info-aparelho, .diagnostico { border: none; box-shadow: none; padding: 5px 0; margin-bottom: 10px; }
+                    .info-empresa, .info-cliente, .info-aparelho, .diagnostico { border: none; box-shadow: none; padding: 5px 0; margin-bottom: 10px; }
                     h2, .footer { page-break-after: avoid; }
                     p, .item { page-break-inside: avoid; }
                     a { text-decoration: none; color: #000; }
@@ -625,6 +654,8 @@ function gerarPaginaDeImpressao(dados) {
         <body>
             <div class="container">
                 <h1>Orçamento de Avaliação de Aparelho</h1>
+                ${dadosEmpresa.logo ? `<div class="logo-empresa"><img src="${dadosEmpresa.logo}" alt="Logo ${dadosEmpresa.nome}" /></div>` : ''}
+                ${secaoEmpresaHtml}
                 <div class="info-cliente">
                     <h2>Dados do Cliente</h2>
                     ${secaoClienteHtml}

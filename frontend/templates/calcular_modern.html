@@ -730,5 +730,21 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Dados da empresa para o JavaScript -->
+<script>
+    // Dados da empresa para uso no orçamento impresso
+    window.dadosEmpresa = {
+        nome: '{{ info_empresa.nome_empresa if info_empresa else "Sistema" }}',
+        cnpj: '{{ info_empresa.cnpj if info_empresa and info_empresa.cnpj else "Não informado" }}',
+        endereco: {
+            rua: '{{ info_empresa.endereco_rua if info_empresa and info_empresa.endereco_rua else "" }}',
+            numero: '{{ info_empresa.endereco_numero if info_empresa and info_empresa.endereco_numero else "" }}',
+            bairro: '{{ info_empresa.endereco_bairro if info_empresa and info_empresa.endereco_bairro else "" }}',
+            cidade: '{{ info_empresa.endereco_cidade if info_empresa and info_empresa.endereco_cidade else "" }}',
+            estado: '{{ info_empresa.endereco_estado if info_empresa and info_empresa.endereco_estado else "" }}'
+        },
+        logo: '{{ info_empresa.logo_url if info_empresa and info_empresa.logo_url else "" }}'
+    };
+</script>
 <script src="{{ url_for('static', filename='scriptValor.js') }}"></script>
 {% endblock %}
