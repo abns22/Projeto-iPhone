@@ -239,7 +239,7 @@ def get_info_empresa_logada():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT nome_empresa, logo_url, permite_ajuste_valores, permite_link_convidado, envia_email_orcamento, envia_email_orcamento_link, plano_ativo FROM empresas WHERE id = %s", (session['empresa_id'],))
+        cursor.execute("SELECT nome_empresa, logo_url, cnpj, endereco_rua, endereco_numero, endereco_bairro, endereco_cidade, endereco_estado, permite_ajuste_valores, permite_link_convidado, envia_email_orcamento, envia_email_orcamento_link, plano_ativo FROM empresas WHERE id = %s", (session['empresa_id'],))
         info_empresa = cursor.fetchone()
 
         # Atualiza as permissões na sessão se necessário
@@ -632,7 +632,7 @@ def enviar_orcamento():
             # Se as colunas não existem, usar apenas email_contato_principal
             if not colunas_existentes:
                 cursor.execute("""
-                    SELECT email_contato_principal, nome_empresa
+                    SELECT email_contato_principal, nome_empresa, logo_url, cnpj, endereco_rua, endereco_numero, endereco_bairro, endereco_cidade, endereco_estado
                     FROM empresas WHERE id = %s
                 """, (empresa_id,))
                 
@@ -642,7 +642,7 @@ def enviar_orcamento():
                     print("❌ Configurações de email não encontradas para a empresa")
                     return jsonify({"mensagem": "Orçamento salvo com sucesso! (Email não enviado - configurações não encontradas)"})
                 
-                email_empresa, nome_empresa = config_email
+                email_empresa, nome_empresa, logo_url, cnpj, endereco_rua, endereco_numero, endereco_bairro, endereco_cidade, endereco_estado = config_email
                 
                 # Usar configurações do arquivo .env
                 servidor_smtp = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
@@ -876,7 +876,19 @@ def enviar_orcamento():
                                         <div class="info-label">Empresa</div>
                                         <div class="info-value">{nome_empresa}</div>
                                     </div>
+                                    <div class="info-item">
+                                        <div class="info-label">CNPJ</div>
+                                        <div class="info-value">{cnpj or 'Não informado'}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Endereço</div>
+                                        <div class="info-value">
+                                            {endereco_rua or ''} {endereco_numero or ''}, {endereco_bairro or ''}<br>
+                                            {endereco_cidade or ''} - {endereco_estado or ''}
+                                        </div>
+                                    </div>
                                 </div>
+                                {f'<div style="text-align: center; margin-top: 15px;"><img src="cid:logo_empresa" alt="Logo {nome_empresa}" style="max-width: 200px; max-height: 100px; object-fit: contain;"></div>' if logo_url else ''}
                             </div>
                             
                             <div class="section">
@@ -973,7 +985,8 @@ def enviar_orcamento():
             # Se as colunas existem, usar a query original
             cursor.execute("""
                 SELECT email_empresa, senha_email_empresa, servidor_smtp, porta_smtp, 
-                       usar_tls, usar_ssl, nome_empresa
+                       usar_tls, usar_ssl, nome_empresa, logo_url, cnpj, endereco_rua, 
+                       endereco_numero, endereco_bairro, endereco_cidade, endereco_estado
                 FROM empresas WHERE id = %s
             """, (empresa_id,))
             
@@ -983,7 +996,7 @@ def enviar_orcamento():
                 print("❌ Configurações de email não encontradas para a empresa")
                 return jsonify({"mensagem": "Orçamento salvo com sucesso! (Email não enviado - configurações não encontradas)"})
             
-            email_empresa, senha_email, servidor_smtp, porta_smtp, usar_tls, usar_ssl, nome_empresa = config_email
+            email_empresa, senha_email, servidor_smtp, porta_smtp, usar_tls, usar_ssl, nome_empresa, logo_url, cnpj, endereco_rua, endereco_numero, endereco_bairro, endereco_cidade, endereco_estado = config_email
             
             # Configurar Flask-Mail - Sempre usar configurações do .env para enviar para a empresa
             app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
@@ -1909,6 +1922,11 @@ def adicionar_empresa_super_admin():
 
         nome_empresa = request.form['nome_empresa']
         cnpj = request.form.get('cnpj')
+        endereco_rua = request.form.get('endereco_rua')
+        endereco_numero = request.form.get('endereco_numero')
+        endereco_bairro = request.form.get('endereco_bairro')
+        endereco_cidade = request.form.get('endereco_cidade')
+        endereco_estado = request.form.get('endereco_estado')
         email_contato_principal = request.form.get('email_contato_principal')
         nome_responsavel = request.form['nome_responsavel']
         email_admin = request.form['email_admin'].strip().lower()
@@ -1953,11 +1971,11 @@ def adicionar_empresa_super_admin():
             cursor = conn.cursor(dictionary=True)
 
             sql_insert_empresa = """
-                INSERT INTO empresas (nome_empresa, cnpj, nome_responsavel, email_contato_principal, max_usuarios, permite_ajuste_valores, permite_link_convidado, envia_email_orcamento, envia_email_orcamento_link, plano_ativo, logo_url)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+                INSERT INTO empresas (nome_empresa, cnpj, endereco_rua, endereco_numero, endereco_bairro, endereco_cidade, endereco_estado, nome_responsavel, email_contato_principal, max_usuarios, permite_ajuste_valores, permite_link_convidado, envia_email_orcamento, envia_email_orcamento_link, plano_ativo, logo_url)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
             """
             cursor.execute(sql_insert_empresa, (
-                nome_empresa, cnpj, nome_responsavel, email_contato_principal, limite_usuarios, permite_ajustes, permite_link, envia_email, envia_email_link, plano_ativo, logo_url
+                nome_empresa, cnpj, endereco_rua, endereco_numero, endereco_bairro, endereco_cidade, endereco_estado, nome_responsavel, email_contato_principal, limite_usuarios, permite_ajustes, permite_link, envia_email, envia_email_link, plano_ativo, logo_url
             ))
             nova_empresa_id = cursor.lastrowid
             print(f"Empresa '{nome_empresa}' criada com ID: {nova_empresa_id}")
@@ -2063,6 +2081,11 @@ def editar_empresa_admin(empresa_id):
             # Pega todos os dados do formulário
             nome_empresa = request.form.get('nome_empresa')
             cnpj = request.form.get('cnpj')
+            endereco_rua = request.form.get('endereco_rua')
+            endereco_numero = request.form.get('endereco_numero')
+            endereco_bairro = request.form.get('endereco_bairro')
+            endereco_cidade = request.form.get('endereco_cidade')
+            endereco_estado = request.form.get('endereco_estado')
             email_contato = request.form.get('email_contato_principal')
             max_usuarios = request.form.get('max_usuarios', 1, type=int)
 
@@ -2099,13 +2122,16 @@ def editar_empresa_admin(empresa_id):
             # Executa o comando UPDATE completo
             sql_update = """
                 UPDATE empresas SET
-                    nome_empresa = %s, cnpj = %s, email_contato_principal = %s,
-                    max_usuarios = %s, permite_ajuste_valores = %s, permite_link_convidado = %s,
-                    envia_email_orcamento = %s, envia_email_orcamento_link = %s, plano_ativo = %s
+                    nome_empresa = %s, cnpj = %s, endereco_rua = %s, endereco_numero = %s,
+                    endereco_bairro = %s, endereco_cidade = %s, endereco_estado = %s,
+                    email_contato_principal = %s, max_usuarios = %s, permite_ajuste_valores = %s,
+                    permite_link_convidado = %s, envia_email_orcamento = %s,
+                    envia_email_orcamento_link = %s, plano_ativo = %s
                 WHERE id = %s
             """
             cursor.execute(sql_update, (
-                nome_empresa, cnpj, email_contato, max_usuarios, permite_ajustes,
+                nome_empresa, cnpj, endereco_rua, endereco_numero, endereco_bairro,
+                endereco_cidade, endereco_estado, email_contato, max_usuarios, permite_ajustes,
                 permite_link, envia_email, envia_email_link, plano_ativo, empresa_id
             ))
 
@@ -3578,7 +3604,8 @@ def enviar_orcamento_convite(token):
 
         # Verifica link
         cursor.execute("""
-            SELECT lc.*, e.nome_empresa, e.email_contato_principal, e.logo_url,
+            SELECT lc.*, e.nome_empresa, e.email_contato_principal, e.logo_url, e.cnpj,
+                   e.endereco_rua, e.endereco_numero, e.endereco_bairro, e.endereco_cidade, e.endereco_estado,
                    lc.nome_cliente, lc.email_cliente, lc.telefone_cliente
             FROM links_convidados lc
             JOIN empresas e ON lc.empresa_id = e.id
@@ -3853,6 +3880,28 @@ def enviar_orcamento_convite(token):
                     </div>
                     
                     <div class="content">
+                        <div class="section">
+                            <h2>🏢 Informações da Empresa</h2>
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="info-label">Empresa</div>
+                                    <div class="info-value">{link['nome_empresa']}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">CNPJ</div>
+                                    <div class="info-value">{link.get('cnpj') or 'Não informado'}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Endereço</div>
+                                    <div class="info-value">
+                                        {link.get('endereco_rua') or ''} {link.get('endereco_numero') or ''}, {link.get('endereco_bairro') or ''}<br>
+                                        {link.get('endereco_cidade') or ''} - {link.get('endereco_estado') or ''}
+                                    </div>
+                                </div>
+                            </div>
+                            {f'<div style="text-align: center; margin-top: 15px;"><img src="cid:logo_empresa" alt="Logo {link["nome_empresa"]}" style="max-width: 200px; max-height: 100px; object-fit: contain;"></div>' if link.get('logo_url') else ''}
+                        </div>
+                        
                         <div class="section">
                             <h2>👤 Dados do Cliente</h2>
                             <div class="info-grid">
